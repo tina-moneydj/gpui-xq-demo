@@ -2456,6 +2456,8 @@ dependencies = [
  "gpui-pre",
  "gpui-pre-platform",
  "parking_lot",
+ "serde",
+ "serde_json",
  "xq-feed",
 ]
 

@@ -1,0 +1,141 @@
+{
+ "date": "2026-10-08 13:19 +0800",
+ "runs": 3,
+ "mode": "heavy",
+ "wry": {
+  "binary_mb": 1.6687850952148438,
+  "heavy": {
+   "heavy_frame_ms": 1294.464725011494,
+   "first_quote_ms": 913.337488018442,
+   "canvas": "1166x512",
+   "overlays": 20,
+   "drawings": 1000,
+   "bars": 1200,
+   "ticks": {
+    "fps": 31.7,
+    "paint_ms": 6.845,
+    "cpu_pct": 249.20655986432564,
+    "cpu_nollvm_pct": 135.65336532217398,
+    "rss_mb": 685.26953125,
+    "pss_mb": 498.1591796875,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 122.7,
+     "WebKitWebProces/llvmpipe": 113.3,
+     "wry-xq-demo/wry-xq-demo": 5.8,
+     "WebKitWebProces/JITWorker": 4.4,
+     "WebKitWebProces/ReceiveQueue": 1.7,
+     "wry-xq-demo/ReceiveQueue": 1.2
+    }
+   },
+   "crosshair": {
+    "fps": 31.9,
+    "paint_ms": 7.289,
+    "cpu_pct": 249.13484438753576,
+    "cpu_nollvm_pct": 132.0654612503751,
+    "rss_mb": 703.203125,
+    "pss_mb": 516.4296875,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 122.2,
+     "WebKitWebProces/llvmpipe": 117.1,
+     "wry-xq-demo/wry-xq-demo": 5.6,
+     "WebKitWebProces/JITWorker": 1.7,
+     "WebKitWebProces/ReceiveQueue": 1.3,
+     "wry-xq-demo/ReceiveQueue": 1.1
+    }
+   },
+   "pan": {
+    "fps": 23.9,
+    "paint_ms": 8.165,
+    "cpu_pct": 284.75886298205506,
+    "cpu_nollvm_pct": 110.00727395519388,
+    "rss_mb": 803.58984375,
+    "pss_mb": 616.8115234375,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 171.2,
+     "WebKitWebProces/WebKitWebProces": 100.9,
+     "wry-xq-demo/wry-xq-demo": 4.5,
+     "WebKitWebProces/JITWorker": 3.7,
+     "wry-xq-demo/ReceiveQueue": 1.1
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "wry-xq-demo",
+     "rss_mb": 178.2,
+     "pss_mb": 99.9,
+     "threads": 33
+    },
+    {
+     "comm": "WebKitNetworkPr",
+     "rss_mb": 60.9,
+     "pss_mb": 28.0,
+     "threads": 9
+    },
+    {
+     "comm": "WebKitWebProces",
+     "rss_mb": 465.2,
+     "pss_mb": 389.0,
+     "threads": 38
+    }
+   ]
+  }
+ },
+ "gpui": {
+  "binary_mb": 25.393043518066406,
+  "heavy": {
+   "heavy_frame_ms": 762.7705920021981,
+   "first_quote_ms": 404.5825320063159,
+   "canvas": "1166x512",
+   "overlays": 20,
+   "drawings": 1000,
+   "bars": 1200,
+   "ticks": {
+    "fps": 20.6,
+    "paint_ms": 2.955,
+    "cpu_pct": 413.100377938087,
+    "cpu_nollvm_pct": 36.61154780758712,
+    "rss_mb": 218.88671875,
+    "pss_mb": 214.8017578125,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 376.1,
+     "gpui-xq-demo/gpui-xq-demo": 33.2,
+     "gpui-xq-demo/WSI swapchain q": 1.4
+    }
+   },
+   "crosshair": {
+    "fps": 20.7,
+    "paint_ms": 3.087,
+    "cpu_pct": 422.05377493222943,
+    "cpu_nollvm_pct": 37.58638053253186,
+    "rss_mb": 219.59765625,
+    "pss_mb": 215.5322265625,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 378.3,
+     "gpui-xq-demo/gpui-xq-demo": 34.1,
+     "gpui-xq-demo/WSI swapchain q": 1.2
+    }
+   },
+   "pan": {
+    "fps": 20.5,
+    "paint_ms": 2.247,
+    "cpu_pct": 411.86348421059176,
+    "cpu_nollvm_pct": 35.76511630064271,
+    "rss_mb": 222.90234375,
+    "pss_mb": 218.99609375,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 376.9,
+     "gpui-xq-demo/gpui-xq-demo": 33.3,
+     "gpui-xq-demo/WSI swapchain q": 1.4
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "gpui-xq-demo",
+     "rss_mb": 219.6,
+     "pss_mb": 215.5,
+     "threads": 53
+    }
+   ]
+  }
+ }
+}

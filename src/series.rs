@@ -1,34 +1,51 @@
-//! 走勢圖序列＋增量指標。每筆 tick 只改最後一根與各 MA 的最後一個值（O(期數)），
-//! 新增一根時只 append，不整段重算。
+//! 走勢圖序列（K 棒）。指標在 indicators.rs，tick 時只改最後一根。
 
 use xq_feed::Bar as FeedBar;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Period {
     /// 分時（引擎分鐘線）
     Intraday,
     /// 日 K（合成，最後一根跟著現價）
     Daily,
+    /// 週 K／月 K：由合成日 K 聚合
+    Weekly,
+    Monthly,
 }
 
 impl Period {
+    pub const ALL: [Period; 4] = [Period::Intraday, Period::Daily, Period::Weekly, Period::Monthly];
     pub fn code(self) -> &'static str {
         match self {
             Period::Intraday => "T",
             Period::Daily => "D",
+            Period::Weekly => "W",
+            Period::Monthly => "M",
         }
+    }
+    pub fn from_code(s: &str) -> Option<Period> {
+        Period::ALL.into_iter().find(|p| p.code().eq_ignore_ascii_case(s))
     }
     pub fn label(self) -> &'static str {
         match self {
             Period::Intraday => "分時",
-            Period::Daily => "日線",
+            Period::Daily => "日K",
+            Period::Weekly => "週K",
+            Period::Monthly => "月K",
+        }
+    }
+    /// 引擎訂閱用的週期（W/M 由日線聚合，跟引擎要日線現價即可）
+    pub fn feed_code(self) -> &'static str {
+        match self {
+            Period::Intraday => "T",
+            _ => "D",
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct K {
-    /// 分時：當日分鐘數（540 = 09:00）；日線：yyyymmdd
+    /// 分時：當日分鐘數（540 = 09:00）；日／週／月：yyyymmdd（該期最後一個交易日）
     pub t: u32,
     pub o: f64,
     pub h: f64,
@@ -38,119 +55,53 @@ pub struct K {
 }
 
 #[derive(Clone, Debug)]
-pub struct Ma {
-    pub n: usize,
-    pub vals: Vec<f64>,
-}
-
-#[derive(Clone, Debug)]
 pub struct Series {
     pub symbol: String,
     pub period: Period,
     pub bars: Vec<K>,
-    pub mas: Vec<Ma>,
     /// 昨收（分時參考線）
     pub prev: f64,
     /// true = 來自引擎；false = 合成
     pub live: bool,
 }
 
-pub const MA_PERIODS_INTRADAY: [usize; 2] = [5, 20];
-pub const MA_PERIODS_DAILY: [usize; 3] = [5, 20, 60];
-
 impl Series {
-    pub fn new(symbol: &str, period: Period, bars: Vec<K>, prev: f64, live: bool) -> Self {
-        let periods: &[usize] = match period {
-            Period::Intraday => &MA_PERIODS_INTRADAY,
-            Period::Daily => &MA_PERIODS_DAILY,
-        };
-        let mut s = Series {
-            symbol: symbol.to_string(),
-            period,
-            bars,
-            mas: periods.iter().map(|&n| Ma { n, vals: Vec::new() }).collect(),
-            prev,
-            live,
-        };
-        s.rebuild_mas();
-        s
-    }
-
     pub fn empty(symbol: &str, period: Period) -> Self {
-        Series::new(symbol, period, Vec::new(), 0.0, false)
+        Series { symbol: symbol.to_string(), period, bars: Vec::new(), prev: 0.0, live: false }
     }
 
-    /// 只在換代號／重設時跑一次（O(n)，滑動和）。
-    fn rebuild_mas(&mut self) {
-        for ma in &mut self.mas {
-            ma.vals.clear();
-            ma.vals.reserve(self.bars.len());
-            let mut sum = 0.0;
-            for (i, b) in self.bars.iter().enumerate() {
-                sum += b.c;
-                if i >= ma.n {
-                    sum -= self.bars[i - ma.n].c;
-                }
-                ma.vals.push(if i + 1 >= ma.n { sum / ma.n as f64 } else { f64::NAN });
-            }
-        }
-    }
-
-    fn ma_at(&self, n: usize, i: usize) -> f64 {
-        if i + 1 < n {
-            return f64::NAN;
-        }
-        let mut sum = 0.0;
-        for b in &self.bars[i + 1 - n..=i] {
-            sum += b.c;
-        }
-        sum / n as f64
-    }
-
-    fn refresh_last_ma(&mut self) {
-        let Some(i) = self.bars.len().checked_sub(1) else { return };
-        for k in 0..self.mas.len() {
-            let v = self.ma_at(self.mas[k].n, i);
-            let vals = &mut self.mas[k].vals;
-            if vals.len() == i + 1 {
-                vals[i] = v;
-            } else {
-                vals.push(v);
-            }
-        }
-    }
-
-    /// 現價 tick：只動最後一根。
-    pub fn apply_price(&mut self, price: f64, day_volume: Option<i64>) -> bool {
+    /// 現價 tick：只動最後一根。`vol_delta`：這筆 tick 的成交量增量（日／週／月累加）。
+    pub fn apply_price(&mut self, price: f64, vol_delta: f64) -> bool {
         let Some(last) = self.bars.last_mut() else { return false };
-        if last.c == price && day_volume.map_or(true, |v| last.v == v as f64) {
+        if last.c == price && vol_delta == 0.0 {
             return false;
         }
         last.c = price;
         last.h = last.h.max(price);
         last.l = last.l.min(price);
-        if let Some(v) = day_volume {
-            last.v = v as f64;
-        }
-        self.refresh_last_ma();
+        last.v += vol_delta;
         true
     }
 
-    /// 引擎分鐘線：同一分鐘改最後一根，新分鐘才 append。
-    pub fn apply_minute(&mut self, b: &FeedBar) {
+    /// 引擎分鐘線：同一分鐘改最後一根（回傳 false），新分鐘才 append（回傳 true）。
+    pub fn apply_minute(&mut self, b: &FeedBar) -> Option<bool> {
         let k = K { t: b.t as u32, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v as f64 };
-        match self.bars.last_mut() {
+        let appended = match self.bars.last_mut() {
             Some(last) if last.t == k.t => {
                 last.h = last.h.max(k.h);
                 last.l = last.l.min(k.l);
                 last.c = k.c;
                 last.v = k.v;
+                false
             }
-            Some(last) if last.t > k.t => return, // 舊分鐘，忽略
-            _ => self.bars.push(k),
-        }
+            Some(last) if last.t > k.t => return None, // 舊分鐘，忽略
+            _ => {
+                self.bars.push(k);
+                true
+            }
+        };
         self.live = true;
-        self.refresh_last_ma();
+        Some(appended)
     }
 }
 
@@ -159,7 +110,48 @@ pub fn from_feed(symbol: &str, prev: f64, bars: &[FeedBar]) -> Series {
         .iter()
         .map(|b| K { t: b.t as u32, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v as f64 })
         .collect();
-    Series::new(symbol, Period::Intraday, ks, prev, true)
+    Series { symbol: symbol.to_string(), period: Period::Intraday, bars: ks, prev, live: true }
+}
+
+/// 日 K → 週 K／月 K（與 wry aggregate 相同：同一期合併，t 取該期最後一天）
+pub fn aggregate(daily: &[K], period: Period) -> Vec<K> {
+    let key = |t: u32| -> i64 {
+        match period {
+            Period::Monthly => (t / 100) as i64,
+            _ => {
+                // 週：以該日所屬週一的 days-from-epoch 當 key
+                let d = days_from_civil((t / 10_000) as i64, (t / 100 % 100) as i64, (t % 100) as i64);
+                d - (d + 3).rem_euclid(7)
+            }
+        }
+    };
+    let mut out: Vec<K> = Vec::new();
+    let mut cur_key = i64::MIN;
+    for b in daily {
+        let k = key(b.t);
+        if k != cur_key {
+            out.push(*b);
+            cur_key = k;
+        } else {
+            let c = out.last_mut().unwrap();
+            c.t = b.t;
+            c.h = c.h.max(b.h);
+            c.l = c.l.min(b.l);
+            c.c = b.c;
+            c.v += b.v;
+        }
+    }
+    out
+}
+
+fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468
 }
 
 // ---- 合成日線（引擎不給日 K；與 wry 版相同做法：最後一根對上現價）----
@@ -224,7 +216,8 @@ fn civil(days: i64) -> u32 {
     (y * 10_000 + m * 100 + d) as u32
 }
 
-pub const N_DAILY: usize = 260;
+/// 與 wry 版 chart.js 相同：合成 1200 根日 K
+pub const N_DAILY: usize = 1200;
 
 pub fn synth_daily(symbol: &str, price: f64, change: f64, day_volume: i64) -> Series {
     let mut r = Rng::seed(symbol, 11);
@@ -267,7 +260,7 @@ pub fn synth_daily(symbol: &str, price: f64, change: f64, day_volume: i64) -> Se
         last.h = round2(last.o.max(price) * (1.0 + r.next() * 0.004));
         last.l = round2(last.o.min(price) * (1.0 - r.next() * 0.004));
     }
-    Series::new(symbol, Period::Daily, bars, prev_close, false)
+    Series { symbol: symbol.to_string(), period: Period::Daily, bars, prev: prev_close, live: false }
 }
 
 #[cfg(test)]
@@ -275,20 +268,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn incremental_ma_matches_rebuild() {
-        let mut s = synth_daily("2330", 1035.0, 12.0, 0);
-        s.apply_price(1040.0, Some(123));
-        let inc: Vec<f64> = s.mas.iter().map(|m| *m.vals.last().unwrap()).collect();
-        s.rebuild_mas();
-        let full: Vec<f64> = s.mas.iter().map(|m| *m.vals.last().unwrap()).collect();
-        for (a, b) in inc.iter().zip(full) {
-            assert!((a - b).abs() < 1e-9);
-        }
-    }
-
-    #[test]
     fn civil_known() {
         assert_eq!(civil(0), 19700101);
         assert_eq!(civil(20_000), 20241004);
+        assert_eq!(days_from_civil(2024, 10, 4), 20_000);
+    }
+
+    #[test]
+    fn weekly_monthly() {
+        let d = synth_daily("2330", 1000.0, 5.0, 0);
+        let w = aggregate(&d.bars, Period::Weekly);
+        let m = aggregate(&d.bars, Period::Monthly);
+        assert!(w.len() > 230 && w.len() < 260, "{}", w.len());
+        assert!(m.len() > 50 && m.len() < 60, "{}", m.len());
+        assert_eq!(w.last().unwrap().c, 1000.0);
+        let vsum: f64 = d.bars.iter().map(|b| b.v).sum();
+        let wsum: f64 = w.iter().map(|b| b.v).sum();
+        assert!((vsum - wsum).abs() < 1e-6);
     }
 }

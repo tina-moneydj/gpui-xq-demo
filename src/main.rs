@@ -6,12 +6,17 @@
 
 mod bridge;
 mod chart;
+mod drawings;
+mod gfx;
+mod indicators;
+mod model;
 mod names;
 mod series;
+mod store;
 mod table;
 mod theme;
 
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use futures::StreamExt;
@@ -25,6 +30,9 @@ use chart::{ChartEvent, ChartView};
 use series::Period;
 use table::{QuoteTable, TableEvent};
 use theme::*;
+
+/// 根 view 畫過的 frame 總數（走勢圖壓測算 FPS 用）
+pub static FRAMES: AtomicU64 = AtomicU64::new(0);
 
 const TITLE_H: f32 = 26.0;
 const STATUS_H: f32 = 22.0;
@@ -169,11 +177,8 @@ impl Terminal {
         let table = cx.new(|_| QuoteTable::new(names::WATCH));
         let (sym, name) = names::WATCH[0];
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
-        let period = match std::env::var("XQ_PERIOD").as_deref() {
-            Ok("D") | Ok("d") => Period::Daily,
-            _ => Period::Intraday,
-        };
-        let chart = cx.new(|_| ChartView::new(sym, name, period));
+        let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
+        let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
             name: name.into(),
@@ -189,7 +194,7 @@ impl Terminal {
             }),
             cx.subscribe(&chart, |this: &mut Self, _, ev: &ChartEvent, cx| match ev {
                 ChartEvent::Period(p) => {
-                    let sym = this.chart.read(cx).symbol().to_string();
+                    let sym = this.chart.read(cx).symbol();
                     this.switch_chart(sym, Some(*p), cx);
                 }
             }),
@@ -218,7 +223,8 @@ impl Terminal {
             chart,
             info,
             conn: Conn::Connecting,
-            top_frac: 0.56,
+            // XQ_TOP_FRAC：上方走勢圖佔比（重圖表壓測時調到與 wry 版同樣大的圖面）
+            top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
             left_w: 470.0,
             drag: None,
             frames: 0,
@@ -340,7 +346,7 @@ impl Terminal {
     fn resubscribe(&mut self, cx: &mut Context<Self>) {
         let symbols = self.table.read(cx).symbols();
         let chart = self.chart.read(cx);
-        let sub = xq_feed::Subscribe { symbols, chart: chart.symbol().to_string(), period: chart.period().code().into() };
+        let sub = xq_feed::Subscribe { symbols, chart: chart.symbol(), period: chart.period().feed_code().into() };
         self.bridge.subscribe(sub);
     }
 
@@ -379,7 +385,7 @@ impl Terminal {
                 cx.notify();
             }
             self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx));
-            let sym = self.chart.read(cx).symbol().to_string();
+            let sym = self.chart.read(cx).symbol();
             if let Some(q) = ib.quotes.get(&sym) {
                 let name = if q.name.is_empty() || q.name == q.symbol {
                     self.table.read(cx).row(&sym).map(|r| r.name.to_string()).unwrap_or_default()
@@ -409,8 +415,7 @@ impl Terminal {
         let frames_in = self.bridge.counters.frames.load(Ordering::Relaxed);
         let rows_in = self.bridge.counters.quote_rows.load(Ordering::Relaxed);
         let (paints, paint_us) = {
-            let c = self.chart.read(cx);
-            (c.paints.get(), c.paint_us.get())
+            self.chart.read(cx).paint_totals()
         };
         let dp = paints - self.last_paints;
         self.stats = Stats {
@@ -466,7 +471,7 @@ impl Terminal {
     }
 }
 
-fn rss_mb() -> f64 {
+pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
         .and_then(|s| {
@@ -484,6 +489,7 @@ impl Render for Terminal {
         // 根 view 每個 frame 都會 render（子 view 是 cached），所以這裡數 FPS
         self.frames += 1;
         self.total_frames += 1;
+        FRAMES.fetch_add(1, Ordering::Relaxed);
         if self.track_jank {
             let now = Instant::now();
             if let Some(prev) = self.last_frame.replace(now) {

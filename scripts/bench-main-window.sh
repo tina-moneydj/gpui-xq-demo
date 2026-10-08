@@ -17,7 +17,14 @@
 #   先只跳價 30 秒、再邊跳價邊上下正弦捲動 10 秒（wry：XQ_GROUP_STRESS 的 __benchGroupWatchlist；GPUI：XQ_GROUP_STRESS）。
 #   量 RSS/PSS（跳價末、捲動中）、CPU（跳價 30 秒、捲動 10 秒）、程式回報的 FPS／可見格更新耗時（GROUPPERF|{json}）。
 #
-# 用法：bench-main-window.sh [runs=3] [mode=all|baseline|stress]
+# 重圖表情境（mode=heavy，2026-10-08 新增）：同一個主視窗，上方走勢圖放大到約 1166×505 的圖面（wry：XQ_CHART_TOP_RATIO；
+#   GPUI：XQ_TOP_FRAC，兩邊實際 canvas 尺寸印在 CHARTPERF setup），XQ_CHART_STRESS=1 啟動後自動：等第一筆報價 → 300ms 後
+#   20 個主圖疊加（MA×13、EMA×5、布林×2、SAR×2… 同 wry __perfSetupStress）＋全部 8 種副圖＋均量＋1000 筆混合畫線
+#   → 暖身 3 秒 → 每幀跳一筆合成價 10 秒（ticks）→ 跳價＋十字線移動 10 秒（crosshair）→ 跳價＋十字線＋左右平移 10 秒（pan）。
+#   量：啟動到第一個重圖表幀（BENCH heavy-frame）、各段 CPU（全部執行緒／扣掉 llvmpipe 光柵化執行緒）、各段中間的 RSS/PSS、
+#   程式回報的 FPS 與平均走勢圖繪製耗時（CHARTPERF|{json}）。截圖在最後一輪 crosshair 段中間存 $OUT/<app>-heavy.png。
+#
+# 用法：bench-main-window.sh [runs=3] [mode=all|baseline|stress|heavy]
 #   需求：DISPLAY（預設 :2）、xdotool、ffmpeg、WryFeedHost --demo-ticks 在 127.0.0.1:47631、兩個 release binary 已建好、
 #         兩個程式都沒有在跑（否則會互搶 feed）。wry 的 state.json 會先備份、跑完還原。
 set -euo pipefail
@@ -155,14 +162,22 @@ def screenshot(wid, path):
     d = dict(l.split("=", 1) for l in g.split() if "=" in l)
     return int(d.get("WIDTH", 0)), int(d.get("HEIGHT", 0))
 
+HEAVY_PHASES = ("ticks", "crosshair", "pan")
+HEAVY_ENV = {
+    "wry": {"XQ_CHART_STRESS": "1", "XQ_CHART_TOP_RATIO": os.environ.get("WRY_TOP_RATIO", "0.8"),
+            "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
+    "gpui": {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": os.environ.get("GPUI_TOP_FRAC", "0.8"),
+             "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
+}
+
 STRESS_ENV = {"XQ_GROUP_STRESS": "1", "XQ_STRESS_COLS": "6", "XQ_STRESS_TICK_HZ": "3000",
               "XQ_STRESS_TICK_MS": "30000", "XQ_STRESS_SCROLL_MS": "10000"}
 
-def run_once(name, shot, stress=False):
+def run_once(name, shot, stress=False, heavy=False):
     app = APPS[name]
     if name == "wry":
         json.dump(wry_bench_state(), open(STATE, "w"), ensure_ascii=False, indent=2)
-    env = dict(os.environ, **app["env"], **(STRESS_ENV if stress else {}))
+    env = dict(os.environ, **app["env"], **(STRESS_ENV if stress else {}), **(HEAVY_ENV[name] if heavy else {}))
     events = {}; fps = []; log = []
     t0 = time.monotonic()
     proc = subprocess.Popen(app["cmd"], cwd=app["cwd"], env=env, stdin=subprocess.DEVNULL,
@@ -172,6 +187,15 @@ def run_once(name, shot, stress=False):
             t = time.monotonic() - t0; log.append(f"{t:8.3f} {line.rstrip()}")
             for ev in ("first-frame", "first-quote"):
                 if f"BENCH {ev}" in line and ev not in events: events[ev] = t
+            if "BENCH heavy-frame" in line and "heavy-frame" not in events: events["heavy-frame"] = t
+            if "CHARTPHASE|" in line:
+                parts = line.strip().split("CHARTPHASE|", 1)[1].split("|")
+                if len(parts) >= 2: events[f"ph:{parts[0]}:{parts[1].split()[0]}"] = t
+            if "CHARTPERF|{" in line:
+                try:
+                    j = json.loads(line.split("CHARTPERF|", 1)[1])
+                    events["cp:" + j.get("phase", "?")] = (t, j)
+                except Exception: pass
             if "GROUPPERF|{" in line:
                 try:
                     j = json.loads(line.split("GROUPPERF|", 1)[1])
@@ -184,7 +208,8 @@ def run_once(name, shot, stress=False):
                 except Exception: pass
     threading.Thread(target=reader, daemon=True).start()
     try:
-        return (measure_stress if stress else measure)(name, app, proc, t0, events, fps, log, shot)
+        fn = measure_heavy if heavy else (measure_stress if stress else measure)
+        return fn(name, app, proc, t0, events, fps, log, shot)
     except BaseException:
         for p in reversed(tree(proc.pid)):
             try: os.kill(p, signal.SIGKILL)
@@ -246,6 +271,43 @@ def measure_stress(name, app, proc, t0, events, fps, log, shot):
             "cpu_scroll_pct": (c2 - c1) / CLK / (tc - tb) * 100,
             "mem_tick": mem_tick, "mem_scroll": mem_scroll, "screenshot": shot_path}
 
+def cpu_split(th0, th1, secs):
+    """(全部 %, 扣掉 llvmpipe 執行緒 %)"""
+    tot = sum(th1.get(k, 0) - th0.get(k, 0) for k in th1)
+    llvm = sum(th1.get(k, 0) - th0.get(k, 0) for k in th1 if "llvmpipe" in k)
+    return tot / CLK / secs * 100, (tot - llvm) / CLK / secs * 100
+
+def measure_heavy(name, app, proc, t0, events, fps, log, shot):
+    wid = open_window(name, app, t0, events)
+    def wait_ev(key, timeout):
+        end = time.monotonic() + timeout
+        while key not in events:
+            if proc.poll() is not None: raise SystemExit(f"{name}: 程式結束了（等 {key}）")
+            if time.monotonic() > end: raise SystemExit(f"{name}: 等不到 {key}")
+            time.sleep(0.01)
+        return events[key]
+    wait_ev("heavy-frame", 40)
+    _, setup = wait_ev("cp:setup", 10)
+    out = {"app": name, "heavy": True, "window_s": events.get("window"), "first_frame_s": events.get("first-frame"),
+           "first_quote_s": events.get("first-quote"), "heavy_frame_s": events["heavy-frame"], "setup": setup,
+           "phases": {}, "screenshot": None}
+    for ph in HEAVY_PHASES:
+        wait_ev(f"ph:{ph}:start", 30)
+        pids0 = tree(proc.pid); th0 = thread_ticks(pids0); ta = time.monotonic()
+        while time.monotonic() - ta < 5: time.sleep(0.02)
+        m = snapshot(proc.pid)
+        if shot and ph == "crosshair":
+            screenshot(wid, f"{OUT}/{name}-heavy.png"); out["screenshot"] = f"{OUT}/{name}-heavy.png"
+        wait_ev(f"ph:{ph}:end", 30)
+        pids1 = tree(proc.pid); th1 = thread_ticks(set(pids0) | set(pids1)); tb = time.monotonic()
+        tot, nollvm = cpu_split(th0, th1, tb - ta)
+        _, perf = wait_ev(f"cp:{ph}", 5)
+        out["phases"][ph] = {"cpu_pct": tot, "cpu_nollvm_pct": nollvm, "threads": thread_breakdown(th0, th1, tb - ta),
+                             "mem": m, "perf": perf}
+    wait_ev("cp:done", 10)
+    stop(proc, name + "-heavy", log)
+    return out
+
 def measure(name, app, proc, t0, events, fps, log, shot):
     wid = open_window(name, app, t0, events)
     def wait_until(t):
@@ -273,10 +335,10 @@ def main():
     backup = STATE + ".bench-backup"
     had_state = os.path.exists(STATE)
     if had_state: shutil.copy2(STATE, backup)
-    for f in ("wry-run.log", "gpui-run.log", "wry-stress-run.log", "gpui-stress-run.log"):
+    for f in ("wry-run.log", "gpui-run.log", "wry-stress-run.log", "gpui-stress-run.log", "wry-heavy-run.log", "gpui-heavy-run.log"):
         try: os.remove(f"{OUT}/{f}")
         except FileNotFoundError: pass
-    results = []; stress = []
+    results = []; stress = []; heavy = []
     try:
         if MODE in ("all", "baseline"):
             for i in range(RUNS):
@@ -297,6 +359,19 @@ def main():
                           f"rss_tick={r['mem_tick']['rss_mb']:.1f} pss_tick={r['mem_tick']['pss_mb']:.1f} "
                           f"rss_scroll={r['mem_scroll']['rss_mb']:.1f}\n  tick_end={r['tick_end']}\n  done={r['done']}\n"
                           f"  threads={r['cpu_tick_threads']}", flush=True)
+                    time.sleep(3)
+        if MODE == "heavy":
+            for i in range(RUNS):
+                for name in ("wry", "gpui"):
+                    print(f"heavy {i+1}/{RUNS} {name} …", flush=True)
+                    r = run_once(name, shot=(i == RUNS - 1), heavy=True); r["run"] = i + 1; heavy.append(r)
+                    st = r["setup"]
+                    print(f"  heavy_frame={r['heavy_frame_s']:.3f}s canvas={st.get('cssW')}x{st.get('cssH')} "
+                          f"ovs={st.get('overlays')} drawings={st.get('drawings')}", flush=True)
+                    for ph, v in r["phases"].items():
+                        print(f"  {ph:9s} fps={v['perf'].get('fps')} paint={v['perf'].get('avgPaintMs')}ms "
+                              f"cpu={v['cpu_pct']:.1f}% (no-llvmpipe {v['cpu_nollvm_pct']:.1f}%) "
+                              f"rss={v['mem']['rss_mb']:.1f} pss={v['mem']['pss_mb']:.1f} threads={v['threads']}", flush=True)
                     time.sleep(3)
     finally:
         time.sleep(1)
@@ -334,9 +409,28 @@ def main():
                 "rows": ss[-1]["done"].get("rows"), "cols": ss[-1]["done"].get("cols"),
                 "cpu_tick_threads_last": ss[-1]["cpu_tick_threads"],
             }
+        hs = [r for r in heavy if r["app"] == name]
+        if hs:
+            h = {"heavy_frame_ms": med([r["heavy_frame_s"] * 1000 for r in hs]),
+                 "first_quote_ms": med([r["first_quote_s"] * 1000 if r["first_quote_s"] else None for r in hs]),
+                 "canvas": f"{hs[-1]['setup'].get('cssW')}x{hs[-1]['setup'].get('cssH')}",
+                 "overlays": hs[-1]["setup"].get("overlays"), "drawings": hs[-1]["setup"].get("drawings"),
+                 "bars": hs[-1]["setup"].get("bars")}
+            for ph in HEAVY_PHASES:
+                pv = [r["phases"][ph] for r in hs]
+                h[ph] = {"fps": med([v["perf"].get("fps") for v in pv]), "paint_ms": med([v["perf"].get("avgPaintMs") for v in pv]),
+                         "cpu_pct": med([v["cpu_pct"] for v in pv]), "cpu_nollvm_pct": med([v["cpu_nollvm_pct"] for v in pv]),
+                         "rss_mb": med([v["mem"]["rss_mb"] for v in pv]), "pss_mb": med([v["mem"]["pss_mb"] for v in pv]),
+                         "threads_last": pv[-1]["threads"]}
+            h["procs_last"] = hs[-1]["phases"]["crosshair"]["mem"]["procs"]
+            out["heavy"] = h
         summary[name] = out
-    json.dump({"baseline": results, "stress": stress}, open(f"{OUT}/results.json", "w"), ensure_ascii=False, indent=1)
-    json.dump(summary, open(f"{OUT}/summary.json", "w"), ensure_ascii=False, indent=1)
+    if MODE == "heavy":
+        json.dump({"heavy": heavy}, open(f"{OUT}/results-heavy.json", "w"), ensure_ascii=False, indent=1)
+        json.dump(summary, open(f"{OUT}/summary-heavy.json", "w"), ensure_ascii=False, indent=1)
+    else:
+        json.dump({"baseline": results, "stress": stress}, open(f"{OUT}/results.json", "w"), ensure_ascii=False, indent=1)
+        json.dump(summary, open(f"{OUT}/summary.json", "w"), ensure_ascii=False, indent=1)
     print(json.dumps(summary, ensure_ascii=False, indent=1))
 
 main()
