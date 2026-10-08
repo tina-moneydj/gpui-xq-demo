@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use parking_lot::Mutex;
-use xq_feed::{Bar, Event, Msg, Quote, Subscribe};
+use xq_feed::{Bar, Event, Msg, Quote, Stamp, Subscribe};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Conn {
@@ -31,6 +31,10 @@ pub struct Inbox {
     pub intraday: Option<(String, f64, Vec<Bar>)>,
     pub minutes: Vec<(String, Bar)>,
     pub conn: Option<Conn>,
+    /// XQ_TICK_BENCH=1：這批裡最新一包的壓測時間戳（每包都含探針代號，所以只留最新）
+    pub stamp: Option<Stamp>,
+    /// 同上，這批裡最早一包（= 這批最舊的 tick，量「最久等多久」）
+    pub stamp_first: Option<Stamp>,
 }
 
 pub struct Counters {
@@ -96,6 +100,12 @@ fn merge(inbox: &Mutex<Inbox>, counters: &Counters, ev: Event) {
             // 斷線：丟掉還沒套用的行情，避免殘包晚到
             let conn = Some(Conn::Down);
             *ib = Inbox { conn, ..Inbox::default() };
+        }
+        Event::Stamp(st) => {
+            if ib.stamp_first.is_none() {
+                ib.stamp_first = Some(st);
+            }
+            ib.stamp = Some(st);
         }
         Event::Msg(msg) => {
             counters.frames.fetch_add(1, Ordering::Relaxed);

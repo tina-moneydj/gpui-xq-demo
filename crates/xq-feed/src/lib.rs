@@ -63,6 +63,71 @@ pub enum Event {
     Connected,
     Down,
     Msg(Msg),
+    /// 高頻進價壓測（`XQ_TICK_BENCH=1` 才會出現）：緊接在帶時間戳的報價包之後送出。
+    Stamp(Stamp),
+}
+
+/// 壓測時間戳尾巴：報價包（型別 2）在 n 筆報價之後多附 20 bytes
+/// `b"XQTS" + seq u64 + sent_us u64`（產生器送出時的 Unix µs）。
+/// 一般解碼器讀完 n 筆就停，會忽略這段尾巴，所以向下相容（WryFeedHost 不會送）。
+pub const STAMP_MAGIC: [u8; 4] = *b"XQTS";
+pub const STAMP_LEN: usize = 20;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Stamp {
+    pub seq: u64,
+    /// 產生器送出時間（Unix µs，CLOCK_REALTIME；同機比較）
+    pub sent_us: u64,
+    /// 背景執行緒 read() 回來的時間（Unix µs）
+    pub recv_us: u64,
+    /// 這一包的報價筆數（未合併）
+    pub rows: u32,
+}
+
+/// 取出報價包尾端的壓測時間戳 `(seq, sent_us)`；沒有就回 None。
+pub fn stamp_of(payload: &[u8]) -> Option<(u64, u64)> {
+    if payload.first() != Some(&2) || payload.len() < 3 + STAMP_LEN {
+        return None;
+    }
+    let t = &payload[payload.len() - STAMP_LEN..];
+    if t[..4] != STAMP_MAGIC {
+        return None;
+    }
+    Some((u64::from_le_bytes(t[4..12].try_into().ok()?), u64::from_le_bytes(t[12..20].try_into().ok()?)))
+}
+
+/// 現在的 Unix 時間（µs）
+pub fn unix_us() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_micros() as u64).unwrap_or(0)
+}
+
+/// `XQ_TICK_BENCH=1`（非 0）才解析時間戳；預設關閉，熱路徑零成本。
+pub fn tick_bench_enabled() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("XQ_TICK_BENCH").is_some_and(|v| v != "0"))
+}
+
+/// 報價包（含 u32 長度）；`stamp` = Some((seq, sent_us)) 時附壓測尾巴。給產生器／測試用。
+pub fn encode_quotes(quotes: &[Quote], stamp: Option<(u64, u64)>) -> Vec<u8> {
+    let mut body = Vec::with_capacity(3 + quotes.len() * 40 + STAMP_LEN);
+    body.push(2);
+    body.extend_from_slice(&(quotes.len().min(u16::MAX as usize) as u16).to_le_bytes());
+    for q in quotes.iter().take(u16::MAX as usize) {
+        push_text(&mut body, &q.symbol);
+        push_text(&mut body, &q.name);
+        body.extend_from_slice(&((q.price * 100.0).round() as i32).to_le_bytes());
+        body.extend_from_slice(&((q.change * 100.0).round() as i32).to_le_bytes());
+        body.extend_from_slice(&q.volume.to_le_bytes());
+    }
+    if let Some((seq, sent_us)) = stamp {
+        body.extend_from_slice(&STAMP_MAGIC);
+        body.extend_from_slice(&seq.to_le_bytes());
+        body.extend_from_slice(&sent_us.to_le_bytes());
+    }
+    let mut frame = Vec::with_capacity(body.len() + 4);
+    frame.extend_from_slice(&(body.len() as u32).to_le_bytes());
+    frame.extend_from_slice(&body);
+    frame
 }
 
 pub fn encode_subscribe(cmd: &Subscribe) -> Vec<u8> {
@@ -276,6 +341,7 @@ fn session(
     }
     let mut reader = FrameReader::default();
     let mut buf = vec![0u8; 64 * 1024];
+    let bench = tick_bench_enabled();
     loop {
         loop {
             match rx.try_recv() {
@@ -290,10 +356,16 @@ fn session(
         match stream.read(&mut buf) {
             Ok(0) => return Err(std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "closed")),
             Ok(n) => {
+                let recv_us = if bench { unix_us() } else { 0 };
                 reader.push(&buf[..n]);
                 while let Some(payload) = reader.next_frame()? {
+                    let stamp = if bench { stamp_of(payload) } else { None };
                     if let Some(msg) = decode(payload) {
+                        let rows = if let Msg::Quotes(q) = &msg { q.len() as u32 } else { 0 };
                         on_event(Event::Msg(msg));
+                        if let Some((seq, sent_us)) = stamp {
+                            on_event(Event::Stamp(Stamp { seq, sent_us, recv_us, rows }));
+                        }
                     }
                 }
             }
@@ -348,5 +420,17 @@ mod tests {
             other => panic!("{other:?}"),
         }
         assert!(r.next_frame().unwrap().is_none());
+    }
+
+    #[test]
+    fn stamp_trailer_is_backward_compatible() {
+        let q = Quote { symbol: "2330".into(), name: "台積電".into(), price: 1035.0, change: -1.5, volume: 42 };
+        let f = encode_quotes(std::slice::from_ref(&q), Some((7, 123_456)));
+        let payload = &f[4..];
+        assert_eq!(stamp_of(payload), Some((7, 123_456)));
+        // 一般解碼忽略尾巴
+        assert_eq!(decode(payload), Some(Msg::Quotes(vec![q.clone()])));
+        let plain = encode_quotes(&[q], None);
+        assert_eq!(stamp_of(&plain[4..]), None);
     }
 }

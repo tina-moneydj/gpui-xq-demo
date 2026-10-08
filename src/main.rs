@@ -15,6 +15,7 @@ mod series;
 mod store;
 mod table;
 mod theme;
+mod tickbench;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -167,6 +168,8 @@ struct Terminal {
     last_frame: Option<Instant>,
     jank_n: u64,
     jank_ms: f64,
+    /// XQ_TICK_BENCH=1：高頻進價壓測量測（預設 None，熱路徑不多做事）
+    tick: Option<tickbench::TickBench>,
     _tasks: Vec<Task<()>>,
     _subs: Vec<Subscription>,
 }
@@ -190,7 +193,12 @@ impl Terminal {
 
         let subs = vec![
             cx.subscribe(&table, |this: &mut Self, _, ev: &TableEvent, cx| match ev {
-                TableEvent::Select(sym) => this.switch_chart(sym.to_string(), None, cx),
+                TableEvent::Select(sym) => {
+                    if let Some(tb) = this.tick.as_mut() {
+                        tb.on_switch(sym);
+                    }
+                    this.switch_chart(sym.to_string(), None, cx)
+                }
             }),
             cx.subscribe(&chart, |this: &mut Self, _, ev: &ChartEvent, cx| match ev {
                 ChartEvent::Period(p) => {
@@ -245,9 +253,14 @@ impl Terminal {
             last_frame: None,
             jank_n: 0,
             jank_ms: 0.0,
+            tick: xq_feed::tick_bench_enabled().then(tickbench::TickBench::default),
             _tasks: vec![feed_task, stats_task],
             _subs: subs,
         };
+        if t.tick.is_some() {
+            // 高頻進價壓測：一開始就開 5 萬合成列（Z 代號進索引，engine 報價可對到）
+            t.table.update(cx, |tb, cx| tb.enable_stress_indexed(cx));
+        }
         t.resubscribe(cx);
         if let Some(task) = Self::spawn_stress(cx) {
             t._tasks.push(task);
@@ -379,12 +392,13 @@ impl Terminal {
             }
             cx.notify();
         }
+        let mut changed = 0;
         if !ib.quotes.is_empty() {
             if self.conn != Conn::Ready {
                 self.conn = Conn::Ready;
                 cx.notify();
             }
-            self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx));
+            changed = self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx));
             let sym = self.chart.read(cx).symbol();
             if let Some(q) = ib.quotes.get(&sym) {
                 let name = if q.name.is_empty() || q.name == q.symbol {
@@ -408,7 +422,14 @@ impl Terminal {
             self.chart.update(cx, |c, cx| c.apply_minute(sym, bar, cx));
         }
         self.applies += 1;
-        self.apply_us += t0.elapsed().as_micros() as u64;
+        let us = t0.elapsed().as_micros() as u64;
+        self.apply_us += us;
+        if let Some(tb) = self.tick.as_mut() {
+            if ib.stamp.is_some() {
+                cx.notify();
+            }
+            tb.on_apply(ib.stamp_first, ib.stamp, ib.quotes.len(), changed, us);
+        }
     }
 
     fn sample(&mut self, cx: &mut Context<Self>) {
@@ -434,6 +455,9 @@ impl Terminal {
                 "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} conn={:?}",
                 s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, self.conn
             );
+        }
+        if let Some(tb) = self.tick.as_mut() {
+            tb.report(rows_in, frames_in, self.stats.fps, self.stats.rss_mb);
         }
         self.last_frames_in = frames_in;
         self.last_rows_in = rows_in;
@@ -499,6 +523,9 @@ impl Render for Terminal {
                     self.jank_ms += dt;
                 }
             }
+        }
+        if let Some(tb) = self.tick.as_mut() {
+            tb.on_render(window);
         }
         if self.bench {
             if !self.bench_frame_logged {

@@ -1,0 +1,494 @@
+[
+ {
+  "app": "wry",
+  "scenario": "s1k",
+  "secs": 30.0,
+  "gen": {
+   "sent": 29995,
+   "target": 30000,
+   "frames": 5999,
+   "bytes": 1181564,
+   "maxDue": 6,
+   "behindFrames": 0,
+   "maxWriteMs": 0.8,
+   "cpu": 1.1,
+   "perSec": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
+  },
+  "latOldest": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null,
+   "n": 0
+  },
+  "latNewest": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null,
+   "n": 0
+  },
+  "breakdown_p50": {
+   "transport": null,
+   "recvToApply": null,
+   "applyToPresent": null
+  },
+  "breakdown_p99": {
+   "transport": null,
+   "recvToApply": null,
+   "applyToPresent": null
+  },
+  "trend": {
+   "first5_p50": null,
+   "last5_p50": null,
+   "first5_max": null,
+   "last5_max": null
+  },
+  "maxSampleGapMs": null,
+  "stallAtEndMs": null,
+  "ticks": {
+   "sent": 29995,
+   "recvAtEnd": 0,
+   "recvFinal": 0,
+   "toUi": 0,
+   "applied": 0,
+   "batches": 0,
+   "lossFinal": 29995,
+   "backlogAtEnd": 29995
+  },
+  "cpu": 102.0,
+  "cpuExLlvmpipe": 102.0,
+  "cpuTop": {
+   "wry-xq-demo.bef/wry-xq-demo.bef": 101.6
+  },
+  "mem": {
+   "start": {
+    "rss_mb": 628.3,
+    "pss_mb": 442.5
+   },
+   "end": {
+    "rss_mb": 645.6,
+    "pss_mb": 459.4
+   },
+   "tail": {
+    "rss_mb": 647.9,
+    "pss_mb": 461.8
+   },
+   "peakRss": 645.6,
+   "rssGrowth": 17.3,
+   "pssGrowth": 16.9,
+   "series": [
+    [
+     0.0,
+     628.3,
+     442.5
+    ],
+    [
+     2.0,
+     630.0,
+     444.2
+    ],
+    [
+     4.0,
+     631.3,
+     445.4
+    ],
+    [
+     6.0,
+     631.2,
+     445.2
+    ],
+    [
+     8.0,
+     632.2,
+     446.2
+    ],
+    [
+     10.0,
+     633.3,
+     447.3
+    ],
+    [
+     12.0,
+     634.4,
+     448.4
+    ],
+    [
+     14.0,
+     635.1,
+     448.9
+    ],
+    [
+     16.0,
+     636.2,
+     450.0
+    ],
+    [
+     18.0,
+     637.8,
+     451.6
+    ],
+    [
+     20.0,
+     639.1,
+     452.9
+    ],
+    [
+     22.0,
+     640.4,
+     454.3
+    ],
+    [
+     24.0,
+     641.8,
+     455.6
+    ],
+    [
+     26.0,
+     643.0,
+     456.8
+    ],
+    [
+     28.0,
+     644.4,
+     458.2
+    ],
+    [
+     30.0,
+     645.6,
+     459.4
+    ]
+   ]
+  },
+  "fps": null,
+  "fpsMin": null,
+  "switch": {
+   "p50": null,
+   "max": null,
+   "n": 0,
+   "missed": 8,
+   "dispatch_p50": null,
+   "all": [],
+   "clicks": [
+    [
+     "2317",
+     1791442666884658
+    ],
+    [
+     "2330",
+     1791442667874549
+    ],
+    [
+     "2317",
+     1791442672889406
+    ],
+    [
+     "2330",
+     1791442673880547
+    ],
+    [
+     "2317",
+     1791442678883555
+    ],
+    [
+     "2330",
+     1791442679893460
+    ],
+    [
+     "2317",
+     1791442684877983
+    ],
+    [
+     "2330",
+     1791442685888752
+    ]
+   ],
+   "raw": []
+  },
+  "shot": null,
+  "wry": {
+   "evaluates": 0,
+   "nev": 0,
+   "pushMs": 0,
+   "quotesLen": 4,
+   "evalToApply_p50": null,
+   "recvToEval_p50": null
+  }
+ },
+ {
+  "app": "wry",
+  "scenario": "s10k",
+  "secs": 30.0,
+  "gen": {
+   "sent": 299952,
+   "target": 300000,
+   "frames": 5998,
+   "bytes": 10562213,
+   "maxDue": 89,
+   "behindFrames": 0,
+   "maxWriteMs": 6.1,
+   "cpu": 1.5,
+   "perSec": [
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10002,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000,
+    10000
+   ]
+  },
+  "latOldest": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null,
+   "n": 0
+  },
+  "latNewest": {
+   "p50": null,
+   "p95": null,
+   "p99": null,
+   "max": null,
+   "n": 0
+  },
+  "breakdown_p50": {
+   "transport": null,
+   "recvToApply": null,
+   "applyToPresent": null
+  },
+  "breakdown_p99": {
+   "transport": null,
+   "recvToApply": null,
+   "applyToPresent": null
+  },
+  "trend": {
+   "first5_p50": null,
+   "last5_p50": null,
+   "first5_max": null,
+   "last5_max": null
+  },
+  "maxSampleGapMs": null,
+  "stallAtEndMs": null,
+  "ticks": {
+   "sent": 299952,
+   "recvAtEnd": 0,
+   "recvFinal": 0,
+   "toUi": 0,
+   "applied": 0,
+   "batches": 0,
+   "lossFinal": 299952,
+   "backlogAtEnd": 299952
+  },
+  "cpu": 105.2,
+  "cpuExLlvmpipe": 105.2,
+  "cpuTop": {
+   "wry-xq-demo.bef/wry-xq-demo.bef": 104.7
+  },
+  "mem": {
+   "start": {
+    "rss_mb": 641.3,
+    "pss_mb": 449.7
+   },
+   "end": {
+    "rss_mb": 884.0,
+    "pss_mb": 692.1
+   },
+   "tail": {
+    "rss_mb": 886.3,
+    "pss_mb": 694.4
+   },
+   "peakRss": 884.0,
+   "rssGrowth": 242.7,
+   "pssGrowth": 242.4,
+   "series": [
+    [
+     0.0,
+     641.3,
+     449.7
+    ],
+    [
+     2.0,
+     647.2,
+     455.6
+    ],
+    [
+     4.0,
+     662.7,
+     471.0
+    ],
+    [
+     6.0,
+     679.1,
+     487.3
+    ],
+    [
+     8.0,
+     693.4,
+     501.5
+    ],
+    [
+     10.0,
+     710.5,
+     518.6
+    ],
+    [
+     12.0,
+     728.1,
+     536.2
+    ],
+    [
+     14.0,
+     743.9,
+     552.1
+    ],
+    [
+     16.0,
+     760.8,
+     568.9
+    ],
+    [
+     18.0,
+     779.0,
+     587.1
+    ],
+    [
+     20.0,
+     796.6,
+     604.7
+    ],
+    [
+     22.0,
+     814.0,
+     622.1
+    ],
+    [
+     24.0,
+     832.1,
+     640.2
+    ],
+    [
+     26.0,
+     848.2,
+     656.3
+    ],
+    [
+     28.0,
+     865.5,
+     673.5
+    ],
+    [
+     30.0,
+     884.0,
+     692.1
+    ]
+   ]
+  },
+  "fps": null,
+  "fpsMin": null,
+  "switch": {
+   "p50": null,
+   "max": null,
+   "n": 0,
+   "missed": 8,
+   "dispatch_p50": null,
+   "all": [],
+   "clicks": [
+    [
+     "2317",
+     1791442709455242
+    ],
+    [
+     "2330",
+     1791442710445432
+    ],
+    [
+     "2317",
+     1791442715453205
+    ],
+    [
+     "2330",
+     1791442716444292
+    ],
+    [
+     "2317",
+     1791442721451849
+    ],
+    [
+     "2330",
+     1791442722441530
+    ],
+    [
+     "2317",
+     1791442727445820
+    ],
+    [
+     "2330",
+     1791442728436454
+    ]
+   ],
+   "raw": []
+  },
+  "shot": null,
+  "wry": {
+   "evaluates": 0,
+   "nev": 0,
+   "pushMs": 0,
+   "quotesLen": 4,
+   "evalToApply_p50": null,
+   "recvToEval_p50": null
+  }
+ }
+]

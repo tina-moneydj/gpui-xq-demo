@@ -121,6 +121,17 @@ impl QuoteTable {
         cx.notify();
     }
 
+    /// XQ_TICK_BENCH=1：開 5 萬合成列並把 Z 代號放進索引，讓 engine 報價可以 O(1) 對到合成列。
+    pub fn enable_stress_indexed(&mut self, cx: &mut Context<Self>) {
+        if !self.stress {
+            self.toggle_stress(cx);
+        }
+        self.index.reserve(self.rows.len() - self.real_len);
+        for i in self.real_len..self.rows.len() {
+            self.index.insert(self.rows[i].symbol.clone(), i);
+        }
+    }
+
     /// 壓測：在 5 萬合成列裡隨機挑 n 列跳價（同 wry 版 applyTicks），有變就 notify。
     pub fn synth_ticks(&mut self, n: usize, rng: &mut u64, cx: &mut Context<Self>) {
         let base = self.real_len;
