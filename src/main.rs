@@ -149,6 +149,16 @@ struct Terminal {
     stats: Stats,
     metrics_log: bool,
     no_cache: bool,
+    /// XQ_BENCH=1：第一個 frame／第一筆報價畫出後各在 stderr 印一行 `BENCH ...`（bench 腳本打時間戳）
+    bench: bool,
+    bench_frame_logged: bool,
+    bench_quote_logged: bool,
+    /// 壓測（XQ_GROUP_STRESS=1）：累計 frame 數、捲動時 frame 間隔 > 32ms 的次數／總毫秒
+    total_frames: u64,
+    track_jank: bool,
+    last_frame: Option<Instant>,
+    jank_n: u64,
+    jank_ms: f64,
     _tasks: Vec<Task<()>>,
     _subs: Vec<Subscription>,
 }
@@ -158,7 +168,12 @@ impl Terminal {
         let (bridge, mut wake_rx) = FeedBridge::start();
         let table = cx.new(|_| QuoteTable::new(names::WATCH));
         let (sym, name) = names::WATCH[0];
-        let chart = cx.new(|_| ChartView::new(sym, name, Period::Intraday));
+        // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
+        let period = match std::env::var("XQ_PERIOD").as_deref() {
+            Ok("D") | Ok("d") => Period::Daily,
+            _ => Period::Intraday,
+        };
+        let chart = cx.new(|_| ChartView::new(sym, name, period));
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
             name: name.into(),
@@ -216,11 +231,110 @@ impl Terminal {
             stats: Stats::default(),
             metrics_log: std::env::var_os("XQ_METRICS").is_some(),
             no_cache: std::env::var_os("XQ_NO_VIEW_CACHE").is_some(),
+            bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
+            bench_frame_logged: false,
+            bench_quote_logged: false,
+            total_frames: 0,
+            track_jank: false,
+            last_frame: None,
+            jank_n: 0,
+            jank_ms: 0.0,
             _tasks: vec![feed_task, stats_task],
             _subs: subs,
         };
         t.resubscribe(cx);
+        if let Some(task) = Self::spawn_stress(cx) {
+            t._tasks.push(task);
+        }
         t
+    }
+
+    /// XQ_GROUP_STRESS=1：與 wry 版 `__benchGroupWatchlist` 同流程——1.2 秒後開 5 萬合成列，
+    /// 先只跳價（XQ_STRESS_TICK_HZ 筆/秒，30 Hz 分批，預設 3000）XQ_STRESS_TICK_MS，
+    /// 再邊跳價邊上下正弦捲動 XQ_STRESS_SCROLL_MS（預設各 2000ms）。結果用 `GROUPPERF|{json}` 印到 stderr。
+    fn spawn_stress(cx: &mut Context<Self>) -> Option<Task<()>> {
+        if !std::env::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0") {
+            return None;
+        }
+        let num = |k: &str, d: u64| std::env::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
+        let tick_ms = num("XQ_STRESS_TICK_MS", 2000);
+        let scroll_ms = num("XQ_STRESS_SCROLL_MS", 2000);
+        let hz = num("XQ_STRESS_TICK_HZ", 3000);
+        let batch = ((hz as f64) / 30.0).round().max(1.0) as usize;
+        Some(cx.spawn(async move |this, cx| {
+            type Snap = (u64, u64, u64, u64, usize);
+            fn snap(t: &mut Terminal, cx: &mut Context<Terminal>) -> Snap {
+                let tb = t.table.read(cx);
+                (t.total_frames, tb.paints, tb.paint_us, tb.cells, tb.len())
+            }
+            fn stats(a: Snap, b: Snap, secs: f64) -> String {
+                let paints = b.1 - a.1;
+                let avg_ms = if paints > 0 { (b.2 - a.2) as f64 / paints as f64 / 1000.0 } else { 0.0 };
+                let cells = if paints > 0 { (b.3 - a.3) / paints } else { 0 };
+                format!(
+                    "\"fps\":{:.1},\"paints\":{},\"avgPaintMs\":{:.3},\"avgCellsPerPaint\":{},\"cellUpdates\":{}",
+                    (b.0 - a.0) as f64 / secs, paints, avg_ms, cells, b.3 - a.3
+                )
+            }
+            cx.background_executor().timer(Duration::from_millis(1200)).await;
+            if this.update(cx, |t, cx| t.table.update(cx, |tb, cx| { if !tb.stress { tb.toggle_stress(cx) } })).is_err() {
+                return;
+            }
+            cx.background_executor().timer(Duration::from_millis(150)).await;
+            let mut rng: u64 = 0x9E37_79B9_7F4A_7C15;
+            let Ok(a) = this.update(cx, snap) else { return };
+            eprintln!("GROUPPERF|{{\"phase\":\"tick-start\",\"rows\":{},\"cols\":6,\"tickHz\":{hz}}}", a.4);
+            let t0 = Instant::now();
+            while t0.elapsed() < Duration::from_millis(tick_ms) {
+                let _ = this.update(cx, |t, cx| t.table.update(cx, |tb, cx| tb.synth_ticks(batch, &mut rng, cx)));
+                cx.background_executor().timer(Duration::from_millis(33)).await;
+            }
+            let secs = t0.elapsed().as_secs_f64();
+            let Ok(b) = this.update(cx, snap) else { return };
+            eprintln!("GROUPPERF|{{\"phase\":\"tick-end\",\"elapsedMs\":{:.0},{}}}", secs * 1000.0, stats(a, b, secs));
+
+            let _ = this.update(cx, |t, _| {
+                t.track_jank = true;
+                t.last_frame = None;
+                t.jank_n = 0;
+                t.jank_ms = 0.0;
+            });
+            let s0 = Instant::now();
+            let mut last_tick = Instant::now();
+            while s0.elapsed() < Duration::from_millis(scroll_ms) {
+                let f = s0.elapsed().as_secs_f64() / (scroll_ms as f64 / 1000.0);
+                let frac = (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5;
+                let tick = last_tick.elapsed() >= Duration::from_millis(33);
+                if tick {
+                    last_tick = Instant::now();
+                }
+                let _ = this.update(cx, |t, cx| {
+                    t.table.update(cx, |tb, cx| {
+                        tb.scroll_frac(frac, cx);
+                        if tick {
+                            tb.synth_ticks(batch, &mut rng, cx);
+                        }
+                    })
+                });
+                cx.background_executor().timer(Duration::from_millis(16)).await;
+            }
+            let secs = s0.elapsed().as_secs_f64();
+            let Ok(c) = this.update(cx, |t, cx| {
+                t.track_jank = false;
+                (snap(t, cx), t.jank_n, t.jank_ms)
+            }) else {
+                return;
+            };
+            let (c, jn, jms) = c;
+            eprintln!(
+                "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},{}}}",
+                c.4,
+                (b.0 - a.0) as f64 / (tick_ms as f64 / 1000.0),
+                (c.0 - b.0) as f64 / secs,
+                if jn > 0 { jms / jn as f64 } else { 0.0 },
+                stats(b, c, secs)
+            );
+        }))
     }
 
     fn resubscribe(&mut self, cx: &mut Context<Self>) {
@@ -369,6 +483,28 @@ impl Render for Terminal {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // 根 view 每個 frame 都會 render（子 view 是 cached），所以這裡數 FPS
         self.frames += 1;
+        self.total_frames += 1;
+        if self.track_jank {
+            let now = Instant::now();
+            if let Some(prev) = self.last_frame.replace(now) {
+                let dt = now.duration_since(prev).as_secs_f64() * 1000.0;
+                if dt > 32.0 {
+                    self.jank_n += 1;
+                    self.jank_ms += dt;
+                }
+            }
+        }
+        if self.bench {
+            if !self.bench_frame_logged {
+                self.bench_frame_logged = true;
+                window.on_next_frame(|_, _| eprintln!("BENCH first-frame"));
+            }
+            // 第一批報價會把 conn 切成 Ready 並 notify 根 view；這一幀畫完即報價已上畫面
+            if !self.bench_quote_logged && self.conn == Conn::Ready {
+                self.bench_quote_logged = true;
+                window.on_next_frame(|_, _| eprintln!("BENCH first-quote"));
+            }
+        }
         let vp = window.viewport_size();
         let avail = f32::from(vp.height) - TITLE_H - STATUS_H - SPLIT;
         let top_h = (avail * self.top_frac).floor();

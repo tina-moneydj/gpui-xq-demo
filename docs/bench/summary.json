@@ -1,0 +1,131 @@
+{
+ "date": "2026-10-08 12:34 +0800",
+ "runs": 3,
+ "mode": "all",
+ "wry": {
+  "binary_mb": 1.6414413452148438,
+  "baseline": {
+   "window_ms": 228.21474203374237,
+   "first_frame_ms": 986.2930840463378,
+   "first_quote_ms": 916.9861170230433,
+   "rss10_mb": 600.08984375,
+   "pss10_mb": 414.1220703125,
+   "rss60_mb": 673.6796875,
+   "pss60_mb": 476.5439453125,
+   "cpu_pct": 180.75512759330192,
+   "fps": 59.49333333333333,
+   "nproc": 3,
+   "threads": 80,
+   "procs60_last": [
+    {
+     "comm": "wry-xq-demo",
+     "rss_mb": 195.0,
+     "pss_mb": 108.7,
+     "threads": 33
+    },
+    {
+     "comm": "WebKitNetworkPr",
+     "rss_mb": 59.9,
+     "pss_mb": 27.9,
+     "threads": 9
+    },
+    {
+     "comm": "WebKitWebProces",
+     "rss_mb": 412.8,
+     "pss_mb": 336.7,
+     "threads": 38
+    }
+   ],
+   "cpu_threads_last": {
+    "WebKitWebProces/llvmpipe": 101.9,
+    "WebKitWebProces/WebKitWebProces": 65.2,
+    "wry-xq-demo/wry-xq-demo": 7.7,
+    "WebKitWebProces/ReceiveQueue": 2.1,
+    "WebKitWebProces/JITWorker": 1.6,
+    "wry-xq-demo/ReceiveQueue": 1.4
+   }
+  },
+  "stress": {
+   "rss_tick_mb": 622.99609375,
+   "pss_tick_mb": 425.876953125,
+   "rss_scroll_mb": 646.49609375,
+   "pss_scroll_mb": 455.951171875,
+   "cpu_tick_pct": 170.81100514819772,
+   "cpu_scroll_pct": 191.9015602767933,
+   "tick_fps": 59.5,
+   "scroll_fps": 59.7,
+   "tick_avg_paint_ms": 0.358,
+   "tick_cells_per_paint": 1,
+   "tick_paints": 769,
+   "scroll_avg_paint_ms": 1.154,
+   "scroll_cells_per_paint": 120,
+   "scroll_paints": 834,
+   "scroll_jank_count": 1,
+   "scroll_jank_avg_ms": 35,
+   "rows": 50000,
+   "cols": 6,
+   "cpu_tick_threads_last": {
+    "WebKitWebProces/llvmpipe": 107.2,
+    "WebKitWebProces/WebKitWebProces": 55.9,
+    "wry-xq-demo/wry-xq-demo": 7.8,
+    "WebKitWebProces/ReceiveQueue": 1.8,
+    "wry-xq-demo/ReceiveQueue": 1.5,
+    "WebKitWebProces/JITWorker": 1.2
+   }
+  }
+ },
+ "gpui": {
+  "binary_mb": 25.118125915527344,
+  "baseline": {
+   "window_ms": 260.90399001259357,
+   "first_frame_ms": 284.6343489945866,
+   "first_quote_ms": 397.7650090237148,
+   "rss10_mb": 182.15234375,
+   "pss10_mb": 178.3515625,
+   "rss60_mb": 182.46875,
+   "pss60_mb": 178.47265625,
+   "cpu_pct": 245.78911114512465,
+   "fps": 27.7,
+   "nproc": 1,
+   "threads": 53,
+   "procs60_last": [
+    {
+     "comm": "gpui-xq-demo",
+     "rss_mb": 181.6,
+     "pss_mb": 177.9,
+     "threads": 53
+    }
+   ],
+   "cpu_threads_last": {
+    "gpui-xq-demo/llvmpipe": 223.9,
+    "gpui-xq-demo/gpui-xq-demo": 19.6,
+    "gpui-xq-demo/WSI swapchain q": 1.8
+   }
+  },
+  "stress": {
+   "rss_tick_mb": 186.61328125,
+   "pss_tick_mb": 182.732421875,
+   "rss_scroll_mb": 186.46484375,
+   "pss_scroll_mb": 182.6787109375,
+   "cpu_tick_pct": 298.2282448797813,
+   "cpu_scroll_pct": 305.06918694252056,
+   "tick_fps": 35.8,
+   "scroll_fps": 35.5,
+   "tick_avg_paint_ms": 0.089,
+   "tick_cells_per_paint": 84,
+   "tick_paints": 1074,
+   "scroll_avg_paint_ms": 0.091,
+   "scroll_cells_per_paint": 84,
+   "scroll_paints": 355,
+   "scroll_jank_count": 140,
+   "scroll_jank_avg_ms": 33.1,
+   "rows": 50033,
+   "cols": 6,
+   "cpu_tick_threads_last": {
+    "gpui-xq-demo/llvmpipe": 271.8,
+    "gpui-xq-demo/gpui-xq-demo": 23.7,
+    "gpui-xq-demo/WSI swapchain q": 2.1
+   }
+  }
+ }
+}

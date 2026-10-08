@@ -37,6 +37,10 @@ pub struct QuoteTable {
     pub selected: usize,
     scroll: UniformListScrollHandle,
     pub stress: bool,
+    /// 壓測量測：可見列更新次數／累積耗時（µs，含量測呼叫）／建立的格數（列×6 欄）
+    pub paints: u64,
+    pub paint_us: u64,
+    pub cells: u64,
 }
 
 impl EventEmitter<TableEvent> for QuoteTable {}
@@ -48,11 +52,15 @@ impl QuoteTable {
             .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0 })
             .collect();
         let index = rows.iter().enumerate().map(|(i, r)| (r.symbol.clone(), i)).collect();
-        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false }
+        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0 }
     }
 
     pub fn symbols(&self) -> Vec<String> {
         self.rows[..self.real_len].iter().map(|r| r.symbol.to_string()).collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.rows.len()
     }
 
     pub fn row(&self, symbol: &str) -> Option<&Row> {
@@ -113,6 +121,43 @@ impl QuoteTable {
         cx.notify();
     }
 
+    /// 壓測：在 5 萬合成列裡隨機挑 n 列跳價（同 wry 版 applyTicks），有變就 notify。
+    pub fn synth_ticks(&mut self, n: usize, rng: &mut u64, cx: &mut Context<Self>) {
+        let base = self.real_len;
+        let cnt = self.rows.len().saturating_sub(base);
+        if !self.stress || cnt == 0 {
+            return;
+        }
+        let mut next = || {
+            *rng ^= *rng << 13;
+            *rng ^= *rng >> 7;
+            *rng ^= *rng << 17;
+            *rng
+        };
+        for _ in 0..n {
+            let i = base + (next() % cnt as u64) as usize;
+            let u = (next() % 10_000) as f64 / 10_000.0 - 0.5;
+            let r = &mut self.rows[i];
+            let wobble = u * (r.price.abs() * 0.002).max(0.2);
+            r.price += wobble;
+            r.change += wobble;
+            r.volume += (next() % 200) as i64;
+            r.tick = if wobble >= 0.0 { 1 } else { -1 };
+        }
+        cx.notify();
+    }
+
+    /// 壓測：捲到第 frac（0..1）的位置（同 wry 版 scrollTop = frac × maxScroll）
+    pub fn scroll_frac(&mut self, frac: f64, cx: &mut Context<Self>) {
+        let n = self.rows.len();
+        if n == 0 {
+            return;
+        }
+        let ix = ((n - 1) as f64 * frac.clamp(0.0, 1.0)) as usize;
+        self.scroll.scroll_to_item(ix, ScrollStrategy::Top);
+        cx.notify();
+    }
+
     fn select(&mut self, ix: usize, cx: &mut Context<Self>) {
         if ix >= self.rows.len() {
             return;
@@ -124,6 +169,12 @@ impl QuoteTable {
     }
 
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
+        let t0 = std::time::Instant::now();
+        // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」
+        if range.len() > 1 {
+            self.paints += 1;
+        }
+        self.cells += (range.len() * COLS.len()) as u64;
         let mut out = Vec::with_capacity(range.len());
         for ix in range {
             let r = &self.rows[ix];
@@ -168,6 +219,7 @@ impl QuoteTable {
                     .into_any_element(),
             );
         }
+        self.paint_us += t0.elapsed().as_micros() as u64;
         out
     }
 }
