@@ -1,0 +1,22 @@
+[workspace]
+members = [".", "crates/xq-feed"]
+
+[package]
+name = "gpui-xq-demo"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.92"
+publish = false
+
+[dependencies]
+xq-feed = { path = "crates/xq-feed" }
+gpui = { package = "gpui-pre", version = "=0.3.7" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.7", features = ["wayland", "x11"] }
+futures = "0.3.34"
+parking_lot = "0.12"
+
+[profile.release]
+strip = true
+debug = false
+lto = "thin"
+codegen-units = 4

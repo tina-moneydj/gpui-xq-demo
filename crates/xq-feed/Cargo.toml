@@ -1,0 +1,8 @@
+[package]
+name = "xq-feed"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "WryFeedHost (127.0.0.1:47631) 二進位協議：訂閱編碼、封包切割、型別化解碼、背景連線執行緒。零外部依賴。"
+
+[dependencies]
