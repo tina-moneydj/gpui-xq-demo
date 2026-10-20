@@ -1,0 +1,14 @@
+---
+description: gpui-xq-demo 專案規則（XQ 高頻看盤，Rust + GPUI）
+alwaysApply: true
+---
+
+本專案的 AI 規則統一寫在根目錄 `AGENTS.md`，每次都要先讀並完整遵守。重點：
+
+- UI 執行緒不做 I/O；行情回呼只做 O(1)；UI 每幀最多套用一次行情（掛在 `Terminal::apply_feed`）。
+- 容器要有上限；熱路徑不配置、不為過編譯而 clone 或包 `Arc<Mutex>`；增量計算；`uniform_list`；有變才 `cx.notify()`。
+- 快捷鍵用 actions + key context；正式路徑不 `unwrap()`；存檔防抖＋背景寫＋tmp/rename。
+- 新面板照 `src/tick_tape.rs`（純邏輯在 `crates/xq-tape`）；先寫行為基準與測試再實作。
+- 註解與文件用繁體中文，識別字用英文。
+
+完整版：`docs/team/ai-dev-guidelines.md`；prompt 模板：`docs/team/prompt-templates.md`。

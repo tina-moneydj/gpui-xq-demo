@@ -3,6 +3,8 @@
 與 [`wry-xq-demo`](https://github.com/tina-moneydj/wry-xq-demo)（tao + wry，HTML/JS 畫面）**接同一個行情來源**：
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
+> **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
+
 ![分時](screenshot.png)
 
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
@@ -30,6 +32,8 @@
   - **存檔**：每個「代號｜週期」的指標設定與畫線寫到 `~/.local/share/gpui-xq-demo/state.json`（`XQ_GPUI_STATE` 可改路徑；新代號沿用上次指標設定）。
   - 點報價列切換走勢圖代號（重新訂閱 `chart` 代號）。
 - 狀態列：連線狀態、FPS、RSS（每秒取樣）、引擎封包數→UI 套用次數。
+- **成交明細（範例模組，`XQ_TAPE=1` 才開）**：右下多一欄，由報價推導逐筆成交（總量差）、固定容量 5000 筆、`b` 只看大單、`[`／`]` 門檻、`Home` 回最新；
+  團隊「照這個寫」的參考，說明見 [docs/team/example-module.md](docs/team/example-module.md)。
 
 右下的「網頁格」**不在範圍內**：GPUI 沒有官方 WebView；`gpui-wry` 的子視窗畫在 GPUI 之上、不受 ContentMask 裁切
 （舊測試程式保留在 `legacy/gpui_wry_window_test.rs`，不參與編譯）。此格先放資訊與效能數字。
@@ -40,7 +44,8 @@
 export PATH="$HOME/.cargo/bin:$PATH"
 cargo build --release            # rust-toolchain.toml 用 stable（GPUI 依賴 oo7 需要 rustc ≥ 1.92）
 DISPLAY=:2 XQ_METRICS=1 ./target/release/gpui-xq-demo
-cargo test --release --workspace # 協議切包／解碼、指標增量＝整段重算、週／月聚合測試
+cargo test --release --workspace # 協議切包／解碼、指標增量＝整段重算、週／月聚合、成交明細（含行為基準）
+cargo bench -p xq-tape           # 成交明細熱路徑 micro-bench（各項有預算）
 ```
 
 環境變數：
@@ -57,6 +62,7 @@ cargo test --release --workspace # 協議切包／解碼、指標增量＝整段
 | `XQ_CHART_STRESS=1` | 重圖表壓測（與 wry 版同流程）：等第一筆報價 → 20 疊加＋8 副圖＋1000 畫線（`XQ_CHART_DRAWINGS`）→ 暖身 `XQ_CHART_WARM_MS`（3000）→ ticks／crosshair／pan 各 `XQ_CHART_PHASE_MS`（10000），結果印 `CHARTPERF|{json}`（FPS、各層平均 paint ms、RSS） |
 | `XQ_LAYER_MODE=split` | 實驗：圖層改成 quad／path／字分開（預設每層一個 scene layer，lavapipe 上較快） |
 | `XQ_BENCH=1` | 第一幀／第一筆報價畫出後各印一行 `BENCH ...`（給 `scripts/bench-main-window.sh` 打時間戳） |
+| `XQ_TAPE=1` | 開成交明細範例面板（預設關閉，壓測版面不變）；`XQ_TAPE_STATE=路徑` 改設定檔位置（預設 `~/.local/share/gpui-xq-demo/tick_tape.json`） |
 | `XQ_GROUP_STRESS=1` | 壓測：1.2 秒後開 5 萬列＋合成跳價（`XQ_STRESS_TICK_HZ`，預設 3000 筆/s）`XQ_STRESS_TICK_MS`，再邊跳價邊捲動 `XQ_STRESS_SCROLL_MS`（預設各 2000 ms），結果印 `GROUPPERF|{json}` |
 
 Linux 需要 Vulkan（或 GL）驅動；沒有 GPU 的機器裝 Mesa lavapipe：`sudo apt install mesa-vulkan-drivers vulkan-tools`。
@@ -68,6 +74,8 @@ Linux 需要 Vulkan（或 GL）驅動；沒有 GPU 的機器裝 Mesa lavapipe：
 
 ```
 crates/xq-feed      ← 共用協議 crate（零依賴）：Subscribe 編碼、FrameReader 切包、型別化 decode、背景連線/重連執行緒
+crates/xq-tape      ← 成交明細純邏輯（範例）：報價→成交推導、固定容量 Ring、格式化；單元測試＋行為基準＋micro-bench
+src/tick_tape.rs    ← 成交明細面板（範例）：背景緩衝→每幀套用、uniform_list、actions/快捷鍵/焦點、背景存檔
 src/bridge.rs       ← 背景執行緒 → UI 的合併層（Inbox）
 src/table.rs        ← 報價表 view（uniform_list）
 src/chart.rs        ← 走勢圖 view：三個 cached 繪圖層、左側畫線工具列、指標選單、事件、XQ_CHART_STRESS 壓測驅動

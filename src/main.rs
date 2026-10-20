@@ -15,6 +15,7 @@ mod series;
 mod store;
 mod table;
 mod theme;
+mod tick_tape;
 mod tickbench;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -30,6 +31,7 @@ use bridge::{Conn, FeedBridge};
 use chart::{ChartEvent, ChartView};
 use series::Period;
 use table::{QuoteTable, TableEvent};
+use tick_tape::{TapeFeed, TickTape};
 use theme::*;
 
 /// 根 view 畫過的 frame 總數（走勢圖壓測算 FPS 用）
@@ -144,6 +146,8 @@ struct Terminal {
     table: Entity<QuoteTable>,
     chart: Entity<ChartView>,
     info: Entity<InfoPane>,
+    /// 成交明細範例面板（XQ_TAPE=1 才開；預設 None，版面與壓測不變）
+    tape: Option<Entity<TickTape>>,
     conn: Conn,
     top_frac: f32,
     left_w: f32,
@@ -176,9 +180,11 @@ struct Terminal {
 
 impl Terminal {
     fn new(cx: &mut Context<Self>) -> Self {
-        let (bridge, mut wake_rx) = FeedBridge::start();
-        let table = cx.new(|_| QuoteTable::new(names::WATCH));
         let (sym, name) = names::WATCH[0];
+        let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
+        let tape = tape_feed.clone().map(|f| cx.new(|cx| TickTape::new(f, sym, cx)));
+        let (bridge, mut wake_rx) = FeedBridge::start(tape_feed);
+        let table = cx.new(|_| QuoteTable::new(names::WATCH));
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
@@ -230,6 +236,7 @@ impl Terminal {
             table,
             chart,
             info,
+            tape,
             conn: Conn::Connecting,
             // XQ_TOP_FRAC：上方走勢圖佔比（重圖表壓測時調到與 wry 版同樣大的圖面）
             top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
@@ -370,6 +377,9 @@ impl Terminal {
         };
         let period = period.unwrap_or_else(|| self.chart.read(cx).period());
         self.chart.update(cx, |c, cx| c.load(&symbol, &name, period, quote, cx));
+        if let Some(tape) = &self.tape {
+            tape.update(cx, |t, cx| t.set_symbol(&symbol, cx));
+        }
         self.info.update(cx, |i, cx| {
             i.symbol = symbol.clone().into();
             i.name = name.clone().into();
@@ -420,6 +430,10 @@ impl Terminal {
         }
         for (sym, bar) in &ib.minutes {
             self.chart.update(cx, |c, cx| c.apply_minute(sym, bar, cx));
+        }
+        if let Some(tape) = &self.tape {
+            // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
+            tape.update(cx, |t, cx| t.apply(cx));
         }
         self.applies += 1;
         let us = t0.elapsed().as_micros() as u64;
@@ -625,7 +639,11 @@ impl Render for Terminal {
                                 cx.notify();
                             })),
                     )
-                    .child(div().flex_1().h_full().child(view(self.info.clone().into()))),
+                    .child(div().flex_1().h_full().child(view(self.info.clone().into())))
+                    .when_some(self.tape.clone(), |d, tape| {
+                        d.child(div().w(px(SPLIT)).h_full().bg(border()))
+                            .child(div().w(px(276.)).h_full().flex_none().child(view(tape.into())))
+                    }),
             )
             .child(
                 div()
@@ -653,6 +671,7 @@ impl Render for Terminal {
 
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
+        tick_tape::bind_keys(cx);
         let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
         cx.open_window(
             WindowOptions {

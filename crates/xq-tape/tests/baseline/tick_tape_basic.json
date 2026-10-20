@@ -1,0 +1,22 @@
+{
+  "id": "TT-BASIC",
+  "title": "成交明細：由報價推導逐筆成交與顯示格式",
+  "source": "範例：正式案例應附 WPF 版 XQNext 的截圖或錄製檔路徑（例如 qa/wpf-recordings/tick_tape/2026-10-20.json）",
+  "utc_offset_sec": 28800,
+  "symbol": "2330",
+  "steps": [
+    { "note": "第一筆只記基準，不出明細", "ts_ms": 1792458000000, "symbol": "2330", "price": 1000.0, "change": 0.0, "volume": 1000, "expect": null },
+    { "note": "量增 25、與上一筆同價 → －、平盤白", "ts_ms": 1792458001250, "symbol": "2330", "price": 1000.0, "change": 0.0, "volume": 1025, "expect": { "time": "09:00:01.250", "price": "1000.00", "qty": "25", "side": "－", "color": "flat" } },
+    { "note": "量增 1200、價升 → 外、漲紅、千分位", "ts_ms": 1792458002000, "symbol": "2330", "price": 1005.0, "change": 5.0, "volume": 2225, "expect": { "time": "09:00:02.000", "price": "1005.00", "qty": "1,200", "side": "外", "color": "up" } },
+    { "note": "別檔報價不影響", "ts_ms": 1792458002100, "symbol": "2317", "price": 200.0, "change": -1.0, "volume": 99999, "expect": null },
+    { "note": "只有價格變、量不變 → 不出明細", "ts_ms": 1792458002200, "symbol": "2330", "price": 1010.0, "change": 10.0, "volume": 2225, "expect": null },
+    { "note": "價跌（相對上一筆成交 1005）→ 內；漲跌仍為正 → 紅", "ts_ms": 1792458003000, "symbol": "2330", "price": 1002.0, "change": 2.0, "volume": 2230, "expect": { "time": "09:00:03.000", "price": "1002.00", "qty": "5", "side": "內", "color": "up" } },
+    { "note": "跌破昨收 → 綠", "ts_ms": 1792458004000, "symbol": "2330", "price": 995.0, "change": -5.0, "volume": 2240, "expect": { "time": "09:00:04.000", "price": "995.00", "qty": "10", "side": "內", "color": "down" } },
+    { "note": "總量變少（資料更正）→ 重設基準，不出明細", "ts_ms": 1792458005000, "symbol": "2330", "price": 995.0, "change": -5.0, "volume": 100, "expect": null },
+    { "note": "重設後第一筆量增照常", "ts_ms": 1792458006000, "symbol": "2330", "price": 996.0, "change": -4.0, "volume": 103, "expect": { "time": "09:00:06.000", "price": "996.00", "qty": "3", "side": "外", "color": "down" } }
+  ],
+  "known_diffs": [
+    { "id": "TT-D1", "category": "刻意", "desc": "外／內盤用成交價升降近似（協議沒有五檔），WPF 版若用買賣價判斷，兩邊會不同；引擎有逐筆成交封包後改回。", "status": "已公告" },
+    { "id": "TT-D2", "category": "海外版差異", "desc": "XQNext 海外版時間用使用者所在時區（utc_offset_sec 由設定傳入），台灣版固定 +08:00。", "status": "設計如此" }
+  ]
+}

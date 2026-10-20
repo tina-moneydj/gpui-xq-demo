@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/xq-feed"]
+members = [".", "crates/xq-feed", "crates/xq-tape"]
 
 [package]
 name = "gpui-xq-demo"
@@ -10,6 +10,7 @@ publish = false
 
 [dependencies]
 xq-feed = { path = "crates/xq-feed" }
+xq-tape = { path = "crates/xq-tape" }
 gpui = { package = "gpui-pre", version = "=0.3.7" }
 gpui_platform = { package = "gpui-pre-platform", version = "=0.3.7", features = ["wayland", "x11"] }
 futures = "0.3.34"

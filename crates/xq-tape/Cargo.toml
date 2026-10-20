@@ -1,0 +1,16 @@
+[package]
+name = "xq-tape"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "成交明細（tick tape）純邏輯：由報價推導逐筆成交、固定容量環狀緩衝、顯示格式。不依賴 UI，可單元測試／行為基準／micro-bench。"
+
+[dependencies]
+xq-feed = { path = "../xq-feed" }
+
+[dev-dependencies]
+serde_json = "1"
+
+[[bench]]
+name = "tape"
+harness = false

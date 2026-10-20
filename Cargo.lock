@@ -2459,6 +2459,7 @@ dependencies = [
  "serde",
  "serde_json",
  "xq-feed",
+ "xq-tape",
 ]
 
 [[package]]
@@ -6913,6 +6914,14 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 [[package]]
 name = "xq-feed"
 version = "0.1.0"
+
+[[package]]
+name = "xq-tape"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "xq-feed",
+]
 
 [[package]]
 name = "y4m"
