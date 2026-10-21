@@ -1,0 +1,59 @@
+# Windows release build：gpui-xq-demo.exe＋xq-tickgen.exe＋Windows 壓測工具包（bench/windows）
+# 每次 push main（或手動）都在 windows-latest 上建 release exe，上傳 artifact，並更新 `bench-latest` 預發行版，
+# 讓測試的人不用裝 Rust 就能下載。
+name: windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc -V
+      - uses: Swatinem/rust-cache@v2
+      - name: Build (release)
+        shell: pwsh
+        run: cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
+      - name: Test
+        shell: pwsh
+        run: cargo test --release --locked --workspace
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist, kit/xq-bench-windows/bin | Out-Null
+          Copy-Item target/release/gpui-xq-demo.exe, target/release/xq-tickgen.exe dist/
+          Copy-Item bench/windows/* kit/xq-bench-windows/ -Recurse
+          Copy-Item dist/*.exe kit/xq-bench-windows/bin/
+          "gpui-xq-demo $env:GITHUB_SHA $(Get-Date -Format o)" | Set-Content kit/xq-bench-windows/bin/gpui-build.txt
+          Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows.zip -Force
+          Get-ChildItem dist | Format-Table Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gpui-xq-demo-windows-x64
+          path: dist/*
+      - name: Publish bench-latest pre-release
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete bench-latest --cleanup-tag -y 2>$null
+          gh release create bench-latest dist/* --prerelease --target $env:GITHUB_SHA `
+            --title "Windows bench build (main $($env:GITHUB_SHA.Substring(0,7)))" `
+            --notes "main 最新版的 Windows release build（自動產生）。測試工具包：下載 xq-bench-windows.zip，解壓後雙擊 run-bench.cmd。說明見 bench/windows/README.md。"
