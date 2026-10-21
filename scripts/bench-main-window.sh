@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 主視窗成本比較：wry-xq-demo（tao + wry / WebKitGTK）vs gpui-xq-demo（GPUI 原生繪圖）
+# 主視窗成本比較：wry-xq-demo（tao + wry / WebKitGTK）vs gpui-xq-demo（GPUI 原生繪圖）vs egui-xq-demo（egui 立即模式）
+# 2026-10-21：加 egui；APPS_LIST=wry,gpui,egui 選要跑哪幾個；FEED_RESTART=1 時每一輪前由本腳本重啟 WryFeedHost --demo-ticks
 #
 # 兩邊同畫面：一個主視窗 1200×720、同一份 33 檔自選、單一走勢圖分頁（2330 日線＋MA5/20/60＋成交量）、
 # 右下空白／資訊格（wry 不建子 WebView）、不開壓力 5 萬。兩個程式輪流跑（WryFeedHost 一次只服務一個 client）。
@@ -33,14 +34,21 @@ MODE="${2:-all}"
 export DISPLAY="${DISPLAY:-:2}"
 WRY_DIR="${WRY_DIR:-/workspace/wry-xq-demo}"
 GPUI_DIR="${GPUI_DIR:-/workspace/gpui-xq-demo}"
+EGUI_DIR="${EGUI_DIR:-/workspace/egui-xq-demo}"
+APPS_LIST="${APPS_LIST:-wry,gpui,egui}"
+FEED_RESTART="${FEED_RESTART:-0}"
 OUT="${OUT:-/workspace/bench}"
 mkdir -p "$OUT"
-export RUNS MODE WRY_DIR GPUI_DIR OUT
+export RUNS MODE WRY_DIR GPUI_DIR EGUI_DIR APPS_LIST FEED_RESTART OUT
 exec python3 - <<'PY'
 import json, os, shutil, signal, statistics, subprocess, sys, threading, time
 
 RUNS = int(os.environ["RUNS"]); OUT = os.environ["OUT"]; MODE = os.environ["MODE"]
-WRY_DIR = os.environ["WRY_DIR"]; GPUI_DIR = os.environ["GPUI_DIR"]
+WRY_DIR = os.environ["WRY_DIR"]; GPUI_DIR = os.environ["GPUI_DIR"]; EGUI_DIR = os.environ["EGUI_DIR"]
+NAMES = [n for n in os.environ["APPS_LIST"].split(",") if n]
+FEED_RESTART = os.environ["FEED_RESTART"] == "1"
+FEED_CMD = [os.path.expanduser("~/.dotnet/dotnet"), WRY_DIR + "/feedhost/WryFeedHost/bin/Release/net8.0/WryFeedHost.dll", "--demo-ticks"]
+feed_proc = None
 W, H = 1200, 720  # 1280×800 Xvfb 扣掉 xfwm4 標題列後放得下的尺寸
 T_IDLE, T_CPU0, T_END = 10.0, 30.0, 60.0
 CLK = os.sysconf("SC_CLK_TCK")
@@ -83,7 +91,29 @@ APPS = {
                 env={"WEBKIT_DISABLE_COMPOSITING_MODE": "1", "XQ_BENCH": "1"}),
     "gpui": dict(cwd=GPUI_DIR, cmd=["./target/release/gpui-xq-demo"], title="^XQ .*GPUI",
                  env={"XQ_BENCH": "1", "XQ_PERIOD": "D", "XQ_METRICS": "1"}),
+    # egui：預設 glow 後端（見 egui-xq-demo README「glow vs wgpu」）；狀態檔放 /tmp，不動使用者的
+    "egui": dict(cwd=EGUI_DIR, cmd=["./target/release/egui-xq-demo"], title="^XQ .*egui",
+                 env={"XQ_BENCH": "1", "XQ_PERIOD": "D", "XQ_METRICS": "1",
+                      "XQ_RENDERER": os.environ.get("EGUI_RENDERER", "glow"), "XQ_EGUI_STATE": "/tmp/egui-bench-state.json"}),
 }
+
+def restart_feed():
+    """每一輪前重啟 feed（只殺本腳本自己啟動的 pid），等 47631 可以連線"""
+    global feed_proc
+    import socket
+    if feed_proc is not None:
+        feed_proc.terminate()
+        try: feed_proc.wait(10)
+        except subprocess.TimeoutExpired: feed_proc.kill(); feed_proc.wait()
+    feed_proc = subprocess.Popen(FEED_CMD, stdin=subprocess.DEVNULL, stdout=open(f"{OUT}/feedhost.log", "a"),
+                                 stderr=subprocess.STDOUT, cwd=WRY_DIR + "/feedhost/WryFeedHost")
+    end = time.monotonic() + 30
+    while time.monotonic() < end:
+        try:
+            socket.create_connection(("127.0.0.1", 47631), 0.5).close(); break
+        except OSError: time.sleep(0.1)
+    else: raise SystemExit("feed 起不來")
+    time.sleep(1.0)  # 讓那次探測連線斷乾淨
 
 def ppid(p):
     try: return int(open(f"/proc/{p}/stat").read().rsplit(")", 1)[1].split()[1])
@@ -168,13 +198,23 @@ HEAVY_ENV = {
             "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
     "gpui": {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": os.environ.get("GPUI_TOP_FRAC", "0.8"),
              "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
+    "egui": {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": os.environ.get("EGUI_TOP_FRAC", os.environ.get("GPUI_TOP_FRAC", "0.8")),
+             "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
 }
 
 STRESS_ENV = {"XQ_GROUP_STRESS": "1", "XQ_STRESS_COLS": "6", "XQ_STRESS_TICK_HZ": "3000",
               "XQ_STRESS_TICK_MS": "30000", "XQ_STRESS_SCROLL_MS": "10000"}
 
 def run_once(name, shot, stress=False, heavy=False):
+    """失敗（程式意外結束／等不到事件）重跑一次，失敗的 log 留在 <app>-failed-run.log"""
+    try: return run_once_(name, shot, stress, heavy)
+    except SystemExit as e:
+        print(f"  ！{e}；重跑一次", flush=True); time.sleep(3)
+        return run_once_(name, shot, stress, heavy)
+
+def run_once_(name, shot, stress=False, heavy=False):
     app = APPS[name]
+    if FEED_RESTART: restart_feed()
     if name == "wry":
         json.dump(wry_bench_state(), open(STATE, "w"), ensure_ascii=False, indent=2)
     env = dict(os.environ, **app["env"], **(STRESS_ENV if stress else {}), **(HEAVY_ENV[name] if heavy else {}))
@@ -211,6 +251,9 @@ def run_once(name, shot, stress=False, heavy=False):
         fn = measure_heavy if heavy else (measure_stress if stress else measure)
         return fn(name, app, proc, t0, events, fps, log, shot)
     except BaseException:
+        # 失敗也留下 log（含結束碼），方便查是程式掛掉還是等太久
+        time.sleep(0.3)
+        open(f"{OUT}/{name}-failed-run.log", "a").write(f"==== exit={proc.poll()}\n" + "\n".join(log) + "\n----\n")
         for p in reversed(tree(proc.pid)):
             try: os.kill(p, signal.SIGKILL)
             except ProcessLookupError: pass
@@ -248,6 +291,7 @@ def measure_stress(name, app, proc, t0, events, fps, log, shot):
     def wait_ev(key, timeout):
         end = time.monotonic() + timeout
         while key not in events:
+            if proc.poll() is not None: raise SystemExit(f"{name}: 程式結束了 exit={proc.returncode}（等 {key}）")
             if time.monotonic() > end: raise SystemExit(f"{name}: 等不到 {key}")
             time.sleep(0.02)
         return events[key]
@@ -335,14 +379,16 @@ def main():
     backup = STATE + ".bench-backup"
     had_state = os.path.exists(STATE)
     if had_state: shutil.copy2(STATE, backup)
-    for f in ("wry-run.log", "gpui-run.log", "wry-stress-run.log", "gpui-stress-run.log", "wry-heavy-run.log", "gpui-heavy-run.log"):
+    if FEED_RESTART and subprocess.run(["pgrep", "-f", "WryFeedHost"], capture_output=True).returncode == 0:
+        raise SystemExit("FEED_RESTART=1 但已有 WryFeedHost 在跑，請先關掉（本腳本自己起）")
+    for f in [f"{n}{suf}-run.log" for n in NAMES for suf in ("", "-stress", "-heavy")]:
         try: os.remove(f"{OUT}/{f}")
         except FileNotFoundError: pass
     results = []; stress = []; heavy = []
     try:
         if MODE in ("all", "baseline"):
             for i in range(RUNS):
-                for name in ("wry", "gpui"):
+                for name in NAMES:
                     print(f"baseline {i+1}/{RUNS} {name} …", flush=True)
                     r = run_once(name, shot=(i == RUNS - 1)); r["run"] = i + 1; results.append(r)
                     print(f"  window={r['window_s']:.3f}s frame={r['first_frame_s']} quote={r['first_quote_s']} "
@@ -352,7 +398,7 @@ def main():
                     time.sleep(3)
         if MODE in ("all", "stress"):
             for i in range(RUNS):
-                for name in ("wry", "gpui"):
+                for name in NAMES:
                     print(f"stress {i+1}/{RUNS} {name} …", flush=True)
                     r = run_once(name, shot=(i == RUNS - 1), stress=True); r["run"] = i + 1; stress.append(r)
                     print(f"  cpu_tick={r['cpu_tick_pct']:.1f}% cpu_scroll={r['cpu_scroll_pct']:.1f}% "
@@ -362,7 +408,7 @@ def main():
                     time.sleep(3)
         if MODE == "heavy":
             for i in range(RUNS):
-                for name in ("wry", "gpui"):
+                for name in NAMES:
                     print(f"heavy {i+1}/{RUNS} {name} …", flush=True)
                     r = run_once(name, shot=(i == RUNS - 1), heavy=True); r["run"] = i + 1; heavy.append(r)
                     st = r["setup"]
@@ -375,11 +421,16 @@ def main():
                     time.sleep(3)
     finally:
         time.sleep(1)
+        if feed_proc is not None:
+            feed_proc.terminate()
+            try: feed_proc.wait(10)
+            except subprocess.TimeoutExpired: feed_proc.kill()
         if had_state: shutil.copy2(backup, STATE); os.remove(backup)
     med = lambda xs: statistics.median([x for x in xs if x is not None]) if any(x is not None for x in xs) else None
     def bin_size(p): return os.path.getsize(p) / 1024 / 1024
-    summary = {"date": time.strftime("%Y-%m-%d %H:%M %z"), "runs": RUNS, "mode": MODE}
-    for name in ("wry", "gpui"):
+    summary = {"date": time.strftime("%Y-%m-%d %H:%M %z"), "runs": RUNS, "mode": MODE, "apps": NAMES,
+               "feed": "WryFeedHost --demo-ticks" + ("（每輪重啟）" if FEED_RESTART else "")}
+    for name in NAMES:
         out = {"binary_mb": bin_size(os.path.join(APPS[name]["cwd"], APPS[name]["cmd"][0]))}
         rs = [r for r in results if r["app"] == name]
         if rs:

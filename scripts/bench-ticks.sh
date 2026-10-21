@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 高頻進價壓測：wry-xq-demo（tao + wry / WebKitGTK）vs gpui-xq-demo（GPUI 原生繪圖），2026-10-08
+# 高頻進價壓測：wry-xq-demo（tao + wry / WebKitGTK）vs gpui-xq-demo（GPUI 原生繪圖）vs egui-xq-demo（egui 立即模式），
+# 2026-10-08；2026-10-21 加 egui（present＝下一幀開始，同為上界）
 #
 # 行情來源：gpui-xq-demo/crates/xq-feed 的 xq-tickgen（同 WryFeedHost 協議、同 127.0.0.1:47631），
 #   每 5ms 一包、不合併；每包第一筆是走勢圖那檔 2330（探針），其餘 20% 落在 33 檔自選、80% 均勻落在 Z00000–Z49999。
@@ -18,27 +19,28 @@
 #   記憶體：RSS／PSS（smaps_rollup）量測開始與結束、成長。FPS：程式自己每秒回報（wry＝rAF 次數；GPUI＝root render 次數）。
 #   回應性：量測中每 6 秒用 xdotool 點報價表 2317 列、1 秒後點 2330 列，click → 切換後第一幀畫完（同上 present 定義）。
 # 輸出：$OUT/ticks-results.json（每輪原始數據）、$OUT/ticks-summary.json（3 輪中位數）、$OUT/tick-<app>-run.log、截圖。
-# 用法：bench-ticks.sh [runs=3] [scenarios=s1k,s10k,s50k,s100k,burst] [apps=gpui,wry]
+# 用法：bench-ticks.sh [runs=3] [scenarios=s1k,s10k,s50k,s100k,burst] [apps=gpui,wry,egui]
 #   需求：DISPLAY（預設 :2）、xdotool、ffmpeg、兩個 release binary＋xq-tickgen 已建好；
 #         127.0.0.1:47631 沒有被佔用（先停 WryFeedHost）、兩個程式都沒在跑。wry 用獨立 XDG_DATA_HOME，不碰使用者 state.json。
 set -euo pipefail
 RUNS="${1:-3}"
 SCEN="${2:-s1k,s10k,s50k,s100k,burst}"
-APPS_SEL="${3:-gpui,wry}"
+APPS_SEL="${3:-gpui,wry,egui}"
 export DISPLAY="${DISPLAY:-:2}"
 WRY_DIR="${WRY_DIR:-/workspace/wry-xq-demo}"
 GPUI_DIR="${GPUI_DIR:-/workspace/gpui-xq-demo}"
+EGUI_DIR="${EGUI_DIR:-/workspace/egui-xq-demo}"
 OUT="${OUT:-/workspace/bench/ticks}"
 TICK_ADDR="${TICK_ADDR:-127.0.0.1:47631}"
 WRY_BIN="${WRY_BIN:-./target/release/wry-xq-demo}"
 mkdir -p "$OUT"
-export RUNS SCEN APPS_SEL WRY_DIR GPUI_DIR OUT TICK_ADDR WRY_BIN
+export RUNS SCEN APPS_SEL WRY_DIR GPUI_DIR EGUI_DIR OUT TICK_ADDR WRY_BIN
 exec python3 - <<'PY'
 import json, os, signal, statistics, subprocess, sys, threading, time
 
 RUNS = int(os.environ["RUNS"]); OUT = os.environ["OUT"]
 SCEN = os.environ["SCEN"].split(","); APPS_SEL = os.environ["APPS_SEL"].split(",")
-WRY_DIR = os.environ["WRY_DIR"]; GPUI_DIR = os.environ["GPUI_DIR"]; ADDR = os.environ["TICK_ADDR"]
+WRY_DIR = os.environ["WRY_DIR"]; GPUI_DIR = os.environ["GPUI_DIR"]; EGUI_DIR = os.environ["EGUI_DIR"]; ADDR = os.environ["TICK_ADDR"]
 W, H = 1200, 720
 CLK = os.sysconf("SC_CLK_TCK")
 XDG = os.path.join(OUT, "xdg")  # wry 專用 XDG_DATA_HOME（bench 狀態），不碰使用者的 state.json
@@ -56,6 +58,7 @@ WATCH = ["2330","2317","2454","0050","2303","2881","2882","2308","2412","2382","
 CLICK = {
     "gpui": {"2330": (30, int(os.environ.get("GPUI_ROW0_Y", "462"))), "2317": (30, int(os.environ.get("GPUI_ROW1_Y", "484")))},
     "wry": {"2330": (30, int(os.environ.get("WRY_ROW0_Y", "501"))), "2317": (30, int(os.environ.get("WRY_ROW1_Y", "524")))},
+    "egui": {"2330": (30, int(os.environ.get("EGUI_ROW0_Y", "462"))), "2317": (30, int(os.environ.get("EGUI_ROW1_Y", "484")))},
 }
 
 def wry_bench_state():
@@ -91,6 +94,9 @@ APPS = {
                      "XQ_FEED_ADDR": ADDR, "XDG_DATA_HOME": XDG}),
     "gpui": dict(cwd=GPUI_DIR, cmd=["./target/release/gpui-xq-demo"], title="^XQ .*GPUI",
                  env={"XQ_BENCH": "1", "XQ_TICK_BENCH": "1", "XQ_PERIOD": "D", "XQ_FEED_ADDR": ADDR}),
+    "egui": dict(cwd=EGUI_DIR, cmd=["./target/release/egui-xq-demo"], title="^XQ .*egui",
+                 env={"XQ_BENCH": "1", "XQ_TICK_BENCH": "1", "XQ_PERIOD": "D", "XQ_FEED_ADDR": ADDR,
+                      "XQ_RENDERER": os.environ.get("EGUI_RENDERER", "glow"), "XQ_EGUI_STATE": "/tmp/egui-bench-state.json"}),
 }
 
 def ppid(p):
@@ -266,7 +272,7 @@ def run_once(name, scen, shot):
     return analyze(name, scen, tb, gev, t_start, t_end, start_us, j_end, th0, th1, g0, g1, secs, mems, m_tail, clicks, shot_path)
 
 def counters(name, j):
-    if name == "gpui":
+    if name in ("gpui", "egui"):  # egui 的 TICKBENCH 欄位與 gpui 相同
         return {"recv": j["rowsIn"], "toUi": j["inboxRows"], "applied": j["applied"], "batches": j["applies"]}
     return {"recv": j["raw"], "toUi": j["rows"], "applied": j["applied"], "batches": j["pushes"]}
 
@@ -341,7 +347,7 @@ def analyze(name, scen, tb, gev, t_start, t_end, start_us, j_end, th0, th1, g0, 
                       "evalToApply_p50": r(pct([(s[5] - s[7]) / 1000 for s in samples if len(s) > 7 and s[7]], 50)),
                       "recvToEval_p50": r(pct([(s[7] - s[4]) / 1000 for s in samples if len(s) > 7 and s[7]], 50))}
     else:
-        res["gpui"] = {"applyUs": tb[-1][1]["applyUs"] - base[-1]["applyUs"]}
+        res[name] = {"applyUs": tb[-1][1]["applyUs"] - base[-1]["applyUs"]}
     return res
 
 def med(vals):
@@ -385,7 +391,7 @@ def summarize(results):
 
 def main():
     for p in os.listdir("/proc"):
-        if p.isdigit() and comm(int(p)) in ("wry-xq-demo", "gpui-xq-demo", "xq-tickgen"):
+        if p.isdigit() and comm(int(p)) in ("wry-xq-demo", "gpui-xq-demo", "egui-xq-demo", "xq-tickgen"):
             raise SystemExit(f"有程式在跑（pid {p} {comm(int(p))}），先關掉再量")
     import socket
     s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -401,7 +407,10 @@ def main():
                 if sum(1 for x in results if x["app"] == name and x["scenario"] == scen) > i: continue
                 shot = (i == RUNS - 1) and scen in ("s50k", "burst")
                 t = time.strftime("%H:%M:%S")
-                r = run_once(name, scen, shot)
+                try: r = run_once(name, scen, shot)
+                except SystemExit as e:  # 程式意外結束等：重跑一次
+                    print(f"  ！{name}/{scen}: {e}；重跑一次", flush=True); time.sleep(3)
+                    r = run_once(name, scen, shot)
                 results.append(r)
                 json.dump(results, open(path, "w"), ensure_ascii=False, indent=1)
                 print(f"[{t}] {name:4s} {scen:5s} #{i+1} sent={r['ticks']['sent']} recv={r['ticks']['recvFinal']} "
