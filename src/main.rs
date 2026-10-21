@@ -12,6 +12,7 @@ mod indicators;
 mod model;
 mod names;
 mod series;
+mod search;
 mod store;
 mod table;
 mod theme;
@@ -199,7 +200,11 @@ impl Terminal {
             None => {
                 let (bridge, wake_rx) = FeedBridge::start(tape_feed);
                 let counters = bridge.counters.clone();
-                (Some(bridge), Some(wake_rx), cx.new(|_| QuoteTable::new(names::WATCH)), counters)
+                (Some(bridge), Some(wake_rx), cx.new(|cx| {
+                    let mut t = QuoteTable::new(names::WATCH);
+                    t.attach_search(cx);
+                    t
+                }), counters)
             }
             Some((table, counters)) => (None, None, table, counters),
         };
@@ -739,6 +744,7 @@ fn window_options(k: usize, cx: &mut App) -> WindowOptions {
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
         tick_tape::bind_keys(cx);
+        search::bind_keys(cx);
         let opts = window_options(0, cx);
         let main = cx
             .open_window(opts, |window, cx| cx.new(|cx| Terminal::new(0, None, window, cx)))
