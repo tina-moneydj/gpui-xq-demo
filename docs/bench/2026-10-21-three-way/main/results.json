@@ -1,0 +1,1150 @@
+{
+ "baseline": [
+  {
+   "app": "wry",
+   "window_s": 0.14034152699969127,
+   "first_frame_s": 0.7323971920013719,
+   "first_quote_s": 0.6797642029996496,
+   "idle10": {
+    "rss_mb": 597.8671875,
+    "pss_mb": 404.8359375,
+    "threads": 84,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.5,
+      "pss_mb": 100.0,
+      "threads": 34
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.2,
+      "pss_mb": 27.6,
+      "threads": 11
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 356.2,
+      "pss_mb": 277.2,
+      "threads": 39
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 613.44140625,
+    "pss_mb": 420.28515625,
+    "threads": 78,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.6,
+      "pss_mb": 100.1,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.3,
+      "pss_mb": 27.6,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 371.6,
+      "pss_mb": 292.6,
+      "threads": 36
+     }
+    ]
+   },
+   "cpu_threads": {
+    "WebKitWebProces/llvmpipe": 81.0,
+    "WebKitWebProces/WebKitWebProces": 43.7,
+    "wry-xq-demo/wry-xq-demo": 4.5,
+    "WebKitWebProces/HeapHelper": 1.0
+   },
+   "cpu_pct": 132.8458197341163,
+   "fps_avg": 59.96,
+   "geom": null,
+   "run": 1
+  },
+  {
+   "app": "gpui",
+   "window_s": 0.18222893799975282,
+   "first_frame_s": 0.20549943399964832,
+   "first_quote_s": 0.30139594600041164,
+   "idle10": {
+    "rss_mb": 182.02734375,
+    "pss_mb": 177.607421875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 182.0,
+      "pss_mb": 177.6,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 182.1953125,
+    "pss_mb": 177.775390625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 182.2,
+      "pss_mb": 177.8,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 144.5,
+    "gpui-xq-demo/gpui-xq-demo": 9.8,
+    "gpui-xq-demo/WSI swapchain q": 1.0
+   },
+   "cpu_pct": 155.65423284582877,
+   "fps_avg": 19.8,
+   "geom": null,
+   "run": 1
+  },
+  {
+   "app": "egui",
+   "window_s": 0.11443430299914326,
+   "first_frame_s": 0.11550925800111145,
+   "first_quote_s": 0.1414584640006069,
+   "idle10": {
+    "rss_mb": 123.9140625,
+    "pss_mb": 117.548828125,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 123.9,
+      "pss_mb": 117.5,
+      "threads": 19
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 123.9375,
+    "pss_mb": 117.57421875,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 123.9,
+      "pss_mb": 117.6,
+      "threads": 19
+     }
+    ]
+   },
+   "cpu_threads": {
+    "egui-xq-demo/llvmpipe": 36.1,
+    "egui-xq-demo/egui-xq-demo": 3.7
+   },
+   "cpu_pct": 39.99461141182915,
+   "fps_avg": 19.566666666666666,
+   "geom": null,
+   "run": 1
+  },
+  {
+   "app": "wry",
+   "window_s": 0.1529710190006881,
+   "first_frame_s": 0.750058738001826,
+   "first_quote_s": 0.6934531820006669,
+   "idle10": {
+    "rss_mb": 602.578125,
+    "pss_mb": 407.943359375,
+    "threads": 84,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 184.6,
+      "pss_mb": 101.5,
+      "threads": 34
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.2,
+      "pss_mb": 27.6,
+      "threads": 11
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 357.7,
+      "pss_mb": 278.8,
+      "threads": 39
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 621.58203125,
+    "pss_mb": 426.8251953125,
+    "threads": 80,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 184.7,
+      "pss_mb": 101.6,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.3,
+      "pss_mb": 27.6,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 376.6,
+      "pss_mb": 297.6,
+      "threads": 38
+     }
+    ]
+   },
+   "cpu_threads": {
+    "WebKitWebProces/llvmpipe": 80.1,
+    "WebKitWebProces/WebKitWebProces": 42.5,
+    "wry-xq-demo/wry-xq-demo": 4.7
+   },
+   "cpu_pct": 130.96721750459471,
+   "fps_avg": 59.97333333333333,
+   "geom": null,
+   "run": 2
+  },
+  {
+   "app": "gpui",
+   "window_s": 0.17980723400251009,
+   "first_frame_s": 0.21048889900339418,
+   "first_quote_s": 0.29037734099983936,
+   "idle10": {
+    "rss_mb": 181.140625,
+    "pss_mb": 176.7265625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 181.1,
+      "pss_mb": 176.7,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 181.26953125,
+    "pss_mb": 176.85546875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 181.3,
+      "pss_mb": 176.9,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 143.1,
+    "gpui-xq-demo/gpui-xq-demo": 10.2
+   },
+   "cpu_pct": 154.58064727072488,
+   "fps_avg": 19.6,
+   "geom": null,
+   "run": 2
+  },
+  {
+   "app": "egui",
+   "window_s": 0.11922289100039052,
+   "first_frame_s": 0.11801312000170583,
+   "first_quote_s": 0.14725819200248225,
+   "idle10": {
+    "rss_mb": 124.21875,
+    "pss_mb": 117.796875,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.2,
+      "pss_mb": 117.8,
+      "threads": 19
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 124.265625,
+    "pss_mb": 117.84375,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.3,
+      "pss_mb": 117.8,
+      "threads": 19
+     }
+    ]
+   },
+   "cpu_threads": {
+    "egui-xq-demo/llvmpipe": 39.9,
+    "egui-xq-demo/egui-xq-demo": 4.7
+   },
+   "cpu_pct": 44.7285061569066,
+   "fps_avg": 20.333333333333332,
+   "geom": null,
+   "run": 2
+  },
+  {
+   "app": "wry",
+   "window_s": 0.1460891390015604,
+   "first_frame_s": 0.6845329120005772,
+   "first_quote_s": 0.7604589610018593,
+   "idle10": {
+    "rss_mb": 601.34765625,
+    "pss_mb": 408.5478515625,
+    "threads": 84,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.2,
+      "pss_mb": 99.7,
+      "threads": 34
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.1,
+      "pss_mb": 27.6,
+      "threads": 11
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 360.0,
+      "pss_mb": 281.3,
+      "threads": 39
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 614.453125,
+    "pss_mb": 421.5029296875,
+    "threads": 78,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.3,
+      "pss_mb": 99.8,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.2,
+      "pss_mb": 27.6,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 373.0,
+      "pss_mb": 294.1,
+      "threads": 36
+     }
+    ]
+   },
+   "cpu_threads": {
+    "WebKitWebProces/llvmpipe": 85.2,
+    "WebKitWebProces/WebKitWebProces": 45.6,
+    "wry-xq-demo/wry-xq-demo": 5.3,
+    "wry-xq-demo/ReceiveQueue": 1.0
+   },
+   "cpu_pct": 139.9332036326768,
+   "fps_avg": 59.99666666666667,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 3
+  },
+  {
+   "app": "gpui",
+   "window_s": 0.1841213890002109,
+   "first_frame_s": 0.22040382900013356,
+   "first_quote_s": 0.33241172000271035,
+   "idle10": {
+    "rss_mb": 181.921875,
+    "pss_mb": 177.53125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 181.9,
+      "pss_mb": 177.5,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 181.98046875,
+    "pss_mb": 177.59375,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 182.0,
+      "pss_mb": 177.6,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/gpui-xq-demo": 704.5
+   },
+   "cpu_pct": 0.0,
+   "fps_avg": null,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 3
+  },
+  {
+   "app": "egui",
+   "window_s": 0.09299640899916994,
+   "first_frame_s": 0.09104705400022794,
+   "first_quote_s": 0.11131940399718587,
+   "idle10": {
+    "rss_mb": 123.97265625,
+    "pss_mb": 117.6064453125,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.0,
+      "pss_mb": 117.6,
+      "threads": 19
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 124.00390625,
+    "pss_mb": 117.6357421875,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.0,
+      "pss_mb": 117.6,
+      "threads": 19
+     }
+    ]
+   },
+   "cpu_threads": {
+    "egui-xq-demo/llvmpipe": 37.4,
+    "egui-xq-demo/egui-xq-demo": 4.0
+   },
+   "cpu_pct": 41.538883031134056,
+   "fps_avg": 19.8,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 3
+  }
+ ],
+ "stress": [
+  {
+   "app": "wry",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "fps": 60,
+    "elapsedMs": 30007,
+    "rows": 50000,
+    "cols": 6,
+    "paints": 802,
+    "cellUpdates": 384,
+    "lastPaintMs": 0,
+    "avgPaintMs": 0.247,
+    "avgCellsPerPaint": 0,
+    "scrollEvents": 0,
+    "jankCount": 0,
+    "jankAvgMs": 0,
+    "tickRate": 3000,
+    "selected": -1
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50000,
+    "cols": 6,
+    "maxCols": 100,
+    "tickFps": 60,
+    "scrollFps": 60,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0,
+    "lastPaintMs": 0,
+    "avgPaintMs": 0.773,
+    "avgCellsPerPaint": 120,
+    "paints": 854,
+    "cellUpdates": 102126,
+    "note": "virtualized rows+cols; incremental visible cells; synthetic not persisted"
+   },
+   "cpu_tick_pct": 143.77983467572938,
+   "cpu_tick_threads": {
+    "WebKitWebProces/llvmpipe": 93.5,
+    "WebKitWebProces/WebKitWebProces": 40.9,
+    "wry-xq-demo/wry-xq-demo": 4.6,
+    "WebKitWebProces/HeapHelper": 1.2,
+    "wry-xq-demo/ReceiveQueue": 1.1,
+    "WebKitWebProces/ReceiveQueue": 1.1
+   },
+   "cpu_scroll_pct": 170.60423512053111,
+   "mem_tick": {
+    "rss_mb": 610.61328125,
+    "pss_mb": 419.228515625,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.6,
+      "pss_mb": 100.2,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 59.3,
+      "pss_mb": 27.4,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 369.8,
+      "pss_mb": 291.7,
+      "threads": 37
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 628.390625,
+    "pss_mb": 436.826171875,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.6,
+      "pss_mb": 100.2,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 59.3,
+      "pss_mb": 27.4,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 387.6,
+      "pss_mb": 309.2,
+      "threads": 37
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 1
+  },
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30068,
+    "fps": 34.9,
+    "paints": 1045,
+    "avgPaintMs": 0.071,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 87780
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 35.0,
+    "scrollFps": 52.7,
+    "scrollJankCount": 76,
+    "scrollJankAvgMs": 32.7,
+    "fps": 52.7,
+    "paints": 527,
+    "avgPaintMs": 0.063,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 44268
+   },
+   "cpu_tick_pct": 301.1187558915105,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 280.9,
+    "gpui-xq-demo/gpui-xq-demo": 17.3,
+    "gpui-xq-demo/WSI swapchain q": 2.3
+   },
+   "cpu_scroll_pct": 408.1264801776069,
+   "mem_tick": {
+    "rss_mb": 185.703125,
+    "pss_mb": 181.2666015625,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 185.7,
+      "pss_mb": 181.3,
+      "threads": 52
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 186.19140625,
+    "pss_mb": 181.7705078125,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 186.2,
+      "pss_mb": 181.8,
+      "threads": 52
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 1
+  },
+  {
+   "app": "egui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30005,
+    "fps": 62.4,
+    "paints": 1823,
+    "avgPaintMs": 0.169,
+    "avgCellsPerPaint": 72,
+    "cellUpdates": 131256
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 62.4,
+    "scrollFps": 86.5,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0.0,
+    "fps": 86.5,
+    "paints": 847,
+    "avgPaintMs": 0.22,
+    "avgCellsPerPaint": 71,
+    "cellUpdates": 60774
+   },
+   "cpu_tick_pct": 135.1578909598717,
+   "cpu_tick_threads": {
+    "egui-xq-demo/llvmpipe": 123.6,
+    "egui-xq-demo/egui-xq-demo": 11.4
+   },
+   "cpu_scroll_pct": 187.75934571890082,
+   "mem_tick": {
+    "rss_mb": 130.89453125,
+    "pss_mb": 124.537109375,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 130.9,
+      "pss_mb": 124.5,
+      "threads": 19
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 131.2265625,
+    "pss_mb": 124.869140625,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.2,
+      "pss_mb": 124.9,
+      "threads": 19
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 1
+  },
+  {
+   "app": "wry",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "fps": 59.9,
+    "elapsedMs": 30004,
+    "rows": 50000,
+    "cols": 6,
+    "paints": 794,
+    "cellUpdates": 444,
+    "lastPaintMs": 1,
+    "avgPaintMs": 0.293,
+    "avgCellsPerPaint": 1,
+    "scrollEvents": 0,
+    "jankCount": 0,
+    "jankAvgMs": 0,
+    "tickRate": 3000,
+    "selected": -1
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50000,
+    "cols": 6,
+    "maxCols": 100,
+    "tickFps": 59.9,
+    "scrollFps": 60,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0,
+    "lastPaintMs": 0,
+    "avgPaintMs": 0.823,
+    "avgCellsPerPaint": 120,
+    "paints": 853,
+    "cellUpdates": 102024,
+    "note": "virtualized rows+cols; incremental visible cells; synthetic not persisted"
+   },
+   "cpu_tick_pct": 155.1778775704001,
+   "cpu_tick_threads": {
+    "WebKitWebProces/llvmpipe": 102.1,
+    "WebKitWebProces/WebKitWebProces": 42.8,
+    "wry-xq-demo/wry-xq-demo": 6.1,
+    "wry-xq-demo/ReceiveQueue": 1.1,
+    "WebKitWebProces/HeapHelper": 1.0
+   },
+   "cpu_scroll_pct": 159.91410247571628,
+   "mem_tick": {
+    "rss_mb": 616.1953125,
+    "pss_mb": 422.03515625,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 184.5,
+      "pss_mb": 101.7,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.1,
+      "pss_mb": 27.6,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 371.6,
+      "pss_mb": 292.8,
+      "threads": 37
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 634.97265625,
+    "pss_mb": 440.76171875,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 184.6,
+      "pss_mb": 101.7,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.1,
+      "pss_mb": 27.6,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 390.3,
+      "pss_mb": 311.5,
+      "threads": 37
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 2
+  },
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30029,
+    "fps": 44.5,
+    "paints": 1330,
+    "avgPaintMs": 0.059,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 111720
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 44.5,
+    "scrollFps": 56.1,
+    "scrollJankCount": 45,
+    "scrollJankAvgMs": 32.4,
+    "fps": 56.1,
+    "paints": 562,
+    "avgPaintMs": 0.056,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 47208
+   },
+   "cpu_tick_pct": 332.7697878252545,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 311.9,
+    "gpui-xq-demo/gpui-xq-demo": 18.2,
+    "gpui-xq-demo/WSI swapchain q": 2.2
+   },
+   "cpu_scroll_pct": 409.3366395588731,
+   "mem_tick": {
+    "rss_mb": 185.75390625,
+    "pss_mb": 181.36328125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 185.8,
+      "pss_mb": 181.4,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 186.23046875,
+    "pss_mb": 181.82421875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 186.2,
+      "pss_mb": 181.8,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 2
+  },
+  {
+   "app": "egui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30025,
+    "fps": 47.2,
+    "paints": 1374,
+    "avgPaintMs": 0.136,
+    "avgCellsPerPaint": 72,
+    "cellUpdates": 98928
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 47.2,
+    "scrollFps": 74.4,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0.0,
+    "fps": 74.4,
+    "paints": 737,
+    "avgPaintMs": 0.232,
+    "avgCellsPerPaint": 71,
+    "cellUpdates": 52854
+   },
+   "cpu_tick_pct": 100.00324004833921,
+   "cpu_tick_threads": {
+    "egui-xq-demo/llvmpipe": 91.5,
+    "egui-xq-demo/egui-xq-demo": 8.2
+   },
+   "cpu_scroll_pct": 157.2239071329637,
+   "mem_tick": {
+    "rss_mb": 130.8359375,
+    "pss_mb": 124.4541015625,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 130.8,
+      "pss_mb": 124.5,
+      "threads": 19
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 131.1640625,
+    "pss_mb": 124.783203125,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.2,
+      "pss_mb": 124.8,
+      "threads": 19
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 2
+  },
+  {
+   "app": "wry",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "fps": 59.9,
+    "elapsedMs": 30006,
+    "rows": 50000,
+    "cols": 6,
+    "paints": 804,
+    "cellUpdates": 456,
+    "lastPaintMs": 0,
+    "avgPaintMs": 0.254,
+    "avgCellsPerPaint": 1,
+    "scrollEvents": 0,
+    "jankCount": 0,
+    "jankAvgMs": 0,
+    "tickRate": 3000,
+    "selected": -1
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50000,
+    "cols": 6,
+    "maxCols": 100,
+    "tickFps": 59.9,
+    "scrollFps": 60,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0,
+    "lastPaintMs": 3,
+    "avgPaintMs": 0.874,
+    "avgCellsPerPaint": 120,
+    "paints": 855,
+    "cellUpdates": 102234,
+    "note": "virtualized rows+cols; incremental visible cells; synthetic not persisted"
+   },
+   "cpu_tick_pct": 131.3544568200845,
+   "cpu_tick_threads": {
+    "WebKitWebProces/llvmpipe": 85.7,
+    "WebKitWebProces/WebKitWebProces": 37.1,
+    "wry-xq-demo/wry-xq-demo": 4.9
+   },
+   "cpu_scroll_pct": 151.70785081574977,
+   "mem_tick": {
+    "rss_mb": 612.140625,
+    "pss_mb": 419.001953125,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.3,
+      "pss_mb": 99.8,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.1,
+      "pss_mb": 27.5,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 370.7,
+      "pss_mb": 291.7,
+      "threads": 37
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 631.54296875,
+    "pss_mb": 438.404296875,
+    "threads": 79,
+    "nproc": 3,
+    "procs": [
+     {
+      "comm": "wry-xq-demo",
+      "rss_mb": 181.3,
+      "pss_mb": 99.9,
+      "threads": 33
+     },
+     {
+      "comm": "WebKitNetworkPr",
+      "rss_mb": 60.1,
+      "pss_mb": 27.5,
+      "threads": 9
+     },
+     {
+      "comm": "WebKitWebProces",
+      "rss_mb": 390.1,
+      "pss_mb": 311.1,
+      "threads": 37
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/three-way-20261021/main/wry-stress.png",
+   "run": 3
+  },
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30024,
+    "fps": 39.7,
+    "paints": 1188,
+    "avgPaintMs": 0.062,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 99792
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 39.7,
+    "scrollFps": 54.0,
+    "scrollJankCount": 53,
+    "scrollJankAvgMs": 32.0,
+    "fps": 54.0,
+    "paints": 540,
+    "avgPaintMs": 0.06,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 45360
+   },
+   "cpu_tick_pct": 314.77650303154707,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 294.7,
+    "gpui-xq-demo/gpui-xq-demo": 17.5,
+    "gpui-xq-demo/WSI swapchain q": 2.1
+   },
+   "cpu_scroll_pct": 401.69201702373687,
+   "mem_tick": {
+    "rss_mb": 186.015625,
+    "pss_mb": 181.5810546875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 186.0,
+      "pss_mb": 181.6,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 186.5859375,
+    "pss_mb": 182.1513671875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 186.6,
+      "pss_mb": 182.2,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/three-way-20261021/main/gpui-stress.png",
+   "run": 3
+  },
+  {
+   "app": "egui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30007,
+    "fps": 61.9,
+    "paints": 1811,
+    "avgPaintMs": 0.163,
+    "avgCellsPerPaint": 72,
+    "cellUpdates": 130392
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 61.9,
+    "scrollFps": 87.9,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0.0,
+    "fps": 87.9,
+    "paints": 866,
+    "avgPaintMs": 0.208,
+    "avgCellsPerPaint": 71,
+    "cellUpdates": 62136
+   },
+   "cpu_tick_pct": 128.89274630503863,
+   "cpu_tick_threads": {
+    "egui-xq-demo/llvmpipe": 117.8,
+    "egui-xq-demo/egui-xq-demo": 10.9
+   },
+   "cpu_scroll_pct": 180.19094909873982,
+   "mem_tick": {
+    "rss_mb": 130.97265625,
+    "pss_mb": 124.537109375,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.0,
+      "pss_mb": 124.5,
+      "threads": 19
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 131.40625,
+    "pss_mb": 124.97265625,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.4,
+      "pss_mb": 125.0,
+      "threads": 19
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/three-way-20261021/main/egui-stress.png",
+   "run": 3
+  }
+ ]
+}
