@@ -2,8 +2,15 @@
 
 use gpui::{rgb, Rgba};
 
+#[cfg(not(windows))]
 pub const UI_FONT: &str = "Noto Sans CJK TC";
+#[cfg(not(windows))]
 pub const MONO_FONT: &str = "Noto Sans Mono CJK TC";
+/// Windows：系統內建的微軟正黑體；等寬用 Consolas（中文字由 DirectWrite 字型後援補上）
+#[cfg(windows)]
+pub const UI_FONT: &str = "Microsoft JhengHei UI";
+#[cfg(windows)]
+pub const MONO_FONT: &str = "Consolas";
 
 pub fn bg() -> Rgba { rgb(0x0b0e14) }
 pub fn panel() -> Rgba { rgb(0x10141c) }

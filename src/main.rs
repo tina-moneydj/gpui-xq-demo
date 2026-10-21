@@ -560,6 +560,23 @@ impl Terminal {
     }
 }
 
+/// Windows：目前程序的工作集（Working Set，相當於 RSS）
+#[cfg(windows)]
+pub fn rss_mb() -> f64 {
+    use windows_sys::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    unsafe {
+        let mut c: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+        c.cb = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+        if GetProcessMemoryInfo(GetCurrentProcess(), &mut c, c.cb) != 0 {
+            c.WorkingSetSize as f64 / (1024.0 * 1024.0)
+        } else {
+            0.0
+        }
+    }
+}
+
+#[cfg(not(windows))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -767,4 +784,14 @@ fn main() {
         cx.on_window_closed(|cx, _| cx.quit()).detach();
         cx.activate(true);
     });
+}
+
+/// 設定檔根目錄：Windows %APPDATA%；其他 $XDG_DATA_HOME 或 ~/.local/share
+pub fn data_dir() -> Option<std::path::PathBuf> {
+    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
+    #[cfg(windows)]
+    let base = env("APPDATA").or_else(|| env("LOCALAPPDATA"));
+    #[cfg(not(windows))]
+    let base = env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local/share")));
+    base
 }
