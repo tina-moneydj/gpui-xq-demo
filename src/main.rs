@@ -12,6 +12,7 @@ mod indicators;
 mod model;
 mod names;
 mod series;
+mod search;
 mod store;
 mod table;
 mod theme;
@@ -184,7 +185,11 @@ impl Terminal {
         let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| cx.new(|cx| TickTape::new(f, sym, cx)));
         let (bridge, mut wake_rx) = FeedBridge::start(tape_feed);
-        let table = cx.new(|_| QuoteTable::new(names::WATCH));
+        let table = cx.new(|cx| {
+            let mut t = QuoteTable::new(names::WATCH);
+            t.attach_search(cx);
+            t
+        });
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
@@ -672,6 +677,7 @@ impl Render for Terminal {
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
         tick_tape::bind_keys(cx);
+        search::bind_keys(cx);
         let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
         cx.open_window(
             WindowOptions {
