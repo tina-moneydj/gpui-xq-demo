@@ -27,7 +27,8 @@ pub struct Row {
 }
 
 pub enum TableEvent {
-    Select(SharedString),
+    /// 第二個欄位：點選發生在哪個視窗（多視窗共用同一個報價表 entity，各視窗只切自己的走勢圖）
+    Select(SharedString, Option<gpui::WindowId>),
 }
 
 pub struct QuoteTable {
@@ -169,13 +170,13 @@ impl QuoteTable {
         cx.notify();
     }
 
-    fn select(&mut self, ix: usize, cx: &mut Context<Self>) {
+    fn select(&mut self, ix: usize, win: Option<gpui::WindowId>, cx: &mut Context<Self>) {
         if ix >= self.rows.len() {
             return;
         }
         self.selected = ix;
         self.scroll.scroll_to_item(ix, ScrollStrategy::Nearest);
-        cx.emit(TableEvent::Select(self.rows[ix].symbol.clone()));
+        cx.emit(TableEvent::Select(self.rows[ix].symbol.clone(), win));
         cx.notify();
     }
 
@@ -220,7 +221,7 @@ impl QuoteTable {
                     .w_full()
                     .when(ix == self.selected, |d| d.bg(selected()))
                     .when(ix != self.selected, |d| d.hover(|s| s.bg(header())))
-                    .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, _, cx| this.select(ix, cx)))
+                    .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, window, cx| this.select(ix, Some(window.window_handle().window_id()), cx)))
                     .child(cell(COLS[0].1, false).child(r.symbol.clone()))
                     .child(cell(COLS[1].1, false).text_color(text()).child(r.name.clone()))
                     .child(price_cell)

@@ -24,10 +24,12 @@ use std::time::{Duration, Instant};
 use futures::StreamExt;
 use gpui::{
     div, prelude::*, px, size, App, Bounds, Context, Entity, MouseButton, MouseMoveEvent, SharedString,
-    StyleRefinement, Subscription, Task, TitlebarOptions, Window, WindowBounds, WindowOptions,
+    StyleRefinement, Subscription, Task, TitlebarOptions, WeakEntity, Window, WindowBounds, WindowId, WindowOptions,
 };
 
-use bridge::{Conn, FeedBridge};
+use std::sync::Arc;
+
+use bridge::{Conn, Counters, FeedBridge, Inbox};
 use chart::{ChartEvent, ChartView};
 use series::Period;
 use table::{QuoteTable, TableEvent};
@@ -142,7 +144,14 @@ impl Render for InfoPane {
 }
 
 struct Terminal {
-    bridge: FeedBridge,
+    /// 只有主視窗（win 0）持有行情連線；XQ_WINDOWS>1 的其他視窗共用主視窗的報價表與計數器
+    bridge: Option<FeedBridge>,
+    counters: Arc<Counters>,
+    #[allow(dead_code)]
+    win: usize,
+    window_id: WindowId,
+    /// 其他視窗：主視窗每次套用行情後，用同一份 Inbox 更新它們的走勢圖／資訊格（不重複解碼、不重複合併）
+    peers: Vec<WeakEntity<Terminal>>,
     table: Entity<QuoteTable>,
     chart: Entity<ChartView>,
     info: Entity<InfoPane>,
@@ -179,12 +188,22 @@ struct Terminal {
 }
 
 impl Terminal {
-    fn new(cx: &mut Context<Self>) -> Self {
-        let (sym, name) = names::WATCH[0];
-        let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
+    /// `shared`＝None：主視窗（開行情連線、建報價表）；Some：XQ_WINDOWS 的其他視窗，共用主視窗的報價表 entity
+    fn new(win: usize, shared: Option<(Entity<QuoteTable>, Arc<Counters>)>, window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let primary = shared.is_none();
+        let (sym, name) = names::WATCH[win % names::WATCH.len()];
+        let tape_feed =
+            (primary && std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0")).then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| cx.new(|cx| TickTape::new(f, sym, cx)));
-        let (bridge, mut wake_rx) = FeedBridge::start(tape_feed);
-        let table = cx.new(|_| QuoteTable::new(names::WATCH));
+        let (bridge, wake_rx, table, counters) = match shared {
+            None => {
+                let (bridge, wake_rx) = FeedBridge::start(tape_feed);
+                let counters = bridge.counters.clone();
+                (Some(bridge), Some(wake_rx), cx.new(|_| QuoteTable::new(names::WATCH)), counters)
+            }
+            Some((table, counters)) => (None, None, table, counters),
+        };
+        let window_id = window.window_handle().window_id();
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
@@ -199,7 +218,8 @@ impl Terminal {
 
         let subs = vec![
             cx.subscribe(&table, |this: &mut Self, _, ev: &TableEvent, cx| match ev {
-                TableEvent::Select(sym) => {
+                TableEvent::Select(_, Some(w)) if *w != this.window_id => {}
+                TableEvent::Select(sym, _) => {
                     if let Some(tb) = this.tick.as_mut() {
                         tb.on_switch(sym);
                     }
@@ -215,14 +235,14 @@ impl Terminal {
         ];
 
         // 行情：背景喚醒 → 套用一次 → 睡到下一個 frame（≤ ~60 次/秒）
-        let feed_task = cx.spawn(async move |this, cx| {
+        let feed_task = wake_rx.map(|mut wake_rx| cx.spawn(async move |this, cx| {
             while wake_rx.next().await.is_some() {
                 if this.update(cx, |t, cx| t.apply_feed(cx)).is_err() {
                     break;
                 }
                 cx.background_executor().timer(Duration::from_millis(16)).await;
             }
-        });
+        }));
         // 每秒取樣 FPS / RSS（不跟 tick 綁）
         let stats_task = cx.spawn(async move |this, cx| loop {
             cx.background_executor().timer(Duration::from_secs(1)).await;
@@ -233,6 +253,10 @@ impl Terminal {
 
         let mut t = Terminal {
             bridge,
+            counters,
+            win,
+            window_id,
+            peers: Vec::new(),
             table,
             chart,
             info,
@@ -260,10 +284,13 @@ impl Terminal {
             last_frame: None,
             jank_n: 0,
             jank_ms: 0.0,
-            tick: xq_feed::tick_bench_enabled().then(tickbench::TickBench::default),
-            _tasks: vec![feed_task, stats_task],
+            tick: xq_feed::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
+            _tasks: feed_task.into_iter().chain([stats_task]).collect(),
             _subs: subs,
         };
+        if !primary {
+            return t;
+        }
         if t.tick.is_some() {
             // 高頻進價壓測：一開始就開 5 萬合成列（Z 代號進索引，engine 報價可對到）
             t.table.update(cx, |tb, cx| tb.enable_stress_indexed(cx));
@@ -364,10 +391,12 @@ impl Terminal {
     }
 
     fn resubscribe(&mut self, cx: &mut Context<Self>) {
+        // 其他視窗不另外訂閱：報價表訂閱的代號（含 5 萬壓測列）主視窗都已訂了
+        let Some(bridge) = self.bridge.as_mut() else { return };
         let symbols = self.table.read(cx).symbols();
         let chart = self.chart.read(cx);
         let sub = xq_feed::Subscribe { symbols, chart: chart.symbol(), period: chart.period().feed_code().into() };
-        self.bridge.subscribe(sub);
+        bridge.subscribe(sub);
     }
 
     fn switch_chart(&mut self, symbol: String, period: Option<Period>, cx: &mut Context<Self>) {
@@ -394,21 +423,45 @@ impl Terminal {
 
     fn apply_feed(&mut self, cx: &mut Context<Self>) {
         let t0 = Instant::now();
-        let ib = self.bridge.take();
+        let Some(bridge) = self.bridge.as_mut() else { return };
+        let ib = bridge.take();
+        // 報價表只合併一次（多視窗共用同一個 entity，notify 後每個畫它的視窗各自重畫可見列）
+        let changed = if ib.quotes.is_empty() {
+            0
+        } else {
+            self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx))
+        };
+        self.apply_local(&ib, cx);
+        if let Some(tape) = &self.tape {
+            // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
+            tape.update(cx, |t, cx| t.apply(cx));
+        }
+        let us = t0.elapsed().as_micros() as u64;
+        self.finish_apply(&ib, changed, us, cx);
+        if !self.peers.is_empty() {
+            self.peers.retain(|p| p.upgrade().is_some());
+            for p in self.peers.clone() {
+                let _ = p.update(cx, |p, cx| {
+                    let t1 = Instant::now();
+                    p.apply_local(&ib, cx);
+                    let us = us + t1.elapsed().as_micros() as u64;
+                    p.finish_apply(&ib, changed, us, cx);
+                });
+            }
+        }
+    }
+
+    /// 每個視窗自己的部分：連線狀態、自己這張走勢圖、資訊格
+    fn apply_local(&mut self, ib: &Inbox, cx: &mut Context<Self>) {
         if let Some(c) = ib.conn {
             self.conn = c;
-            if c == Conn::Up {
-                // 重連後 xq-feed 會自動重送最新訂閱；這裡不用再送
-            }
             cx.notify();
         }
-        let mut changed = 0;
         if !ib.quotes.is_empty() {
             if self.conn != Conn::Ready {
                 self.conn = Conn::Ready;
                 cx.notify();
             }
-            changed = self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx));
             let sym = self.chart.read(cx).symbol();
             if let Some(q) = ib.quotes.get(&sym) {
                 let name = if q.name.is_empty() || q.name == q.symbol {
@@ -431,12 +484,10 @@ impl Terminal {
         for (sym, bar) in &ib.minutes {
             self.chart.update(cx, |c, cx| c.apply_minute(sym, bar, cx));
         }
-        if let Some(tape) = &self.tape {
-            // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
-            tape.update(cx, |t, cx| t.apply(cx));
-        }
+    }
+
+    fn finish_apply(&mut self, ib: &Inbox, changed: usize, us: u64, cx: &mut Context<Self>) {
         self.applies += 1;
-        let us = t0.elapsed().as_micros() as u64;
         self.apply_us += us;
         if let Some(tb) = self.tick.as_mut() {
             if ib.stamp.is_some() {
@@ -447,8 +498,8 @@ impl Terminal {
     }
 
     fn sample(&mut self, cx: &mut Context<Self>) {
-        let frames_in = self.bridge.counters.frames.load(Ordering::Relaxed);
-        let rows_in = self.bridge.counters.quote_rows.load(Ordering::Relaxed);
+        let frames_in = self.counters.frames.load(Ordering::Relaxed);
+        let rows_in = self.counters.quote_rows.load(Ordering::Relaxed);
         let (paints, paint_us) = {
             self.chart.read(cx).paint_totals()
         };
@@ -669,19 +720,50 @@ impl Render for Terminal {
     }
 }
 
+/// XQ_WINDOWS=N（預設 1，最多 8）：開 N 個看盤視窗（各自走勢圖＝WATCH[k]），
+/// 共用同一條行情連線、同一個報價表 entity（同一份 5 萬列資料，只合併一次），每個視窗自己的 view／走勢圖。
+fn window_count() -> usize {
+    std::env::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
+}
+
+fn window_options(k: usize, cx: &mut App) -> WindowOptions {
+    let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
+    let title = if k == 0 { "XQ 風格測試（GPUI）".to_string() } else { format!("XQ 風格測試（GPUI） #{}", k + 1) };
+    WindowOptions {
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        titlebar: Some(TitlebarOptions { title: Some(title.into()), ..Default::default() }),
+        ..Default::default()
+    }
+}
+
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
         tick_tape::bind_keys(cx);
-        let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
-        cx.open_window(
-            WindowOptions {
-                window_bounds: Some(WindowBounds::Windowed(bounds)),
-                titlebar: Some(TitlebarOptions { title: Some("XQ 風格測試（GPUI）".into()), ..Default::default() }),
-                ..Default::default()
-            },
-            |_window, cx| cx.new(Terminal::new),
-        )
-        .expect("open main window");
+        let opts = window_options(0, cx);
+        let main = cx
+            .open_window(opts, |window, cx| cx.new(|cx| Terminal::new(0, None, window, cx)))
+            .expect("open main window");
+        let n = window_count();
+        if n > 1 {
+            let primary = main.entity(cx).expect("main view");
+            let (table, counters) = {
+                let p = primary.read(cx);
+                (p.table.clone(), p.counters.clone())
+            };
+            for k in 1..n {
+                let shared = (table.clone(), counters.clone());
+                let opts = window_options(k, cx);
+                let w = cx
+                    .open_window(opts, move |window, cx| {
+                        cx.new(|cx| Terminal::new(k, Some(shared), window, cx))
+                    })
+                    .expect("open window");
+                if let Ok(peer) = w.entity(cx) {
+                    let weak = peer.downgrade();
+                    primary.update(cx, |p, _| p.peers.push(weak));
+                }
+            }
+        }
         cx.on_window_closed(|cx, _| cx.quit()).detach();
         cx.activate(true);
     });
