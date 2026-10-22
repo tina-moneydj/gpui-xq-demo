@@ -1,0 +1,256 @@
+{
+ "date": "2026-10-23 02:06 +0800",
+ "runs": 1,
+ "mode": "heavy",
+ "apps": [
+  "wry"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "wry": {
+  "binary_mb": 1.764739990234375,
+  "heavy": {
+   "heavy_frame_ms": 1186.7289550009446,
+   "first_quote_ms": 764.6984860002703,
+   "canvas": "1166x512",
+   "overlays": 20,
+   "drawings": 1000,
+   "layers": 100,
+   "bars": 1200,
+   "ticks": {
+    "fps": 34.6,
+    "paint_ms": 5.994,
+    "cpu_pct": 199.90398828449102,
+    "cpu_nollvm_pct": 104.90209290166639,
+    "rss_mb": 713.37890625,
+    "pss_mb": 468.9384765625,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 95.7,
+     "WebKitWebProces/llvmpipe": 95.0,
+     "WebKitWebProces/JITWorker": 4.1,
+     "wry-xq-demo/wry-xq-demo": 3.5
+    },
+    "perf_med": {
+     "avgPaintMs": 5.994,
+     "drawRebuilds": 0,
+     "fps": 34.6,
+     "frames": 346,
+     "rebuildMsTotal": 0,
+     "seconds": 10,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 34.6
+    }
+   },
+   "crosshair": {
+    "fps": 38.1,
+    "paint_ms": 5.921,
+    "cpu_pct": 228.27353049713744,
+    "cpu_nollvm_pct": 116.28651597379364,
+    "rss_mb": 716.15234375,
+    "pss_mb": 471.6962890625,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 112.0,
+     "WebKitWebProces/WebKitWebProces": 108.0,
+     "wry-xq-demo/wry-xq-demo": 4.0,
+     "WebKitWebProces/JITWorker": 2.8
+    },
+    "perf_med": {
+     "avgPaintMs": 5.921,
+     "drawRebuilds": 0,
+     "fps": 38.1,
+     "frames": 381,
+     "rebuildMsTotal": 0,
+     "seconds": 10.01,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 38.1
+    }
+   },
+   "pan": {
+    "fps": 30.5,
+    "paint_ms": 6.6,
+    "cpu_pct": 269.0526138476648,
+    "cpu_nollvm_pct": 96.37556509391112,
+    "rss_mb": 816.15625,
+    "pss_mb": 571.5859375,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 172.7,
+     "WebKitWebProces/WebKitWebProces": 90.8,
+     "wry-xq-demo/wry-xq-demo": 2.9,
+     "WebKitWebProces/JITWorker": 1.2
+    },
+    "perf_med": {
+     "avgPaintMs": 6.6,
+     "drawRebuilds": 0,
+     "fps": 30.5,
+     "frames": 305,
+     "rebuildMsTotal": 0,
+     "seconds": 10.02,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 30.5
+    }
+   },
+   "drag": {
+    "fps": 24.8,
+    "paint_ms": 8.141,
+    "cpu_pct": 161.8718610636044,
+    "cpu_nollvm_pct": 85.20093667502218,
+    "rss_mb": 840.421875,
+    "pss_mb": 595.8515625,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 80.4,
+     "WebKitWebProces/llvmpipe": 76.7,
+     "wry-xq-demo/wry-xq-demo": 3.0
+    },
+    "perf_med": {
+     "avgPaintMs": 8.141,
+     "drawRebuilds": 1,
+     "drawingsTotal": 1000,
+     "fps": 24.8,
+     "frames": 249,
+     "layers": 100,
+     "pick": 500,
+     "rebuildMsTotal": 15,
+     "seconds": 10.04,
+     "selMs": 0.032,
+     "selPaints": 444
+    }
+   },
+   "select": {
+    "fps": 19.7,
+    "paint_ms": 13.369,
+    "cpu_pct": 160.88202792888188,
+    "cpu_nollvm_pct": 74.66678276402314,
+    "rss_mb": 851.59375,
+    "pss_mb": 607.0234375,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 86.2,
+     "WebKitWebProces/WebKitWebProces": 69.3,
+     "wry-xq-demo/wry-xq-demo": 2.9,
+     "WebKitWebProces/JITWorker": 1.2
+    },
+    "perf_med": {
+     "allOps": 197,
+     "allRebuildP50": 4,
+     "allRebuildP99": 12,
+     "allTtfP50": 50,
+     "allTtfP99": 76,
+     "avgPaintMs": 13.369,
+     "deselectOps": 98,
+     "deselectRebuildP50": 4,
+     "deselectRebuildP99": 11,
+     "deselectTtfP50": 50,
+     "deselectTtfP99": 76,
+     "drawRebuilds": 198,
+     "drawingsTotal": 1000,
+     "fps": 19.7,
+     "frames": 198,
+     "layers": 100,
+     "pick": 500,
+     "rebuildMsTotal": 830,
+     "seconds": 10.03,
+     "selMs": 0.051,
+     "selPaints": 99,
+     "selectOps": 99,
+     "selectRebuildP50": 4,
+     "selectRebuildP99": 14,
+     "selectTtfP50": 50,
+     "selectTtfP99": 79
+    }
+   },
+   "reorder": {
+    "fps": 20.4,
+    "paint_ms": 13.931,
+    "cpu_pct": 180.15901810973205,
+    "cpu_nollvm_pct": 82.5354126226504,
+    "rss_mb": 889.63671875,
+    "pss_mb": 645.06640625,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 97.6,
+     "WebKitWebProces/WebKitWebProces": 75.9,
+     "wry-xq-demo/wry-xq-demo": 2.8,
+     "WebKitWebProces/JITWorker": 1.9
+    },
+    "perf_med": {
+     "allOps": 203,
+     "allRebuildP50": 5,
+     "allRebuildP99": 12,
+     "allTtfP50": 49,
+     "allTtfP99": 73,
+     "avgPaintMs": 13.931,
+     "drawRebuilds": 204,
+     "drawingsTotal": 1000,
+     "fps": 20.4,
+     "frames": 204,
+     "layerMoveOps": 50,
+     "layerMoveRebuildP50": 5,
+     "layerMoveRebuildP99": 8,
+     "layerMoveTtfP50": 50,
+     "layerMoveTtfP99": 71,
+     "layerVisOps": 50,
+     "layerVisRebuildP50": 5,
+     "layerVisRebuildP99": 18,
+     "layerVisTtfP50": 49,
+     "layerVisTtfP99": 77,
+     "layers": 100,
+     "pick": 500,
+     "rebuildMsTotal": 1060,
+     "seconds": 10,
+     "selMs": 0.047,
+     "selPaints": 300,
+     "zopOps": 103,
+     "zopRebuildP50": 5,
+     "zopRebuildP99": 12,
+     "zopTtfP50": 50,
+     "zopTtfP99": 73
+    }
+   },
+   "zshot": {
+    "fps": 59.7,
+    "paint_ms": 1.218,
+    "cpu_pct": 195.73450535185987,
+    "cpu_nollvm_pct": 58.654447731702106,
+    "rss_mb": 876.8046875,
+    "pss_mb": 632.0048828125,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 137.1,
+     "WebKitWebProces/WebKitWebProces": 49.8,
+     "wry-xq-demo/wry-xq-demo": 5.3
+    },
+    "perf_med": {
+     "avgPaintMs": 1.218,
+     "drawRebuilds": 1,
+     "drawingsTotal": 7,
+     "fps": 59.7,
+     "frames": 179,
+     "layers": 3,
+     "rebuildMsTotal": 0,
+     "seconds": 3,
+     "selMs": 0.05,
+     "selPaints": 180
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "wry-xq-demo",
+     "rss_mb": 182.9,
+     "pss_mb": 80.1,
+     "threads": 33
+    },
+    {
+     "comm": "WebKitNetworkPr",
+     "rss_mb": 60.4,
+     "pss_mb": 26.0,
+     "threads": 9
+    },
+    {
+     "comm": "WebKitWebProces",
+     "rss_mb": 472.8,
+     "pss_mb": 365.6,
+     "threads": 37
+    }
+   ]
+  }
+ }
+}
