@@ -3,6 +3,8 @@
 與 [`wry-xq-demo`](https://github.com/tina-moneydj/wry-xq-demo)（tao + wry，HTML/JS 畫面）**接同一個行情來源**：
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
+> **網頁版（`web-wasm` 分支）**：egui 和 GPUI 都能編成 WebAssembly 在瀏覽器跑（同一個主畫面、WebSocket 行情、注音可打）。結論與數字見下方「網頁版」一節。
+
 > **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
 
 ![分時](screenshot.png)
@@ -199,6 +201,171 @@ CPU 端每 frame 的工作（套用＋組 scene）不到 1 ms。
 - 選一條線 → `Ctrl+]` 上移一層、`Ctrl+[` 下移一層、`Ctrl+Shift+]` 移到最上、`Ctrl+Shift+[` 移到最下（mac 用 ⌘）；工具列「圖層 ▾」開圖層面板：同樣四個順序按鈕、「+ 新圖層」、每層的 顯示／隱藏、鎖定、▲▼ 上下移，點圖層名稱設為作用中圖層（新畫的線放這層），「移到作用中圖層」把選取的線搬過去。順序調整都在該線自己的圖層內。
 - 存檔多一個 `layers` 欄位；舊存檔沒有這欄照樣能讀（全部放在預設圖層）。
 - 壓測：`XQ_CHART_STRESS=1 XQ_CHART_LAYERS=100`（`1`＝不分層）；`scripts/bench-main-window.sh 3 heavy` 會多跑 drag／select／reorder／zshot。
+
+## 網頁版（WebAssembly，egui 與 GPUI 都有，`web-wasm` 分支）
+
+> 分支 `web-wasm`（**未合併到 main**；已併入 main 的畫線圖層／上下順序功能）。同一份程式碼編成 `wasm32-unknown-unknown`，在瀏覽器裡跑同一個主畫面：
+> 5 萬列報價表、重圖表、可拖曳分隔線、狀態列、搜尋框（注音可打）、內嵌中文字型。行情透過 `xq-ws-bridge`（TCP 47631 ⇄ WebSocket）進瀏覽器，**解碼還是原生那份 `xq-feed`**。
+
+### 結論先看
+
+- **兩個都真的跑得起來，而且功能跟原生一樣。** GPUI 網頁版不是實驗品：Zed 官方 2026-02 已合併 `gpui_web`（證據見下）。這台沒顯卡，兩版都走 WebGL2（Chrome 的 ANGLE＋軟體 llvmpipe）。
+- **下載量：egui 較小 🏆** — gzip 後 egui **4.2 MB**、GPUI **6.0 MB**（其中 2.5 MB 是兩版共用的中文字型子集）。
+- **開啟速度：egui 較快 🏆** — 瀏覽器已開好、檔案在本機時，到第一筆報價 egui 0.40 秒、GPUI 0.60 秒（原生 0.15／0.41 秒）。
+- **報價延遲：egui 較低 🏆** — 中位數 egui 網頁 **32 ms**（≈ egui 原生 31 ms）、GPUI 網頁 **48–51 ms**（**比 GPUI 原生 74–75 ms 還快**：這台的瀏覽器 WebGL 比原生的軟體 Vulkan 快）。每秒 10 萬筆兩版都 **0 掉筆**。p99 網頁版約 60–70 ms（原生 36–39 ms），多了瀏覽器排程的抖動。
+- **捲動順暢：GPUI 較好 🏆** — 5 萬列邊跳價邊捲，卡頓次數 GPUI 20、egui 167（egui 原生只有 1）；捲動 FPS GPUI 49、egui 42。
+- **重圖表 FPS：egui 較高 🏆** — 33 vs 26（原生 42 vs 21）。
+- **記憶體：網頁版都比原生多很多，也比 wry 多** — 整個 Chrome 加起來 egui 546、GPUI 580 MB PSS（原生 87／150、wry 402）。但**空白 Chrome 本身就 423 MB**，扣掉後程式本身約 egui 120、GPUI 150 MB；wasm 記憶體只有 10／15 MB（重圖表 16／54 MB）。
+- **圖層／上下順序在網頁版正常**（截圖見下），但拖曳／改順序比原生慢很多：單次冒煙測試拖曳 FPS egui 10、GPUI 5（原生 56／10），每次重建約 3 ms（原生約 0.3 ms）。只跑一次、每段 3 秒，**當方向參考，不是正式數字**。
+- **怎麼選：** 要網頁版的話 egui 比較划算（小、快、延遲低）；GPUI 網頁版能用，捲動較順，但檔案大、延遲較高。**網頁版共同的代價**是多一個瀏覽器的記憶體、只有一個視窗、要有 WebSocket 轉接（見「做不到的地方」）。
+
+> **注意事項（重要）**：這台 **沒有 GPU**，Chrome 155 用 WebGL2 on ANGLE＋Mesa llvmpipe（軟體繪圖）；FPS 和「CPU 全部」主要反映軟體繪圖速度，有顯卡時會高很多、低很多。
+> 「CPU 扣軟體繪圖」＝扣掉 llvmpipe 執行緒後的 CPU。開啟時間是「瀏覽器已開、檔案在本機（不含網路下載時間）」，原生是「程式啟動→」，兩者起點不同。
+> 記憶體用 **PSS**（共用頁面按比例分攤，Chrome 多行程時才不會重複算），RSS 也列了。
+> 測試期間 VM 有數次暫停（box 時間跳 4–5 分鐘），受影響的 3 個場次已重跑；另一組「box 很吵時」的數據（同時有別的壓測，負載 6–10）放在 `2026-10-23-contended/`，結論相同。
+
+### 數字（3 輪中位數，box 安靜時；`docs/bench/web/2026-10-23-quiet/`）
+
+原生三欄取自 `docs/bench/2026-10-21-parity`（同一台、同樣的場景）。
+
+#### 主視窗（33 檔自選、日K＋MA＋量，demo-ticks 行情）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 開啟→第一筆報價 (秒) | 0.40 | 0.60 | 0.15 | 0.41 | 0.89 |
+| PSS 60 秒 (MB) | 546 | 580 | 87 | 150 | 402 |
+| RSS 60 秒 (MB) | 1,233 | 1,268 | 124 | 185 | 627 |
+| 　其中 wasm 記憶體 (MB) | 10 | 15 | — | — | — |
+| CPU 全部 (%) | 128 | 221 | 56 | 247 | 171 |
+| CPU 扣軟體繪圖 (%) | 14 | 20 | 4 | 19 | 70 |
+| FPS | 19.4 | 19.8 | 23.9 | 26.0 | 59.7 |
+
+#### 5 萬列報價表（每秒 3000 筆合成跳價 30 秒，再邊跳邊捲 10 秒）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 跳價 FPS | 33.5 | 40.4 | 54.5 | 32.2 | 59.7 |
+| 捲動 FPS | 42.0 | 49.1 | 85.4 | 32.4 | 59.9 |
+| 捲動卡頓次數（>16.7ms×2） | 167 | 20 | 1 | 154 | 1 |
+| 跳價 CPU 全部／扣軟體繪圖 (%) | 232／25 | 447／35 | 126／12 | 299／22 | 182／67 |
+| PSS 跳價中 (MB) | 546 | 582 | 93 | 154 | 397 |
+
+#### 重圖表（20 疊加＋8 副圖＋1000 條畫線，每幀跳價／十字線／平移各 10 秒）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 開啟→重圖表第一幀 (秒) | 0.80 | 1.00 | 0.48 | 0.68 | 1.23 |
+| FPS 跳價／十字線／平移 | 32.7／33.3／33.8 | 26.4／26.9／25.9 | 41.8／39.6／41.7 | 20.5／20.7／20.8 | 36.1／36.5／26.2 |
+| CPU 全部 (%)（十字線段） | 488 | 559 | 226 | 353 | 255 |
+| CPU 扣軟體繪圖 (%)（十字線段） | 61 | 60 | 53 | 33 | 131 |
+| PSS（十字線段，MB） | 634 | 658 | 104 | 186 | 485 |
+| 　其中 wasm 記憶體 (MB) | 16 | 54 | — | — | — |
+
+#### 高頻報價（xq-tickgen，5 萬列表＋2330 日K；延遲＝產生器送出→畫面，中位數／p99，ms）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 每秒 1 千筆 延遲 | 32／65 | 48／60 | 30／36 | 75／79 | 46／54 |
+| 每秒 1 萬筆 延遲 | 32／64 | 49／61 | 31／39 | 74／79 | 47／66 |
+| 每秒 5 萬筆 延遲 | 32／64 | 51／72 | 31／36 | 74／80 | 49／67 |
+| 每秒 10 萬筆 延遲 | 32／64 | 49／64 | 31／37 | 75／82 | 51／66 |
+| 開盤爆量（前 3 秒約 30 萬筆） 延遲 | 31／64 | 49／61 | 30／34 | 46／80 | 46／58 |
+| 每秒 10 萬筆 掉筆 | 0 | 0 | 0 | 0 | 0 |
+| 每秒 10 萬筆 CPU 全部／扣軟體繪圖 (%) | 331／52 | 407／53 | 154／24 | 300／30 | 225／111 |
+| 每秒 10 萬筆 FPS | 54.0 | 39.0 | 61.0 | 32.0 | 55.0 |
+| 每秒 10 萬筆 PSS 結束 (MB) | 554 | 603 | 105 | 164 | 571 |
+
+### 下載量（`dist/web`，wasm-opt -O3 之後）
+
+| | wasm | wasm gzip | js（膠水碼） | js gzip | 其中中文字型 |
+|---|---|---|---|---|---|
+| **egui 網頁** 🏆 | 7.5 MB | **4.2 MB** | 86 KB | 12 KB | 3.0 MB（gzip 2.5 MB） |
+| GPUI 網頁 | 13.0 MB | 6.0 MB | 160 KB | 23 KB | 同上 |
+| 參考：原生執行檔 | egui 13.0 MB／GPUI 25.5 MB／wry 1.7 MB（另需系統 WebKitGTK） | | | | |
+
+- 字型：Noto Sans CJK TC 子集（Big5 常用字 5,401 字＋Big5 符號＋注音＋程式裡出現的所有字，共 6,762 字），另加 13 KB 的等寬英數字。罕用字會變方塊；完整字型約 16 MB。
+- 數字是合併 main（畫線圖層）之後重建的大小；壓測時用的是合併前的版本（egui 7,475,729／GPUI 12,908,932 bytes，差不到 1%）。
+
+### 截圖
+
+| egui 網頁 | GPUI 網頁 |
+|---|---|
+| ![egui 網頁](docs/bench/web/2026-10-23-quiet/egui-web.png) | ![GPUI 網頁](docs/bench/web/2026-10-23-quiet/gpui-web.png) |
+| ![egui 網頁 5 萬列](docs/bench/web/2026-10-23-quiet/egui-web-stress.png) | ![GPUI 網頁 5 萬列](docs/bench/web/2026-10-23-quiet/gpui-web-stress.png) |
+| ![egui 網頁重圖表](docs/bench/web/2026-10-23-quiet/egui-web-heavy.png) | ![GPUI 網頁重圖表](docs/bench/web/2026-10-23-quiet/gpui-web-heavy.png) |
+| 圖層正確性（上層文字框蓋住選取中的矩形）<br>![egui 網頁圖層](docs/bench/web/2026-10-23-layers-smoke/egui-web-layers100-zshot.png) | <br>![GPUI 網頁圖層](docs/bench/web/2026-10-23-layers-smoke/gpui-web-layers100-zshot.png) |
+| 注音輸入（fcitx5＋新酷音，打「台積電」）<br>![egui 注音](docs/bench/web/ime/egui-web-ime-typing.png) | <br>![GPUI 注音](docs/bench/web/ime/gpui-web-ime-typing.png) |
+| 選字後搜尋結果<br>![egui 搜尋](docs/bench/web/ime/egui-web-ime-result.png) | <br>![GPUI 搜尋](docs/bench/web/ime/gpui-web-ime-result.png) |
+
+**注音輸入**：兩版都可以在網頁搜尋框用注音打字（Linux Chrome＋fcitx5 新酷音，`GTK_IM_MODULE=fcitx`），打「台積電」後出現 2330。這次只測了直接送字；候選字視窗的位置沒有驗證（這台截圖看不到 fcitx 的候選窗）。
+
+### GPUI 網頁版：實際狀況（查證＋實測）
+
+先更正之前的說法（「GPUI 網頁版還不能拿來做產品、只有社群實驗移植」）——**這已經過時**：
+
+| 證據 | 內容 |
+|---|---|
+| Zed 官方 PR [#50228 GPUI on the web](https://github.com/zed-industries/zed/pull/50228) | 2026-02-26（台北時間 02-27）由 Zed 員工合併，新增 `crates/gpui_web`：`wasm32-unknown-unknown`、一張 canvas＝一個視窗、**WebGPU 優先、自動退回 WebGL2**、可選的 Web Worker 多執行緒模式 |
+| 我們用的 `gpui-pre 0.3.7` | 同一組快照就有 `gpui-pre-web 0.3.7`（crates.io；最新 0.3.9），不用換 GPUI 版本 |
+| 長橋 gpui-kit（原 gpui-component） | PR [#2102](https://github.com/longbridge/gpui-component/pull/2102)（huacnlee，2026-02-27）用 gpui_web 做網頁版元件展示；現在官網 [gpui-kit.com/gallery](https://gpui-kit.com/gallery/) 就是 wasm。當時 PR 自己列的待辦：沒有 app 選單（`set_menus`）、tree-sitter 編不進 wasm、**中文字型要自己內嵌** |
+| 社群打包 | `gpui-web-gpui-unofficial`（gpui-archipelago，跟著 Zed 版本自動發佈，1.25.2） |
+
+**我們的實測：GPUI 版 demo 整套編得過、跑得起來，功能跟原生一樣**（報價表 5 萬列、重圖表 1000 畫線、分隔線拖曳、搜尋框、行情）。過程中遇到、已解決的：
+
+1. 第一次直接 `cargo build --target wasm32-unknown-unknown` 失敗：
+   ```
+   error[E0554]: `#![feature]` may not be used on the stable release channel
+    --> wasm_thread-0.3.3/src/lib.rs:1:37
+   ```
+   原因：`gpui_platform` 會開 `gpui_web` 的預設 feature `multithreaded`（`wasm_thread`，要 nightly＋atomics＋SharedArrayBuffer）。
+   解法：wasm 時不經過 `gpui_platform`，直接依賴 `gpui_web`（`default-features = false`），用 `WebPlatform::new(false)` 單執行緒。
+   （長橋官網的 wasm 也是用 nightly 編多執行緒版。）
+2. `std::time::Instant::now()`、`SystemTime::now()` 在 wasm32 會 panic → 換成 web-time（`plat.rs`）。
+3. 原生的行情是背景執行緒＋TCP → 網頁版改成 WebSocket（`xq-ws-bridge` 轉送），解碼還是同一份 `xq-feed`。
+4. 瀏覽器沒有系統的 Noto Sans CJK → 內嵌子集字型（`cx.text_system().add_fonts`）。
+   gpui_web 其實會在缺字時退回瀏覽器 canvas 畫字（`CanvasFontFallback`），但為了跟原生同字型、同排版，這裡兩版都內嵌同一份子集。
+5. 這台沒有 GPU：Chrome 有 `navigator.gpu` 但拿不到 adapter，gpui_web 印 `WebGPU initialization failed; falling back to WebGL2` 後改用 WebGL2（ANGLE＋Mesa llvmpipe）；
+   另外 `Dual-source blending not available … Subpixel text antialiasing will be disabled`（文字少了次像素反鋸齒，原生 Linux 也一樣是灰階）。
+   另外試了 Chrome 的軟體 WebGPU（`--enable-unsafe-webgpu --use-webgpu-adapter=swiftshader`）：gpui_web 印 `Browser graphics initialized successfully with BrowserWebGpu`，但截圖整片白（`docs/bench/web/webgpu-swiftshader-try.png`，只在 gpui repo），沒再深究、也沒壓測；上面的數字都是 WebGL2。
+
+gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第二個視窗／彈出視窗／浮動視窗（回 `WebWindowError`）、原生選單（`set_menus` 空實作）、
+檔案對話框（`prompt_for_paths` 回「not supported on the web」）、`reveal_path`、防休眠、結束程式。輸入法走隱藏 `<textarea>`（`ime_mirror.rs`）。
+
+### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
+
+| 原生有 | 網頁版 |
+|---|---|
+| 多視窗（`XQ_WINDOWS=N`） | **不行**：一個分頁只有一張 canvas。要多視窗只能開多個分頁／視窗，各自一份 wasm＋一條行情連線（不共用報價表）。程式裡強制 1 |
+| 直接連行情 TCP 127.0.0.1:47631 | 瀏覽器不能開 TCP → 要 `xq-ws-bridge`（或引擎本身提供 WebSocket）。多一跳，本機實測 <1 ms（網頁版與原生的延遲差都在 ±1 ms 內） |
+| 系統字型（mmap Noto Sans CJK，0 下載） | 要內嵌或下載字型：子集 3.0 MB（Big5 常用字＋注音），罕用字會變方塊；完整字型約 16 MB |
+| 背景執行緒解碼行情 | 單執行緒：解碼、合併、畫面都在瀏覽器主執行緒（多執行緒 wasm 要 nightly＋COOP/COEP，未做） |
+| 存檔 `~/.local/share/...` | 沒有檔案系統（這版不存；要存得改用 localStorage／IndexedDB） |
+| 記憶體只有程式本身 | 要加上整個瀏覽器：**空白分頁的 Chrome 本身就 423 MB PSS**（開一張 WebGL2 canvas 431 MB；3 次中位數，`2026-10-23-chrome-baseline/`） |
+| 原生選單、系統匣、檔案對話框、內嵌網頁格 | 沒有（瀏覽器本身就是網頁，所以「內嵌網頁」反而可以用一般 HTML 疊上去，但 canvas 上的元件無法和 DOM 混排） |
+| 無障礙、文字選取、Ctrl+F 搜尋頁面 | 整個畫面是一張圖，瀏覽器看不到裡面的文字（egui 有實驗性 AccessKit→DOM，這版沒開） |
+| 沒有 GPU／驅動被 Chrome 列入黑名單的電腦 | **畫面全黑**：Chrome 預設不讓軟體 OpenGL 開 WebGL（`WebGL2 blocklisted`），要加 `--ignore-gpu-blocklist` 才會畫（本測試有加）。一般有顯卡的電腦沒問題，但虛擬桌面／遠端桌面環境要先試 |
+
+
+### 怎麼建置、怎麼跑
+
+```bash
+# 一次性：wasm 目標、wasm-bindgen（版本要跟 Cargo.lock 一樣，現在是 0.2.129）、binaryen 的 wasm-opt（可省略，省略就不最佳化）
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129
+
+# 建置（stable Rust 即可；輸出到 dist/web/）
+WASM_OPT=/path/to/wasm-opt ./web/build.sh
+
+# 轉接＋網頁伺服器（在 gpui-xq-demo repo：crates/xq-ws-bridge）
+cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:47631 --www dist/web
+# 瀏覽器開 http://127.0.0.1:8080/index.html
+```
+
+- **網址參數＝原生的環境變數**：例如 `?XQ_PERIOD=D`、`?XQ_BENCH=1`、`?XQ_CHART_STRESS=1&XQ_CHART_LAYERS=100`、`?XQ_FEED_WS=ws://主機:埠/feed`（預設連同一個網址的 `/feed`）、`?XQ_SEARCH=0`（關搜尋框）。
+- `xq-ws-bridge`：同一個埠同時提供網頁檔（`--www`，帶 `Cache-Control: no-store` 與 COOP/COEP 標頭）和 WebSocket 轉接（原封不動轉送位元組）。
+- 壓測（在 gpui-xq-demo repo 的 `scripts/web/`，用 puppeteer-core 開系統 Chrome）：`OUT=輸出資料夾 ./run-all.sh 3` → `summarize.py 輸出資料夾` → `tables.py 輸出資料夾/summary.json docs/bench/2026-10-21-parity`。
+  單場：`node bench-web.js <egui|gpui> <main|stress|heavy|ticks:s1k|…|ticks:burst> <輪次> <輸出資料夾>`。另有 `chrome-baseline.js`（空白 Chrome 記憶體）、`layers-smoke.js`（圖層冒煙測試）、`ime-web.sh`（注音）、`webgpu-try.js`（WebGPU 試跑）。
+- 原始數據：`docs/bench/web/`（`results.jsonl` 每場一行、`summary.json` 中位數、`progress.log`、每場瀏覽器 console log、`contention.log` 每 10 秒的系統負載）。
 
 ## 效能比較（wry vs GPUI vs egui）
 
@@ -861,6 +1028,7 @@ GPUI 三層的細項（中位數那次）：主圖層 ≈ 1.2 ms／幀；畫線�
 - **macOS**：GPUI 的主平台（Zed 編輯器），Metal 繪圖，最成熟。
 - **Windows**：已有官方支援（DirectX 11 / DirectComposition），Zed Windows 版已釋出；中文輸入法、HiDPI 要實測。
 - **Linux**：X11 與 Wayland 都支援，這個版本（`gpui-pre 0.3.7`）繪圖走 wgpu（Vulkan 為主）；需要可用的 Vulkan/GL 驅動。
+- **網頁（WebAssembly）**：Zed 官方 `gpui_web`（2026-02 合併），這個 demo 在 `web-wasm` 分支已能完整跑（WebGPU 優先、退回 WebGL2；單一視窗、沒有原生選單／檔案對話框），見上面「網頁版」。
 - **iOS / iPadOS / Android**：GPUI **不支援**行動平台；全平台要另做行動端（共用 `xq-feed` 協議／Rust 核心）。
 - 依賴：`gpui-pre` 是社群發佈的 Zed GPUI 快照（crates.io 上官方 `gpui` 0.2.x 版本較舊），API 仍在變動，版本鎖在 `=0.3.7`。
 
