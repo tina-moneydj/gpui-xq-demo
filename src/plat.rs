@@ -2,7 +2,7 @@
 //!
 //! - `Instant`：wasm32-unknown-unknown 的 `std::time::Instant::now()` 會 panic，改用 web-time（底層 performance.now()）。
 //! - `var` / `var_os`：原生讀環境變數；網頁版讀網址參數（`index.html?XQ_CHART_STRESS=1&XQ_BENCH=1`），同一組旗標。
-//! - `unix_us`：原生 SystemTime；網頁版 performance.timeOrigin + performance.now()（Chromium 精度約 5–100µs）。
+//! - `unix_us`：原生 SystemTime；網頁版 performance.now()，第一次呼叫時對齊 Date.now()（同一個牆上時鐘，誤差 ≤1ms）。
 //! - `spawn_feed`：原生＝xq-feed 的 TCP 背景執行緒；網頁版＝WebSocket（xq-ws-bridge 轉送同一份位元組），
 //!   切包／解碼都用 xq-feed 的 `FrameReader` / `decode`，跟原生同一份程式碼。
 //! - `log`：原生 stderr；網頁版 console.log（壓測腳本從 DevTools Protocol 收）。
@@ -58,13 +58,24 @@ pub fn var_os(k: &str) -> Option<std::ffi::OsString> {
 pub fn unix_us() -> u64 {
     xq_feed::unix_us()
 }
+/// 網頁版：performance.now()（單調、µs 級）＋第一次呼叫時對齊 Date.now()（牆上時鐘，跟產生器的 SystemTime 同一個時鐘）。
+/// 不直接用 performance.timeOrigin：實測這台 VM 上 timeOrigin＋now() 可以跟牆上時鐘差到 20 幾秒（單調時鐘與 realtime 漂移）。
 #[cfg(target_arch = "wasm32")]
 pub fn unix_us() -> u64 {
-    let p = web_sys::window().and_then(|w| w.performance());
-    match p {
-        Some(p) => ((p.time_origin() + p.now()) * 1000.0) as u64,
-        None => (js_sys::Date::now() * 1000.0) as u64,
+    thread_local! {
+        static OFFSET_MS: std::cell::Cell<Option<f64>> = const { std::cell::Cell::new(None) };
     }
+    let Some(p) = web_sys::window().and_then(|w| w.performance()) else { return (js_sys::Date::now() * 1000.0) as u64 };
+    let now = p.now();
+    let off = OFFSET_MS.with(|o| match o.get() {
+        Some(v) => v,
+        None => {
+            let v = js_sys::Date::now() - now;
+            o.set(Some(v));
+            v
+        }
+    });
+    ((now + off) * 1000.0) as u64
 }
 
 pub fn tick_bench_enabled() -> bool {
