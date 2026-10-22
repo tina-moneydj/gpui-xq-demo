@@ -113,103 +113,111 @@
    ]
   },
   "ticks_s10k": {
-   "n": 1,
-   "lat_p50": 31.6,
-   "lat_p99": 119.2,
-   "lat_max": 309.3,
-   "transport_p50": -0.6,
-   "recv_to_apply_p50": 2.9,
-   "apply_to_present_p50": 16.7,
-   "first5_p50": 32.3,
-   "last5_p50": 31.7,
-   "loss": [
-    0
-   ],
-   "sent": 299951,
-   "fps": 52,
-   "cpu_pct": 363,
-   "cpu_nollvm_pct": 49.5,
-   "rss_end_mb": 1245.9,
-   "pss_end_mb": 557.9,
-   "rss_growth_mb": 0.3,
-   "wasm_end_mb": 19.1,
-   "loadavg": [
-    "0.77"
-   ]
-  },
-  "ticks_s50k": {
-   "n": 1,
-   "lat_p50": 31.5,
-   "lat_p99": 63.9,
-   "lat_max": 150.2,
-   "transport_p50": -0.3,
-   "recv_to_apply_p50": 3,
-   "apply_to_present_p50": 16.4,
-   "first5_p50": 31.5,
-   "last5_p50": 32,
-   "loss": [
-    0
-   ],
-   "sent": 1499755,
-   "fps": 55,
-   "cpu_pct": 333,
-   "cpu_nollvm_pct": 45.8,
-   "rss_end_mb": 1239.3,
-   "pss_end_mb": 555.3,
-   "rss_growth_mb": -10.7,
-   "wasm_end_mb": 21.2,
-   "loadavg": [
-    "3.48"
-   ]
-  },
-  "ticks_s100k": {
-   "n": 1,
-   "lat_p50": 31.5,
-   "lat_p99": 65,
-   "lat_max": 162.9,
-   "transport_p50": -0.4,
-   "recv_to_apply_p50": 3.2,
-   "apply_to_present_p50": 16.2,
-   "first5_p50": 31.6,
-   "last5_p50": 30.7,
-   "loss": [
-    0
-   ],
-   "sent": 2999709,
-   "fps": 54,
-   "cpu_pct": 331,
-   "cpu_nollvm_pct": 51.5,
-   "rss_end_mb": 1239,
-   "pss_end_mb": 553.9,
-   "rss_growth_mb": -4.3,
-   "wasm_end_mb": 19.1,
-   "loadavg": [
-    "3.00"
-   ]
-  },
-  "ticks_burst": {
-   "n": 1,
+   "n": 2,
    "lat_p50": 31.2,
-   "lat_p99": 64.5,
-   "lat_max": 166.5,
+   "lat_p99": 91.8,
+   "lat_max": 187.6,
    "transport_p50": -0.6,
    "recv_to_apply_p50": 2.8,
    "apply_to_present_p50": 16.6,
-   "first5_p50": 31.2,
-   "last5_p50": 30.3,
+   "first5_p50": 31.6,
+   "last5_p50": 30.9,
    "loss": [
+    0,
     0
    ],
-   "sent": 599957,
-   "fps": 55,
-   "cpu_pct": 331.2,
-   "cpu_nollvm_pct": 41,
-   "rss_end_mb": 1242,
-   "pss_end_mb": 556.2,
-   "rss_growth_mb": 1,
+   "sent": 299960.5,
+   "fps": 53.5,
+   "cpu_pct": 350.6,
+   "cpu_nollvm_pct": 45.1,
+   "rss_end_mb": 1241.8,
+   "pss_end_mb": 555.4,
+   "rss_growth_mb": -1.9,
    "wasm_end_mb": 19.1,
    "loadavg": [
-    "3.39"
+    "0.77",
+    "4.77"
+   ]
+  },
+  "ticks_s50k": {
+   "n": 2,
+   "lat_p50": 31.4,
+   "lat_p99": 63.8,
+   "lat_max": 109.0,
+   "transport_p50": -0.5,
+   "recv_to_apply_p50": 2.9,
+   "apply_to_present_p50": 16.4,
+   "first5_p50": 31.3,
+   "last5_p50": 31.8,
+   "loss": [
+    0,
+    0
+   ],
+   "sent": 1499810.0,
+   "fps": 54.0,
+   "cpu_pct": 332.9,
+   "cpu_nollvm_pct": 45.3,
+   "rss_end_mb": 1241.8,
+   "pss_end_mb": 557.5,
+   "rss_growth_mb": -5.8,
+   "wasm_end_mb": 22.2,
+   "loadavg": [
+    "3.48",
+    "4.96"
+   ]
+  },
+  "ticks_s100k": {
+   "n": 2,
+   "lat_p50": 31.6,
+   "lat_p99": 64.6,
+   "lat_max": 116.8,
+   "transport_p50": -0.3,
+   "recv_to_apply_p50": 3.1,
+   "apply_to_present_p50": 16.2,
+   "first5_p50": 31.8,
+   "last5_p50": 31.1,
+   "loss": [
+    0,
+    0
+   ],
+   "sent": 2999727.0,
+   "fps": 53.5,
+   "cpu_pct": 330.3,
+   "cpu_nollvm_pct": 51.5,
+   "rss_end_mb": 1237.8,
+   "pss_end_mb": 553.3,
+   "rss_growth_mb": -9.1,
+   "wasm_end_mb": 19.1,
+   "loadavg": [
+    "3.00",
+    "5.89"
+   ]
+  },
+  "ticks_burst": {
+   "n": 2,
+   "lat_p50": 31.3,
+   "lat_p99": 64.0,
+   "lat_max": 116.0,
+   "transport_p50": -0.6,
+   "recv_to_apply_p50": 2.8,
+   "apply_to_present_p50": 16.6,
+   "first5_p50": 31.8,
+   "last5_p50": 30.8,
+   "loss": [
+    0,
+    0
+   ],
+   "sent": 599955.5,
+   "fps": 54.0,
+   "cpu_pct": 324.6,
+   "cpu_nollvm_pct": 40.5,
+   "rss_end_mb": 1245.3,
+   "pss_end_mb": 558.5,
+   "rss_growth_mb": -4.2,
+   "wasm_end_mb": 21.1,
+   "loadavg": [
+    "3.39",
+    "6.14"
    ]
   }
  },
@@ -316,78 +324,84 @@
    ]
   },
   "ticks_s10k": {
-   "n": 1,
-   "lat_p50": 47.8,
-   "lat_p99": 60.8,
-   "lat_max": 173.9,
-   "transport_p50": -0.6,
-   "recv_to_apply_p50": 2.7,
+   "n": 2,
+   "lat_p50": 49.0,
+   "lat_p99": 64.0,
+   "lat_max": 126.8,
+   "transport_p50": -0.2,
+   "recv_to_apply_p50": 2.9,
    "apply_to_present_p50": 25.8,
-   "first5_p50": 48.3,
-   "last5_p50": 48,
+   "first5_p50": 48.2,
+   "last5_p50": 49.1,
    "loss": [
+    0,
     0
    ],
-   "sent": 299988,
-   "fps": 40,
-   "cpu_pct": 422.4,
-   "cpu_nollvm_pct": 43.9,
-   "rss_end_mb": 1288.1,
-   "pss_end_mb": 600.9,
-   "rss_growth_mb": -20.1,
-   "wasm_end_mb": 29.9,
+   "sent": 299986.5,
+   "fps": 39.5,
+   "cpu_pct": 415.6,
+   "cpu_nollvm_pct": 43.1,
+   "rss_end_mb": 1284.4,
+   "pss_end_mb": 597.0,
+   "rss_growth_mb": -21.6,
+   "wasm_end_mb": 26.6,
    "loadavg": [
-    "2.93"
+    "2.93",
+    "2.96"
    ]
   },
   "ticks_s50k": {
-   "n": 1,
-   "lat_p50": 47.9,
-   "lat_p99": 61,
-   "lat_max": 175.2,
+   "n": 2,
+   "lat_p50": 49.5,
+   "lat_p99": 74.5,
+   "lat_max": 146.1,
    "transport_p50": -0.1,
-   "recv_to_apply_p50": 2.6,
-   "apply_to_present_p50": 25.2,
-   "first5_p50": 47.5,
-   "last5_p50": 48.5,
+   "recv_to_apply_p50": 2.8,
+   "apply_to_present_p50": 25.6,
+   "first5_p50": 50.3,
+   "last5_p50": 49.6,
    "loss": [
+    0,
     0
    ],
-   "sent": 1499984,
-   "fps": 40,
-   "cpu_pct": 409.7,
-   "cpu_nollvm_pct": 47.8,
-   "rss_end_mb": 1293.2,
-   "pss_end_mb": 604.6,
-   "rss_growth_mb": -12.2,
-   "wasm_end_mb": 27.5,
+   "sent": 1499987.0,
+   "fps": 39.0,
+   "cpu_pct": 406.4,
+   "cpu_nollvm_pct": 47.4,
+   "rss_end_mb": 1290.5,
+   "pss_end_mb": 601.2,
+   "rss_growth_mb": -14.2,
+   "wasm_end_mb": 25.4,
    "loadavg": [
-    "2.92"
+    "2.92",
+    "5.24"
    ]
   },
   "ticks_s100k": {
-   "n": 1,
-   "lat_p50": 48.8,
-   "lat_p99": 111.4,
-   "lat_max": 162.8,
+   "n": 2,
+   "lat_p50": 49.8,
+   "lat_p99": 87.8,
+   "lat_max": 119.0,
    "transport_p50": -0.4,
-   "recv_to_apply_p50": 2.9,
-   "apply_to_present_p50": 25.3,
-   "first5_p50": 49.1,
-   "last5_p50": 48.9,
+   "recv_to_apply_p50": 3.2,
+   "apply_to_present_p50": 25.2,
+   "first5_p50": 50.1,
+   "last5_p50": 49.7,
    "loss": [
+    0,
     0
    ],
-   "sent": 2999748,
-   "fps": 39,
-   "cpu_pct": 421,
-   "cpu_nollvm_pct": 56.3,
+   "sent": 2999821.0,
+   "fps": 38.0,
+   "cpu_pct": 407.4,
+   "cpu_nollvm_pct": 54.2,
    "rss_end_mb": 1291.8,
-   "pss_end_mb": 605.4,
-   "rss_growth_mb": -13.1,
-   "wasm_end_mb": 27.5,
+   "pss_end_mb": 604.3,
+   "rss_growth_mb": -11.2,
+   "wasm_end_mb": 27.6,
    "loadavg": [
-    "2.89"
+    "2.89",
+    "6.39"
    ]
   },
   "ticks_burst": {

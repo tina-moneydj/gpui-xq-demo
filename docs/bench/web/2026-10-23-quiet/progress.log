@@ -49,3 +49,17 @@ START 2026-10-23 02:25:50 +0800
 02:53:12 run=2 gpui ticks:s1k load=4.58 3.57 4.09
 {"app":"gpui-web","mode":"ticks:s1k","run":2,"ok":true,"load":{"first_frame_s":0.482082189,"first_quote_s":0.66104483,"wasm_start_s":0.19138956500000004,"bytes_transferred":13070599},"cpu":428.3,"ticks":{"p50":47.6,"p99":59.7,"loss":0,"fps":40}}
 02:53:56 run=2 egui ticks:s10k load=4.77 3.77 4.13
+{"app":"egui-web","mode":"ticks:s10k","run":2,"ok":true,"load":{"first_frame_s":0.3173086970000001,"first_quote_s":0.3565447380000001,"wasm_start_s":0.13321100200000002,"bytes_transferred":7563480},"cpu":338.2,"ticks":{"p50":30.9,"p99":64.5,"loss":0,"fps":55}}
+02:54:40 run=2 gpui ticks:s10k load=2.96 3.45 4.01
+{"app":"gpui-web","mode":"ticks:s10k","run":2,"ok":true,"load":{"first_frame_s":0.45420316699999996,"first_quote_s":0.6884894500000001,"wasm_start_s":0.1690847510000001,"bytes_transferred":13070599},"cpu":408.9,"ticks":{"p50":50.1,"p99":67.3,"loss":0,"fps":39}}
+02:55:24 run=2 egui ticks:s50k load=4.96 3.91 4.13
+{"app":"egui-web","mode":"ticks:s50k","run":2,"ok":true,"load":{"first_frame_s":0.341707427,"first_quote_s":0.3875509600000001,"wasm_start_s":0.14428303599999992,"bytes_transferred":7563480},"cpu":332.8,"ticks":{"p50":31.2,"p99":63.8,"loss":0,"fps":53}}
+02:56:08 run=2 gpui ticks:s50k load=5.35 4.12 4.20
+{"app":"gpui-web","mode":"ticks:s50k","run":2,"ok":true,"load":{"first_frame_s":0.515028228,"first_quote_s":0.726533345,"wasm_start_s":0.20671109099999996,"bytes_transferred":13070599},"cpu":403,"ticks":{"p50":51,"p99":87.9,"loss":0,"fps":38}}
+02:56:52 run=2 egui ticks:s100k load=5.89 4.46 4.31
+{"app":"egui-web","mode":"ticks:s100k","run":2,"ok":true,"load":{"first_frame_s":0.341024059,"first_quote_s":0.3964540350000001,"wasm_start_s":0.1324819359999999,"bytes_transferred":7563480},"cpu":329.6,"ticks":{"p50":31.8,"p99":64.2,"loss":0,"fps":53}}
+02:57:36 run=2 gpui ticks:s100k load=6.39 4.81 4.43
+{"app":"gpui-web","mode":"ticks:s100k","run":2,"ok":true,"load":{"first_frame_s":0.4942148129999999,"first_quote_s":0.706176138,"wasm_start_s":0.18806085699999997,"bytes_transferred":13070599},"cpu":393.9,"ticks":{"p50":50.9,"p99":64.1,"loss":0,"fps":37}}
+02:58:20 run=2 egui ticks:burst load=6.14 4.98 4.51
+{"app":"egui-web","mode":"ticks:burst","run":2,"ok":true,"load":{"first_frame_s":0.37001579500000004,"first_quote_s":0.42318577200000007,"wasm_start_s":0.141055861,"bytes_transferred":7563480},"cpu":318,"ticks":{"p50":31.4,"p99":63.6,"loss":0,"fps":53}}
+02:59:03 run=2 gpui ticks:burst load=4.40 4.71 4.44
