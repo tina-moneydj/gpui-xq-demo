@@ -5,6 +5,10 @@ import json, statistics, sys
 
 out = sys.argv[1]
 rows = [json.loads(l) for l in open(f"{out}/results.jsonl") if l.strip()]
+# 同一 app×情境×輪 重跑過（例如遇到 VM 暫停）時，只留最後一次
+last = {}
+for r in rows: last[(r["app"], r["mode"], r["run"])] = r
+rows = list(last.values())
 ok = [r for r in rows if r.get("ok")]
 med = lambda v: (round(statistics.median(v), 1) if v else None)
 
