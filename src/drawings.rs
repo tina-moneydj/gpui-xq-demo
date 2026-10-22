@@ -541,7 +541,7 @@ impl Emit {
 impl PaintCache {
     /// 由幾何快取建出圖元：只處理可見畫線；選取的那條與水平線分開
     pub fn build(window: &mut Window, list: &[Drawing], gc: &GeomCache, xf: &Xf) -> PaintCache {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         let mut em = Emit::new();
         let mut hl = Tris::default();
         let mut h_tags = Vec::new();

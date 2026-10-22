@@ -4,7 +4,13 @@
 //! 效能：行情在背景執行緒解碼＋合併（xq-feed / bridge），UI 每 frame 最多套用一次；
 //! 報價表／走勢圖／資訊格是各自的 cached view，只有 notify 的那塊會重畫。
 
+/// 網頁版：eprintln! 改寫到 console.log（壓測腳本從 DevTools Protocol 收同樣的 BENCH／CHARTPERF／TICKBENCH 行）
+#[cfg(target_arch = "wasm32")]
+macro_rules! eprintln {
+    ($($t:tt)*) => { $crate::plat::log(&format!($($t)*)) };
+}
 mod bridge;
+mod plat;
 mod chart;
 mod drawings;
 mod gfx;
@@ -20,7 +26,8 @@ mod tick_tape;
 mod tickbench;
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use futures::StreamExt;
 use gpui::{
@@ -194,7 +201,7 @@ impl Terminal {
         let primary = shared.is_none();
         let (sym, name) = names::WATCH[win % names::WATCH.len()];
         let tape_feed =
-            (primary && std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0")).then(|| TapeFeed::new(sym));
+            (primary && crate::plat::var_os("XQ_TAPE").is_some_and(|v| v != "0")).then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| cx.new(|cx| TickTape::new(f, sym, cx)));
         let (bridge, wake_rx, table, counters) = match shared {
             None => {
@@ -202,7 +209,9 @@ impl Terminal {
                 let counters = bridge.counters.clone();
                 (Some(bridge), Some(wake_rx), cx.new(|cx| {
                     let mut t = QuoteTable::new(names::WATCH);
-                    t.attach_search(cx);
+                    if crate::plat::search_enabled() {
+                        t.attach_search(cx);
+                    }
                     t
                 }), counters)
             }
@@ -210,7 +219,7 @@ impl Terminal {
         };
         let window_id = window.window_handle().window_id();
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
-        let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
+        let period = crate::plat::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
@@ -268,7 +277,7 @@ impl Terminal {
             tape,
             conn: Conn::Connecting,
             // XQ_TOP_FRAC：上方走勢圖佔比（重圖表壓測時調到與 wry 版同樣大的圖面）
-            top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
+            top_frac: crate::plat::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
             left_w: 470.0,
             drag: None,
             frames: 0,
@@ -279,9 +288,9 @@ impl Terminal {
             last_paints: 0,
             last_paint_us: 0,
             stats: Stats::default(),
-            metrics_log: std::env::var_os("XQ_METRICS").is_some(),
-            no_cache: std::env::var_os("XQ_NO_VIEW_CACHE").is_some(),
-            bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
+            metrics_log: crate::plat::var_os("XQ_METRICS").is_some(),
+            no_cache: crate::plat::var_os("XQ_NO_VIEW_CACHE").is_some(),
+            bench: crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
             bench_frame_logged: false,
             bench_quote_logged: false,
             total_frames: 0,
@@ -289,7 +298,7 @@ impl Terminal {
             last_frame: None,
             jank_n: 0,
             jank_ms: 0.0,
-            tick: xq_feed::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
+            tick: crate::plat::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
             _tasks: feed_task.into_iter().chain([stats_task]).collect(),
             _subs: subs,
         };
@@ -311,10 +320,10 @@ impl Terminal {
     /// 先只跳價（XQ_STRESS_TICK_HZ 筆/秒，30 Hz 分批，預設 3000）XQ_STRESS_TICK_MS，
     /// 再邊跳價邊上下正弦捲動 XQ_STRESS_SCROLL_MS（預設各 2000ms）。結果用 `GROUPPERF|{json}` 印到 stderr。
     fn spawn_stress(cx: &mut Context<Self>) -> Option<Task<()>> {
-        if !std::env::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0") {
+        if !crate::plat::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0") {
             return None;
         }
-        let num = |k: &str, d: u64| std::env::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
+        let num = |k: &str, d: u64| crate::plat::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
         let tick_ms = num("XQ_STRESS_TICK_MS", 2000);
         let scroll_ms = num("XQ_STRESS_SCROLL_MS", 2000);
         let hz = num("XQ_STRESS_TICK_HZ", 3000);
@@ -565,6 +574,12 @@ impl Terminal {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+pub fn rss_mb() -> f64 {
+    plat::wasm_heap_mb()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -617,7 +632,7 @@ impl Render for Terminal {
             Conn::Ready => ("行情連線", down()),
             Conn::Down => ("行情中斷，重連中", up()),
         };
-        let addr = xq_feed::feed_addr();
+        let addr = crate::plat::feed_label();
         let s = &self.stats;
         let dragging = self.drag;
         let no_cache = self.no_cache;
@@ -636,7 +651,7 @@ impl Render for Terminal {
             .text_color(text())
             .on_mouse_move(cx.listener(Self::on_drag))
             .on_any_mouse_down(|ev, _, _| {
-                if std::env::var_os("XQ_DEBUG").is_some() {
+                if crate::plat::var_os("XQ_DEBUG").is_some() {
                     eprintln!("[debug] mouse down {:?} at {:?}", ev.button, ev.position);
                 }
             })
@@ -716,7 +731,7 @@ impl Render for Terminal {
                     .child(div().text_color(conn_color).child(format!("● {conn_text} {addr}")))
                     .child(div().flex_1())
                     .child(div().font_family(MONO_FONT).child(format!("FPS {}", s.fps)))
-                    .child(div().font_family(MONO_FONT).child(format!("RSS {:.1} MB", s.rss_mb)))
+                    .child(div().font_family(MONO_FONT).child(format!("{} {:.1} MB", if plat::IS_WEB { "WASM" } else { "RSS" }, s.rss_mb)))
                     .child(div().font_family(MONO_FONT).text_color(dim()).child(format!(
                         "封包 {}/s → 套用 {}/s",
                         s.frames_in, s.applies
@@ -728,7 +743,10 @@ impl Render for Terminal {
 /// XQ_WINDOWS=N（預設 1，最多 8）：開 N 個看盤視窗（各自走勢圖＝WATCH[k]），
 /// 共用同一條行情連線、同一個報價表 entity（同一份 5 萬列資料，只合併一次），每個視窗自己的 view／走勢圖。
 fn window_count() -> usize {
-    std::env::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
+    if plat::IS_WEB {
+        return 1; // 瀏覽器只有一張 canvas：gpui_web 第二個視窗會回 WebWindowError::AlreadyOpen
+    }
+    crate::plat::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
 }
 
 fn window_options(k: usize, cx: &mut App) -> WindowOptions {
@@ -741,8 +759,10 @@ fn window_options(k: usize, cx: &mut App) -> WindowOptions {
     }
 }
 
-fn main() {
-    gpui_platform::application().run(|cx: &mut App| {
+fn run(app: gpui::Application) {
+    app.run(|cx: &mut App| {
+        #[cfg(target_arch = "wasm32")]
+        web_fonts(cx);
         tick_tape::bind_keys(cx);
         search::bind_keys(cx);
         let opts = window_options(0, cx);
@@ -773,4 +793,30 @@ fn main() {
         cx.on_window_closed(|cx, _| cx.quit()).detach();
         cx.activate(true);
     });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn main() {
+    run(gpui_platform::application());
+}
+
+/// 網頁版字型：瀏覽器拿不到系統的 Noto Sans CJK，跟 egui 網頁版編同一份子集進 wasm（Big5 一級字＋標點＋注音，約 3 MB）。
+/// 字型家族名稱跟原生一樣（"Noto Sans CJK TC" / "Noto Sans Mono CJK TC"），theme.rs 不用改。
+#[cfg(target_arch = "wasm32")]
+fn web_fonts(cx: &mut App) {
+    static TC: &[u8] = include_bytes!("../web/fonts/NotoSansTC-subset.otf");
+    static MONO: &[u8] = include_bytes!("../web/fonts/NotoSansMonoTC-ascii.otf");
+    if let Err(e) = cx.text_system().add_fonts(vec![std::borrow::Cow::Borrowed(TC), std::borrow::Cow::Borrowed(MONO)]) {
+        eprintln!("[fonts] add_fonts 失敗: {e:?}");
+    }
+}
+
+/// 網頁版入口：gpui_web 單執行緒模式（多執行緒模式要 nightly＋atomics＋SharedArrayBuffer，見 README「網頁版」）
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    console_error_panic_hook::set_once();
+    gpui_web::init_logging();
+    eprintln!("BENCH wasm-start");
+    let platform = std::rc::Rc::new(gpui_web::WebPlatform::new(false));
+    run(gpui::Application::with_platform(platform));
 }

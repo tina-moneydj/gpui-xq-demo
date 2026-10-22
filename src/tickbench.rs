@@ -8,7 +8,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use xq_feed::{unix_us, Stamp};
+use crate::plat::unix_us;
+use xq_feed::Stamp;
 
 #[derive(Default)]
 pub struct TickBench {

@@ -91,7 +91,7 @@ impl QuoteTable {
     fn pick(&mut self, ix: usize, input: &Entity<SearchInput>, cx: &mut Context<Self>) {
         self.matches.clear();
         input.update(cx, |i, cx| i.clear(cx));
-        self.select(ix, cx);
+        self.select(ix, None, cx);
     }
 
     pub fn symbols(&self) -> Vec<String> {
@@ -219,7 +219,7 @@ impl QuoteTable {
     }
 
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」
         if range.len() > 1 {
             self.paints += 1;

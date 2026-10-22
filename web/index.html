@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XQ 風格測試（gpui 網頁版）</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0b0f14; }
+  canvas { display: block; width: 100vw; height: 100vh; outline: none; }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #8899aa; font: 14px sans-serif; pointer-events: none; }
+</style>
+</head>
+<body>
+<!-- gpui_web 自己建 <canvas>，掛在 body 上 -->
+<div id="loading">載入中…</div>
+<script type="module">
+  // 載入時間：網址參數相同（XQ_BENCH=1 等），由 wasm 端讀 location.search
+  const t0 = performance.now();
+  import init from "./gpui-xq-demo.js";
+  window.__xqLoad = { t0 };
+  init({ module_or_path: "./gpui-xq-demo_bg.wasm" }).then(() => {
+    window.__xqLoad.initMs = performance.now() - t0;
+    document.getElementById("loading").remove();
+  }).catch((e) => {
+    document.getElementById("loading").textContent = "載入失敗：" + e;
+    console.error("LOADFAIL " + e);
+  });
+</script>
+</body>
+</html>
