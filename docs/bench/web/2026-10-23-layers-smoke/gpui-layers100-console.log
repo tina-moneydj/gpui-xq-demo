@@ -1,0 +1,38 @@
+Failed to load resource: the server responded with a status of 404 (Not Found)
+BENCH wasm-start
+No available adapters.
+[WARN] gpui_web::platform: WebGPU initialization failed; falling back to WebGL2: browser WebGPU probe did not return a usable adapter
+[WARN] gpui_wgpu::wgpu_context: Dual-source blending not available on this GPU. Subpixel text antialiasing will be disabled.
+[INFO] gpui_wgpu::wgpu_context: Browser graphics initialized: requested=WebGl, selected=Gl, adapter="ANGLE (Mesa, llvmpipe (LLVM 19.1.7 256 bits), OpenGL 4.5)", limits=Limits { max_texture_dimension_1d: 16384, max_texture_dimension_2d: 16384, max_texture_dimension_3d: 2048, max_texture_array_layers: 256, max_bind_groups: 4, max_bindings_per_bind_group: 1000, max_dynamic_uniform_buffers_per_pipeline_layout: 8, max_dynamic_storage_buffers_per_pipeline_layout: 0, max_sampled_textures_per_shader_stage: 16, max_samplers_per_shader_stage: 16, max_storage_buffers_per_shader_stage: 0, max_storage_textures_per_shader_stage: 0, max_uniform_buffers_per_shader_stage: 11, max_binding_array_elements_per_shader_stage: 0, max_binding_array_acceleration_structure_elements_per_shader_stage: 0, max_binding_array_sampler_elements_per_shader_stage: 0, max_uniform_buffer_binding_size: 16384, max_storage_buffer_binding_size: 0, max_vertex_buffers: 8, max_buffer_size: 268435456, max_vertex_attributes: 16, max_vertex_buffer_array_stride: 255, max_inter_stage_shader_variables: 15, min_uniform_buffer_offset_alignment: 32, min_storage_buffer_offset_alignment: 256, max_color_attachments: 4, max_color_attachment_bytes_per_sample: 32, max_compute_workgroup_storage_size: 0, max_compute_invocations_per_workgroup: 0, max_compute_workgroup_size_x: 0, max_compute_workgroup_size_y: 0, max_compute_workgroup_size_z: 0, max_compute_workgroups_per_dimension: 0, max_immediate_size: 0, max_non_sampler_bindings: 1000000, max_task_mesh_workgroup_total_count: 0, max_task_mesh_workgroups_per_dimension: 0, max_task_invocations_per_workgroup: 0, max_task_invocations_per_dimension: 0, max_mesh_invocations_per_workgroup: 0, max_mesh_invocations_per_dimension: 0, max_task_payload_size: 0, max_mesh_output_vertices: 0, max_mesh_output_primitives: 0, max_mesh_output_layers: 0, max_mesh_multiview_view_count: 0, max_blas_primitive_count: 0, max_blas_geometry_count: 0, max_tlas_instance_count: 0, max_acceleration_structure
+[INFO] gpui_web::platform: Browser graphics initialized successfully with Gl
+BENCH first-frame
+[WARN] gpui_wgpu::wgpu_renderer: Failed to poll device during resize: Timeout
+[xq-feed] 已連上 ws://127.0.0.1:47760/feed
+BENCH first-quote
+CHARTPERF|{"phase":"warn","msg":"no quote after 15000 ms, using synthetic bars"}
+CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.51}
+BENCH heavy-frame
+CHARTPERF|{"phase":"setup","cssW":1158,"cssH":432,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":1000,"drawVertices":76044,"drawPaths":2112,"bars":121,"sinceStartMs":15388,"rebuildMs":13.07,"paintMsTotal":123.78,"rssMb":52.7}
+CHARTPHASE|warm|start
+CHARTPHASE|ticks|start
+CHARTPERF|{"phase":"ticks","seconds":3.15,"frames":16,"fps":5.1,"steps":15,"avgPaintMs":12.384,"plotPaints":16,"plotMs":1.121,"drawPaints":32,"drawMs":5.354,"livePaints":16,"liveMs":0.554,"selPaints":16,"selMs":0.001,"drawRebuilds":15,"rebuildMsTotal":58.16,"rssMb":103.6}
+CHARTPHASE|ticks|end
+CHARTPHASE|crosshair|start
+CHARTPERF|{"phase":"crosshair","seconds":3.17,"frames":16,"fps":5.1,"steps":16,"avgPaintMs":8.735,"plotPaints":16,"plotMs":1.062,"drawPaints":32,"drawMs":3.498,"livePaints":16,"liveMs":0.676,"selPaints":16,"selMs":0.000,"drawRebuilds":1,"rebuildMsTotal":3.48,"rssMb":103.6}
+CHARTPHASE|crosshair|end
+CHARTPHASE|pan|start
+CHARTPERF|{"phase":"pan","seconds":3.10,"frames":16,"fps":5.2,"steps":15,"avgPaintMs":8.277,"plotPaints":16,"plotMs":1.080,"drawPaints":32,"drawMs":3.287,"livePaints":16,"liveMs":0.623,"selPaints":16,"selMs":0.001,"drawRebuilds":0,"rebuildMsTotal":0.00,"rssMb":103.6}
+CHARTPHASE|pan|end
+CHARTPHASE|drag|start
+CHARTPERF|{"phase":"drag","seconds":3.06,"frames":15,"fps":4.9,"steps":14,"avgPaintMs":8.995,"plotPaints":15,"plotMs":1.057,"drawPaints":30,"drawMs":3.744,"livePaints":15,"liveMs":0.418,"selPaints":15,"selMs":0.033,"drawRebuilds":1,"rebuildMsTotal":7.85,"rssMb":103.6,"layers":100,"drawingsTotal":1000,"pick":500}
+CHARTPHASE|drag|end
+CHARTPHASE|select|start
+CHARTPERF|{"phase":"select","seconds":3.11,"frames":15,"fps":4.8,"steps":14,"avgPaintMs":12.306,"plotPaints":15,"plotMs":1.114,"drawPaints":30,"drawMs":5.453,"livePaints":15,"liveMs":0.279,"selPaints":15,"selMs":0.007,"drawRebuilds":15,"rebuildMsTotal":58.01,"rssMb":103.6,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":14,"allRebuildP50":3.340,"allRebuildP99":5.640,"allTtfP50":202.615,"allTtfP99":240.100,"selectOps":7,"selectRebuildP50":3.340,"selectRebuildP99":4.325,"selectTtfP50":202.615,"selectTtfP99":240.100,"deselectOps":7,"deselectRebuildP50":3.430,"deselectRebuildP99":5.640,"deselectTtfP50":203.400,"deselectTtfP99":233.595}
+CHARTPHASE|select|end
+CHARTPHASE|reorder|start
+CHARTPERF|{"phase":"reorder","seconds":3.20,"frames":15,"fps":4.7,"steps":14,"avgPaintMs":11.812,"plotPaints":15,"plotMs":1.135,"drawPaints":30,"drawMs":5.204,"livePaints":15,"liveMs":0.255,"selPaints":15,"selMs":0.013,"drawRebuilds":15,"rebuildMsTotal":50.13,"rssMb":103.6,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":14,"allRebuildP50":3.285,"allRebuildP99":3.710,"allTtfP50":208.040,"allTtfP99":237.730,"zopOps":8,"zopRebuildP50":3.285,"zopRebuildP99":3.710,"zopTtfP50":206.140,"zopTtfP99":237.730,"layerVisOps":4,"layerVisRebuildP50":3.340,"layerVisRebuildP99":3.485,"layerVisTtfP50":208.040,"layerVisTtfP99":226.060,"layerMoveOps":2,"layerMoveRebuildP50":3.095,"layerMoveRebuildP99":3.095,"layerMoveTtfP50":209.340,"layerMoveTtfP99":232.715}
+CHARTPHASE|reorder|end
+CHARTPHASE|zshot|start
+CHARTPERF|{"phase":"zshot","seconds":3.03,"frames":100,"fps":33.1,"steps":99,"avgPaintMs":0.249,"plotPaints":100,"plotMs":0.099,"drawPaints":200,"drawMs":0.033,"livePaints":100,"liveMs":0.073,"selPaints":100,"selMs":0.010,"drawRebuilds":1,"rebuildMsTotal":0.14,"rssMb":103.6,"layers":3,"drawingsTotal":7,"pick":500}
+CHARTPHASE|zshot|end
+CHARTPERF|{"phase":"done","sinceStartMs":39376}
