@@ -447,17 +447,48 @@ fn fmt_p(v: f64) -> String {
 /// （GPUI 一批 path 內的頂點依序光柵化＋混色，所以順序就是畫面上的上下關係）。
 #[derive(Default)]
 pub struct ZEmit {
-    runs: Vec<(Tris, Hsla)>,
+    /// (三角形, 顏色, 這段的外框)
+    runs: Vec<(Tris, Hsla, [f32; 4])>,
     pub labels: Vec<(String, f32, f32, f32, Hsla)>,
+    /// 目前這條畫線的外框（t() 合併用）
+    cur_bb: [f32; 4],
+}
+
+/// 往回找同色的段最多看幾段
+const MERGE_LOOKBACK: usize = 64;
+
+fn overlaps(a: &[f32; 4], b: &[f32; 4]) -> bool {
+    a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3]
 }
 
 impl ZEmit {
+    /// 拿顏色 c 的三角形段。往回找同色的段：中間隔著的段只要跟這條畫線的外框都不重疊，
+    /// 把這條的幾何併到那段，畫出來一模一樣（不重疊的圖元先畫後畫結果相同）——
+    /// path 數從「每條畫線好幾段」降到接近「每種顏色幾段」，GPUI 每個 path 的固定成本跟著少。
     #[inline]
     fn t(&mut self, c: Hsla) -> &mut Tris {
-        if self.runs.last().is_none_or(|(_, lc)| *lc != c) {
-            self.runs.push((Tris::default(), c));
+        let bb = self.cur_bb;
+        let mut hit = None;
+        for i in (0..self.runs.len()).rev().take(MERGE_LOOKBACK) {
+            let (_, rc, rb) = &self.runs[i];
+            if *rc == c {
+                hit = Some(i);
+                break;
+            }
+            if overlaps(rb, &bb) {
+                break;
+            }
         }
-        &mut self.runs.last_mut().unwrap().0
+        let i = match hit {
+            Some(i) => i,
+            None => {
+                self.runs.push((Tris::default(), c, bb));
+                self.runs.len() - 1
+            }
+        };
+        let r = &mut self.runs[i];
+        r.2 = [r.2[0].min(bb[0]), r.2[1].min(bb[1]), r.2[2].max(bb[2]), r.2[3].max(bb[3])];
+        &mut r.0
     }
 
     fn quad(&mut self, x: f32, y: f32, w: f32, h: f32, c: Hsla) {
@@ -470,6 +501,9 @@ impl ZEmit {
     pub fn drawing(&mut self, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
         let w: f32 = if sel { 2.0 } else { 1.4 };
         let main = gfx::hex(if sel { SEL_COLOR } else { DRAW_COLOR });
+        // 外框（含線寬餘量；水平線含左右延伸）
+        let ext = if d.kind == Tool::Hline { hline_ext } else { 0.0 };
+        self.cur_bb = [g.bbox[0] - ext - 4.0, g.bbox[1] - 4.0, g.bbox[2] + ext + 4.0, g.bbox[3] + 4.0];
         if let Some(f) = &g.fill {
             let c = gfx::hexa(DRAW_COLOR, if d.kind == Tool::Rect { 0.10 } else { 0.07 });
             self.t(c).poly(f);
@@ -519,7 +553,7 @@ impl ZEmit {
     }
 
     pub fn paths(&mut self) -> Vec<(Path<Pixels>, Hsla)> {
-        self.runs.drain(..).filter_map(|(mut t, c)| t.take().map(|p| (p, c))).collect()
+        self.runs.drain(..).filter_map(|(mut t, c, _)| t.take().map(|p| (p, c))).collect()
     }
 
     /// 即時畫（選取段／繪製中）：幾何 → 字（字包一個整窗格的 layer，順序一定在這段幾何之上）
