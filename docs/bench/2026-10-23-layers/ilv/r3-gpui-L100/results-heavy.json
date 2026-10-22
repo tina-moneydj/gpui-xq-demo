@@ -1,0 +1,369 @@
+{
+ "heavy": [
+  {
+   "app": "gpui",
+   "heavy": true,
+   "window_s": 0.19580217499969876,
+   "first_frame_s": 0.23777177999909327,
+   "first_quote_s": 0.36526965699886205,
+   "heavy_frame_s": 0.765427208998517,
+   "setup": {
+    "phase": "setup",
+    "cssW": 1166,
+    "cssH": 505,
+    "overlays": 20,
+    "subs": 8,
+    "drawings": 1000,
+    "layers": 100,
+    "visibleDrawings": 193,
+    "drawVertices": 10758,
+    "drawPaths": 313,
+    "bars": 1200,
+    "sinceStartMs": 577,
+    "rebuildMs": 1.41,
+    "paintMsTotal": 11.03,
+    "rssMb": 199.1
+   },
+   "phases": {
+    "ticks": {
+     "cpu_pct": 233.57806998556322,
+     "cpu_nollvm_pct": 16.256714520771478,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 217.3,
+      "gpui-xq-demo/gpui-xq-demo": 15.7
+     },
+     "mem": {
+      "rss_mb": 219.26171875,
+      "pss_mb": 167.4072265625,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 219.3,
+        "pss_mb": 167.4,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "ticks",
+      "seconds": 10.02,
+      "frames": 85,
+      "fps": 8.5,
+      "steps": 84,
+      "avgPaintMs": 2.837,
+      "plotPaints": 85,
+      "plotMs": 1.066,
+      "drawPaints": 170,
+      "drawMs": 0.641,
+      "livePaints": 85,
+      "liveMs": 0.488,
+      "selPaints": 85,
+      "selMs": 0.0,
+      "drawRebuilds": 85,
+      "rebuildMsTotal": 34.1,
+      "rssMb": 219.5
+     }
+    },
+    "crosshair": {
+     "cpu_pct": 319.1210748634159,
+     "cpu_nollvm_pct": 20.977881510401293,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 298.1,
+      "gpui-xq-demo/gpui-xq-demo": 20.2
+     },
+     "mem": {
+      "rss_mb": 220.11328125,
+      "pss_mb": 168.2587890625,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 220.1,
+        "pss_mb": 168.3,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "crosshair",
+      "seconds": 10.11,
+      "frames": 127,
+      "fps": 12.6,
+      "steps": 126,
+      "avgPaintMs": 2.693,
+      "plotPaints": 127,
+      "plotMs": 1.006,
+      "drawPaints": 254,
+      "drawMs": 0.587,
+      "livePaints": 127,
+      "liveMs": 0.512,
+      "selPaints": 127,
+      "selMs": 0.0,
+      "drawRebuilds": 127,
+      "rebuildMsTotal": 46.6,
+      "rssMb": 220.1
+     }
+    },
+    "pan": {
+     "cpu_pct": 227.05427536895607,
+     "cpu_nollvm_pct": 16.807784729458426,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 210.2,
+      "gpui-xq-demo/gpui-xq-demo": 16.0
+     },
+     "mem": {
+      "rss_mb": 220.76953125,
+      "pss_mb": 168.9111328125,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 220.8,
+        "pss_mb": 168.9,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "pan",
+      "seconds": 10.05,
+      "frames": 93,
+      "fps": 9.3,
+      "steps": 92,
+      "avgPaintMs": 2.305,
+      "plotPaints": 93,
+      "plotMs": 1.146,
+      "drawPaints": 186,
+      "drawMs": 0.312,
+      "livePaints": 93,
+      "liveMs": 0.535,
+      "selPaints": 93,
+      "selMs": 0.0,
+      "drawRebuilds": 1,
+      "rebuildMsTotal": 0.38,
+      "rssMb": 223.6
+     }
+    },
+    "drag": {
+     "cpu_pct": 228.03753847127388,
+     "cpu_nollvm_pct": 15.833174068529498,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 212.2,
+      "gpui-xq-demo/gpui-xq-demo": 15.1
+     },
+     "mem": {
+      "rss_mb": 223.6875,
+      "pss_mb": 171.8525390625,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 223.7,
+        "pss_mb": 171.9,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "drag",
+      "seconds": 10.06,
+      "frames": 89,
+      "fps": 8.8,
+      "steps": 88,
+      "avgPaintMs": 2.339,
+      "plotPaints": 89,
+      "plotMs": 1.263,
+      "drawPaints": 178,
+      "drawMs": 0.36,
+      "livePaints": 89,
+      "liveMs": 0.348,
+      "selPaints": 89,
+      "selMs": 0.008,
+      "drawRebuilds": 1,
+      "rebuildMsTotal": 1.06,
+      "rssMb": 223.7,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500
+     }
+    },
+    "select": {
+     "cpu_pct": 232.92231306491504,
+     "cpu_nollvm_pct": 17.44176499202402,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 215.5,
+      "gpui-xq-demo/gpui-xq-demo": 16.7
+     },
+     "mem": {
+      "rss_mb": 223.859375,
+      "pss_mb": 172.0009765625,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 223.9,
+        "pss_mb": 172.0,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "select",
+      "seconds": 10.03,
+      "frames": 98,
+      "fps": 9.8,
+      "steps": 97,
+      "avgPaintMs": 3.248,
+      "plotPaints": 98,
+      "plotMs": 1.143,
+      "drawPaints": 196,
+      "drawMs": 0.782,
+      "livePaints": 98,
+      "liveMs": 0.539,
+      "selPaints": 98,
+      "selMs": 0.002,
+      "drawRebuilds": 98,
+      "rebuildMsTotal": 42.04,
+      "rssMb": 224.1,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500,
+      "allOps": 97,
+      "allRebuildP50": 0.401,
+      "allRebuildP99": 1.603,
+      "allTtfP50": 96.61,
+      "allTtfP99": 160.849,
+      "selectOps": 49,
+      "selectRebuildP50": 0.403,
+      "selectRebuildP99": 1.065,
+      "selectTtfP50": 98.631,
+      "selectTtfP99": 160.849,
+      "deselectOps": 48,
+      "deselectRebuildP50": 0.4,
+      "deselectRebuildP99": 1.603,
+      "deselectTtfP50": 96.003,
+      "deselectTtfP99": 114.643
+     }
+    },
+    "reorder": {
+     "cpu_pct": 308.13363773245,
+     "cpu_nollvm_pct": 20.475655019498294,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 287.7,
+      "gpui-xq-demo/gpui-xq-demo": 19.6
+     },
+     "mem": {
+      "rss_mb": 224.02734375,
+      "pss_mb": 186.3564453125,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 224.0,
+        "pss_mb": 186.4,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "reorder",
+      "seconds": 10.02,
+      "frames": 119,
+      "fps": 11.9,
+      "steps": 118,
+      "avgPaintMs": 2.948,
+      "plotPaints": 119,
+      "plotMs": 1.01,
+      "drawPaints": 238,
+      "drawMs": 0.718,
+      "livePaints": 119,
+      "liveMs": 0.497,
+      "selPaints": 119,
+      "selMs": 0.004,
+      "drawRebuilds": 119,
+      "rebuildMsTotal": 55.94,
+      "rssMb": 224.0,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500,
+      "allOps": 118,
+      "allRebuildP50": 0.366,
+      "allRebuildP99": 2.1,
+      "allTtfP50": 64.02,
+      "allTtfP99": 145.094,
+      "zopOps": 60,
+      "zopRebuildP50": 0.358,
+      "zopRebuildP99": 2.1,
+      "zopTtfP50": 64.034,
+      "zopTtfP99": 145.094,
+      "layerVisOps": 30,
+      "layerVisRebuildP50": 0.383,
+      "layerVisRebuildP99": 10.398,
+      "layerVisTtfP50": 64.038,
+      "layerVisTtfP99": 208.002,
+      "layerMoveOps": 28,
+      "layerMoveRebuildP50": 0.366,
+      "layerMoveRebuildP99": 0.522,
+      "layerMoveTtfP50": 64.011,
+      "layerMoveTtfP99": 143.996
+     }
+    },
+    "zshot": {
+     "cpu_pct": 201.86053311286304,
+     "cpu_nollvm_pct": 10.920323922499147,
+     "threads": {
+      "gpui-xq-demo/llvmpipe": 190.9,
+      "gpui-xq-demo/gpui-xq-demo": 9.9
+     },
+     "mem": {
+      "rss_mb": 224.04296875,
+      "pss_mb": 172.1533203125,
+      "threads": 52,
+      "nproc": 1,
+      "procs": [
+       {
+        "comm": "gpui-xq-demo",
+        "rss_mb": 224.0,
+        "pss_mb": 172.2,
+        "threads": 52
+       }
+      ]
+     },
+     "perf": {
+      "phase": "zshot",
+      "seconds": 3.02,
+      "frames": 59,
+      "fps": 19.5,
+      "steps": 58,
+      "avgPaintMs": 0.257,
+      "plotPaints": 59,
+      "plotMs": 0.107,
+      "drawPaints": 118,
+      "drawMs": 0.032,
+      "livePaints": 59,
+      "liveMs": 0.081,
+      "selPaints": 59,
+      "selMs": 0.006,
+      "drawRebuilds": 1,
+      "rebuildMsTotal": 0.11,
+      "rssMb": 224.0,
+      "layers": 3,
+      "drawingsTotal": 7,
+      "pick": 500
+     }
+    }
+   },
+   "screenshot": "/workspace/bench/layers-20261023/ilv/r3-gpui-L100/gpui-heavy.png",
+   "screenshot_drag": "/workspace/bench/layers-20261023/ilv/r3-gpui-L100/gpui-drag.png",
+   "screenshot_zshot": "/workspace/bench/layers-20261023/ilv/r3-gpui-L100/gpui-zshot.png",
+   "run": 1
+  }
+ ]
+}

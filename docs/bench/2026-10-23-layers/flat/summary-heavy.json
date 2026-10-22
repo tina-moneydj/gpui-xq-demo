@@ -1,0 +1,782 @@
+{
+ "date": "2026-10-23 01:55 +0800",
+ "runs": 3,
+ "mode": "heavy",
+ "apps": [
+  "wry",
+  "gpui",
+  "egui"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "wry": {
+  "binary_mb": 1.764739990234375,
+  "heavy": {
+   "heavy_frame_ms": 1221.0894709996865,
+   "first_quote_ms": 773.0802919995767,
+   "canvas": "1166x512",
+   "overlays": 20,
+   "drawings": 1000,
+   "layers": 1,
+   "bars": 1200,
+   "ticks": {
+    "fps": 33,
+    "paint_ms": 6.066,
+    "cpu_pct": 226.14646976935742,
+    "cpu_nollvm_pct": 115.51941082699626,
+    "rss_mb": 703.3046875,
+    "pss_mb": 452.96484375,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 98.7,
+     "WebKitWebProces/WebKitWebProces": 98.1,
+     "wry-xq-demo/wry-xq-demo": 3.6,
+     "WebKitWebProces/JITWorker": 3.4
+    },
+    "perf_med": {
+     "avgPaintMs": 6.066,
+     "drawRebuilds": 0,
+     "fps": 33,
+     "frames": 331,
+     "rebuildMsTotal": 0,
+     "seconds": 10.02,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 33
+    }
+   },
+   "crosshair": {
+    "fps": 24.3,
+    "paint_ms": 8.091,
+    "cpu_pct": 162.53416776254025,
+    "cpu_nollvm_pct": 98.71769365352789,
+    "rss_mb": 711.7421875,
+    "pss_mb": 467.396484375,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 71.2,
+     "WebKitWebProces/llvmpipe": 68.8,
+     "wry-xq-demo/wry-xq-demo": 2.8
+    },
+    "perf_med": {
+     "avgPaintMs": 8.091,
+     "drawRebuilds": 0,
+     "fps": 24.3,
+     "frames": 243,
+     "rebuildMsTotal": 0,
+     "seconds": 10.02,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 24.3
+    }
+   },
+   "pan": {
+    "fps": 20.2,
+    "paint_ms": 8.36,
+    "cpu_pct": 203.48357341548115,
+    "cpu_nollvm_pct": 79.23788550522467,
+    "rss_mb": 812.80859375,
+    "pss_mb": 568.4658203125,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 135.1,
+     "WebKitWebProces/WebKitWebProces": 77.8,
+     "WebKitWebProces/JITWorker": 3.3,
+     "wry-xq-demo/wry-xq-demo": 3.2
+    },
+    "perf_med": {
+     "avgPaintMs": 8.36,
+     "drawRebuilds": 0,
+     "fps": 20.2,
+     "frames": 203,
+     "rebuildMsTotal": 0,
+     "seconds": 10.04,
+     "selMs": 0,
+     "selPaints": 0,
+     "tickHz": 20.2
+    }
+   },
+   "drag": {
+    "fps": 17.3,
+    "paint_ms": 9.618,
+    "cpu_pct": 149.14661493118203,
+    "cpu_nollvm_pct": 83.9373528328523,
+    "rss_mb": 828.2265625,
+    "pss_mb": 583.8798828125,
+    "threads_last": {
+     "WebKitWebProces/WebKitWebProces": 58.4,
+     "WebKitWebProces/llvmpipe": 50.9,
+     "wry-xq-demo/wry-xq-demo": 2.2
+    },
+    "perf_med": {
+     "avgPaintMs": 9.618,
+     "drawRebuilds": 1,
+     "drawingsTotal": 1000,
+     "fps": 17.3,
+     "frames": 173,
+     "layers": 1,
+     "pick": 500,
+     "rebuildMsTotal": 15,
+     "seconds": 10.04,
+     "selMs": 0.054,
+     "selPaints": 339
+    }
+   },
+   "select": {
+    "fps": 22.1,
+    "paint_ms": 14.072,
+    "cpu_pct": 182.30628431671775,
+    "cpu_nollvm_pct": 79.89597815410252,
+    "rss_mb": 853.65625,
+    "pss_mb": 612.5322265625,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 73.4,
+     "WebKitWebProces/WebKitWebProces": 55.8,
+     "wry-xq-demo/wry-xq-demo": 2.4,
+     "WebKitWebProces/JITWorker": 1.1
+    },
+    "perf_med": {
+     "allOps": 221,
+     "allRebuildP50": 4,
+     "allRebuildP99": 11,
+     "allTtfP50": 45,
+     "allTtfP99": 113,
+     "avgPaintMs": 14.072,
+     "deselectOps": 110,
+     "deselectRebuildP50": 4,
+     "deselectRebuildP99": 10,
+     "deselectTtfP50": 44,
+     "deselectTtfP99": 109,
+     "drawRebuilds": 222,
+     "drawingsTotal": 1000,
+     "fps": 22.1,
+     "frames": 222,
+     "layers": 1,
+     "pick": 500,
+     "rebuildMsTotal": 845,
+     "seconds": 10.05,
+     "selMs": 0.054,
+     "selPaints": 111,
+     "selectOps": 111,
+     "selectRebuildP50": 4,
+     "selectRebuildP99": 11,
+     "selectTtfP50": 45,
+     "selectTtfP99": 113
+    }
+   },
+   "reorder": {
+    "fps": 22.2,
+    "paint_ms": 12.671,
+    "cpu_pct": 210.81006373232958,
+    "cpu_nollvm_pct": 95.8768933923872,
+    "rss_mb": 879.4296875,
+    "pss_mb": 647.359375,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 100.0,
+     "WebKitWebProces/WebKitWebProces": 78.3,
+     "wry-xq-demo/wry-xq-demo": 2.6,
+     "WebKitWebProces/JITWorker": 1.9
+    },
+    "perf_med": {
+     "allOps": 221,
+     "allRebuildP50": 5,
+     "allRebuildP99": 9,
+     "allTtfP50": 36,
+     "allTtfP99": 107,
+     "avgPaintMs": 12.671,
+     "drawRebuilds": 222,
+     "drawingsTotal": 1000,
+     "fps": 22.2,
+     "frames": 222,
+     "layers": 1,
+     "pick": 500,
+     "rebuildMsTotal": 1009,
+     "seconds": 10.04,
+     "selMs": 0.019,
+     "selPaints": 360,
+     "zopOps": 221,
+     "zopRebuildP50": 5,
+     "zopRebuildP99": 9,
+     "zopTtfP50": 36,
+     "zopTtfP99": 107
+    }
+   },
+   "zshot": {
+    "fps": 57.4,
+    "paint_ms": 1.12,
+    "cpu_pct": 179.66342143407218,
+    "cpu_nollvm_pct": 54.393512911232854,
+    "rss_mb": 864.30078125,
+    "pss_mb": 619.873046875,
+    "threads_last": {
+     "WebKitWebProces/llvmpipe": 122.7,
+     "WebKitWebProces/WebKitWebProces": 44.8,
+     "wry-xq-demo/wry-xq-demo": 4.3,
+     "WebKitWebProces/HeapHelper": 1.3
+    },
+    "perf_med": {
+     "avgPaintMs": 1.12,
+     "drawRebuilds": 1,
+     "drawingsTotal": 7,
+     "fps": 57.4,
+     "frames": 173,
+     "layers": 3,
+     "rebuildMsTotal": 0,
+     "seconds": 3.01,
+     "selMs": 0.052,
+     "selPaints": 174
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "wry-xq-demo",
+     "rss_mb": 182.8,
+     "pss_mb": 85.2,
+     "threads": 33
+    },
+    {
+     "comm": "WebKitNetworkPr",
+     "rss_mb": 60.6,
+     "pss_mb": 27.3,
+     "threads": 9
+    },
+    {
+     "comm": "WebKitWebProces",
+     "rss_mb": 470.0,
+     "pss_mb": 376.2,
+     "threads": 37
+    }
+   ]
+  }
+ },
+ "gpui": {
+  "binary_mb": 25.628494262695312,
+  "heavy": {
+   "heavy_frame_ms": 778.6352760003865,
+   "first_quote_ms": 394.63871699990705,
+   "canvas": "1166x505",
+   "overlays": 20,
+   "drawings": 1000,
+   "layers": 1,
+   "bars": 1200,
+   "ticks": {
+    "fps": 10.8,
+    "paint_ms": 2.595,
+    "cpu_pct": 259.7891557998246,
+    "cpu_nollvm_pct": 17.76506712730264,
+    "rss_mb": 219.0625,
+    "pss_mb": 167.25390625,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 242.0,
+     "gpui-xq-demo/gpui-xq-demo": 17.2
+    },
+    "perf_med": {
+     "avgPaintMs": 2.595,
+     "drawMs": 0.566,
+     "drawPaints": 218,
+     "drawRebuilds": 109,
+     "fps": 10.8,
+     "frames": 109,
+     "liveMs": 0.44,
+     "livePaints": 109,
+     "plotMs": 1.023,
+     "plotPaints": 109,
+     "rebuildMsTotal": 38.61,
+     "rssMb": 219.0,
+     "seconds": 10.05,
+     "selMs": 0.0,
+     "selPaints": 109,
+     "steps": 108
+    }
+   },
+   "crosshair": {
+    "fps": 10.4,
+    "paint_ms": 2.938,
+    "cpu_pct": 245.3745266884241,
+    "cpu_nollvm_pct": 17.81104634113054,
+    "rss_mb": 219.55859375,
+    "pss_mb": 167.8056640625,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 227.6,
+     "gpui-xq-demo/gpui-xq-demo": 17.1
+    },
+    "perf_med": {
+     "avgPaintMs": 2.938,
+     "drawMs": 0.609,
+     "drawPaints": 210,
+     "drawRebuilds": 105,
+     "fps": 10.4,
+     "frames": 105,
+     "liveMs": 0.581,
+     "livePaints": 105,
+     "plotMs": 1.12,
+     "plotPaints": 105,
+     "rebuildMsTotal": 38.92,
+     "rssMb": 219.5,
+     "seconds": 10.05,
+     "selMs": 0.0,
+     "selPaints": 105,
+     "steps": 104
+    }
+   },
+   "pan": {
+    "fps": 12.6,
+    "paint_ms": 2.097,
+    "cpu_pct": 321.0179004168068,
+    "cpu_nollvm_pct": 23.093380743162538,
+    "rss_mb": 220.8203125,
+    "pss_mb": 169.197265625,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 223.0,
+     "gpui-xq-demo/gpui-xq-demo": 16.8
+    },
+    "perf_med": {
+     "avgPaintMs": 2.097,
+     "drawMs": 0.267,
+     "drawPaints": 254,
+     "drawRebuilds": 1,
+     "fps": 12.6,
+     "frames": 127,
+     "liveMs": 0.492,
+     "livePaints": 127,
+     "plotMs": 1.071,
+     "plotPaints": 127,
+     "rebuildMsTotal": 0.37,
+     "rssMb": 221.2,
+     "seconds": 10.03,
+     "selMs": 0.0,
+     "selPaints": 127,
+     "steps": 126
+    }
+   },
+   "drag": {
+    "fps": 13.6,
+    "paint_ms": 1.83,
+    "cpu_pct": 301.3305720865544,
+    "cpu_nollvm_pct": 21.189637456070017,
+    "rss_mb": 222.8359375,
+    "pss_mb": 180.9541015625,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 383.4,
+     "gpui-xq-demo/gpui-xq-demo": 24.4
+    },
+    "perf_med": {
+     "avgPaintMs": 1.83,
+     "drawMs": 0.255,
+     "drawPaints": 274,
+     "drawRebuilds": 1,
+     "drawingsTotal": 1000,
+     "fps": 13.6,
+     "frames": 137,
+     "layers": 1,
+     "liveMs": 0.332,
+     "livePaints": 137,
+     "pick": 500,
+     "plotMs": 0.983,
+     "plotPaints": 137,
+     "rebuildMsTotal": 0.89,
+     "rssMb": 222.8,
+     "seconds": 10.05,
+     "selMs": 0.007,
+     "selPaints": 137,
+     "steps": 136
+    }
+   },
+   "select": {
+    "fps": 10.6,
+    "paint_ms": 2.784,
+    "cpu_pct": 242.74439212373434,
+    "cpu_nollvm_pct": 18.320331481036558,
+    "rss_mb": 223.21875,
+    "pss_mb": 171.6044921875,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 295.0,
+     "gpui-xq-demo/gpui-xq-demo": 20.5
+    },
+    "perf_med": {
+     "allOps": 106,
+     "allRebuildP50": 0.361,
+     "allRebuildP99": 1.168,
+     "allTtfP50": 95.98,
+     "allTtfP99": 128.628,
+     "avgPaintMs": 2.784,
+     "deselectOps": 53,
+     "deselectRebuildP50": 0.369,
+     "deselectRebuildP99": 1.168,
+     "deselectTtfP50": 95.52,
+     "deselectTtfP99": 112.595,
+     "drawMs": 0.606,
+     "drawPaints": 214,
+     "drawRebuilds": 107,
+     "drawingsTotal": 1000,
+     "fps": 10.6,
+     "frames": 107,
+     "layers": 1,
+     "liveMs": 0.474,
+     "livePaints": 107,
+     "pick": 500,
+     "plotMs": 1.061,
+     "plotPaints": 107,
+     "rebuildMsTotal": 41.3,
+     "rssMb": 223.3,
+     "seconds": 10.05,
+     "selMs": 0.003,
+     "selPaints": 107,
+     "selectOps": 53,
+     "selectRebuildP50": 0.348,
+     "selectRebuildP99": 0.662,
+     "selectTtfP50": 96.001,
+     "selectTtfP99": 143.229,
+     "steps": 106
+    }
+   },
+   "reorder": {
+    "fps": 9.2,
+    "paint_ms": 2.84,
+    "cpu_pct": 211.75095734585025,
+    "cpu_nollvm_pct": 16.638990100141648,
+    "rss_mb": 223.44921875,
+    "pss_mb": 171.875,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 195.1,
+     "gpui-xq-demo/gpui-xq-demo": 16.0
+    },
+    "perf_med": {
+     "allOps": 91,
+     "allRebuildP50": 0.366,
+     "allRebuildP99": 1.016,
+     "allTtfP50": 111.987,
+     "allTtfP99": 155.169,
+     "avgPaintMs": 2.84,
+     "drawMs": 0.644,
+     "drawPaints": 184,
+     "drawRebuilds": 92,
+     "drawingsTotal": 1000,
+     "fps": 9.2,
+     "frames": 92,
+     "layers": 1,
+     "liveMs": 0.484,
+     "livePaints": 92,
+     "pick": 500,
+     "plotMs": 1.063,
+     "plotPaints": 92,
+     "rebuildMsTotal": 37.0,
+     "rssMb": 223.4,
+     "seconds": 10.05,
+     "selMs": 0.005,
+     "selPaints": 92,
+     "steps": 91,
+     "zopOps": 91,
+     "zopRebuildP50": 0.366,
+     "zopRebuildP99": 1.016,
+     "zopTtfP50": 111.987,
+     "zopTtfP99": 155.169
+    }
+   },
+   "zshot": {
+    "fps": 20.3,
+    "paint_ms": 0.257,
+    "cpu_pct": 208.85844097020606,
+    "cpu_nollvm_pct": 11.264468553040262,
+    "rss_mb": 223.37109375,
+    "pss_mb": 171.796875,
+    "threads_last": {
+     "gpui-xq-demo/llvmpipe": 195.9,
+     "gpui-xq-demo/gpui-xq-demo": 11.3
+    },
+    "perf_med": {
+     "avgPaintMs": 0.257,
+     "drawMs": 0.03,
+     "drawPaints": 122,
+     "drawRebuilds": 1,
+     "drawingsTotal": 7,
+     "fps": 20.3,
+     "frames": 61,
+     "layers": 3,
+     "liveMs": 0.073,
+     "livePaints": 61,
+     "pick": 500,
+     "plotMs": 0.107,
+     "plotPaints": 61,
+     "rebuildMsTotal": 0.12,
+     "rssMb": 223.4,
+     "seconds": 3.02,
+     "selMs": 0.007,
+     "selPaints": 61,
+     "steps": 60
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "gpui-xq-demo",
+     "rss_mb": 219.6,
+     "pss_mb": 167.8,
+     "threads": 53
+    }
+   ]
+  }
+ },
+ "egui": {
+  "binary_mb": 13.199920654296875,
+  "heavy": {
+   "heavy_frame_ms": 481.0431400001107,
+   "first_quote_ms": 142.0218709999972,
+   "canvas": "1166x505",
+   "overlays": 20,
+   "drawings": 1000,
+   "layers": 1,
+   "bars": 1200,
+   "ticks": {
+    "fps": 51.7,
+    "paint_ms": 1.056,
+    "cpu_pct": 254.8345805029496,
+    "cpu_nollvm_pct": 47.96886221231992,
+    "rss_mb": 138.84375,
+    "pss_mb": 84.8134765625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 216.8,
+     "egui-xq-demo/egui-xq-demo": 51.8
+    },
+    "perf_med": {
+     "avgPaintMs": 1.056,
+     "drawMs": 0.399,
+     "drawPaints": 516,
+     "drawRebuilds": 516,
+     "fps": 51.7,
+     "frames": 517,
+     "liveMs": 0.197,
+     "livePaints": 517,
+     "plotMs": 0.425,
+     "plotPaints": 517,
+     "rebuildMsTotal": 205.83,
+     "rssMb": 133.2,
+     "seconds": 10.01,
+     "selMs": 0.0,
+     "selPaints": 517,
+     "steps": 516
+    }
+   },
+   "crosshair": {
+    "fps": 51.0,
+    "paint_ms": 1.05,
+    "cpu_pct": 240.7067201159571,
+    "cpu_nollvm_pct": 47.12527649501483,
+    "rss_mb": 141.13671875,
+    "pss_mb": 86.931640625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 222.2,
+     "egui-xq-demo/egui-xq-demo": 52.9
+    },
+    "perf_med": {
+     "avgPaintMs": 1.05,
+     "drawMs": 0.364,
+     "drawPaints": 507,
+     "drawRebuilds": 507,
+     "fps": 51.0,
+     "frames": 511,
+     "liveMs": 0.3,
+     "livePaints": 510,
+     "plotMs": 0.401,
+     "plotPaints": 510,
+     "rebuildMsTotal": 184.55,
+     "rssMb": 133.2,
+     "seconds": 10.0,
+     "selMs": 0.0,
+     "selPaints": 510,
+     "steps": 510
+    }
+   },
+   "pan": {
+    "fps": 50.1,
+    "paint_ms": 0.703,
+    "cpu_pct": 237.5990759908842,
+    "cpu_nollvm_pct": 46.898842808573036,
+    "rss_mb": 140.3828125,
+    "pss_mb": 86.13671875,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 188.9,
+     "egui-xq-demo/egui-xq-demo": 46.8
+    },
+    "perf_med": {
+     "avgPaintMs": 0.703,
+     "drawMs": 0.053,
+     "drawPaints": 500,
+     "drawRebuilds": 1,
+     "fps": 50.1,
+     "frames": 501,
+     "liveMs": 0.253,
+     "livePaints": 501,
+     "plotMs": 0.396,
+     "plotPaints": 501,
+     "rebuildMsTotal": 0.36,
+     "rssMb": 132.7,
+     "seconds": 10.01,
+     "selMs": 0.0,
+     "selPaints": 501,
+     "steps": 500
+    }
+   },
+   "drag": {
+    "fps": 55.3,
+    "paint_ms": 0.543,
+    "cpu_pct": 256.5762335518504,
+    "cpu_nollvm_pct": 46.41488200828816,
+    "rss_mb": 140.78515625,
+    "pss_mb": 86.5390625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 185.8,
+     "egui-xq-demo/egui-xq-demo": 46.3
+    },
+    "perf_med": {
+     "avgPaintMs": 0.543,
+     "drawMs": 0.99,
+     "drawPaints": 1,
+     "drawRebuilds": 1,
+     "drawingsTotal": 1000,
+     "fps": 55.3,
+     "frames": 553,
+     "layers": 1,
+     "liveMs": 0.162,
+     "livePaints": 553,
+     "pick": 500,
+     "plotMs": 0.373,
+     "plotPaints": 553,
+     "rebuildMsTotal": 0.99,
+     "rssMb": 133.0,
+     "seconds": 10.01,
+     "selMs": 0.005,
+     "selPaints": 553,
+     "steps": 552
+    }
+   },
+   "select": {
+    "fps": 56.3,
+    "paint_ms": 0.685,
+    "cpu_pct": 271.0147061793659,
+    "cpu_nollvm_pct": 50.490500288106475,
+    "rss_mb": 133.0625,
+    "pss_mb": 78.84765625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 193.3,
+     "egui-xq-demo/egui-xq-demo": 46.4
+    },
+    "perf_med": {
+     "allOps": 563,
+     "allRebuildP50": 0.347,
+     "allRebuildP99": 0.59,
+     "allTtfP50": 17.552,
+     "allTtfP99": 26.967,
+     "avgPaintMs": 0.685,
+     "deselectOps": 281,
+     "deselectRebuildP50": 0.346,
+     "deselectRebuildP99": 0.559,
+     "deselectTtfP50": 17.548,
+     "deselectTtfP99": 28.222,
+     "drawMs": 0.361,
+     "drawPaints": 564,
+     "drawRebuilds": 564,
+     "drawingsTotal": 1000,
+     "fps": 56.3,
+     "frames": 564,
+     "layers": 1,
+     "liveMs": 0.122,
+     "livePaints": 564,
+     "pick": 500,
+     "plotMs": 0.489,
+     "plotPaints": 201,
+     "rebuildMsTotal": 203.84,
+     "rssMb": 133.2,
+     "seconds": 10.02,
+     "selMs": 0.002,
+     "selPaints": 564,
+     "selectOps": 282,
+     "selectRebuildP50": 0.347,
+     "selectRebuildP99": 0.606,
+     "selectTtfP50": 17.552,
+     "selectTtfP99": 25.516,
+     "steps": 563
+    }
+   },
+   "reorder": {
+    "fps": 56.9,
+    "paint_ms": 0.665,
+    "cpu_pct": 273.19295483173994,
+    "cpu_nollvm_pct": 49.94421973326554,
+    "rss_mb": 133.16015625,
+    "pss_mb": 91.5634765625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 222.3,
+     "egui-xq-demo/egui-xq-demo": 50.8
+    },
+    "perf_med": {
+     "allOps": 568,
+     "allRebuildP50": 0.347,
+     "allRebuildP99": 0.506,
+     "allTtfP50": 17.417,
+     "allTtfP99": 28.262,
+     "avgPaintMs": 0.665,
+     "drawMs": 0.349,
+     "drawPaints": 569,
+     "drawRebuilds": 569,
+     "drawingsTotal": 1000,
+     "fps": 56.9,
+     "frames": 569,
+     "layers": 1,
+     "liveMs": 0.12,
+     "livePaints": 569,
+     "pick": 500,
+     "plotMs": 0.468,
+     "plotPaints": 235,
+     "rebuildMsTotal": 198.67,
+     "rssMb": 133.2,
+     "seconds": 10.01,
+     "selMs": 0.003,
+     "selPaints": 569,
+     "steps": 568,
+     "zopOps": 568,
+     "zopRebuildP50": 0.347,
+     "zopRebuildP99": 0.506,
+     "zopTtfP50": 17.417,
+     "zopTtfP99": 28.262
+    }
+   },
+   "zshot": {
+    "fps": 70.6,
+    "paint_ms": 0.09,
+    "cpu_pct": 149.7307618639878,
+    "cpu_nollvm_pct": 8.670378192569448,
+    "rss_mb": 129.35546875,
+    "pss_mb": 75.1171875,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 145.0,
+     "egui-xq-demo/egui-xq-demo": 9.0
+    },
+    "perf_med": {
+     "avgPaintMs": 0.09,
+     "drawMs": 0.283,
+     "drawPaints": 1,
+     "drawRebuilds": 1,
+     "drawingsTotal": 7,
+     "fps": 70.6,
+     "frames": 213,
+     "layers": 3,
+     "liveMs": 0.032,
+     "livePaints": 213,
+     "pick": 500,
+     "plotMs": 0.114,
+     "plotPaints": 96,
+     "rebuildMsTotal": 0.28,
+     "rssMb": 129.4,
+     "seconds": 3.0,
+     "selMs": 0.006,
+     "selPaints": 213,
+     "steps": 212
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "egui-xq-demo",
+     "rss_mb": 141.2,
+     "pss_mb": 87.0,
+     "threads": 19
+    }
+   ]
+  }
+ }
+}
