@@ -1,0 +1,45 @@
+==== run 1 Fri Oct 23 2026 02:36:54 GMT+0800 (Taipei Standard Time)
+0.412 Failed to load resource: the server responded with a status of 404 (Not Found)
+0.691 BENCH wasm-start
+1.259 BENCH first-frame
+1.264 [xq-feed] 已連上 ws://127.0.0.1:47760/feed
+1.395 BENCH first-quote
+1.825 [metrics] fps=6 rss_mb=16.0 feed_frames/s=1 quote_rows/s=0 applies/s=2 apply_us_avg=5 chart_paints/s=2 chart_paint_us_avg=4632 conn=Ready
+2.841 [metrics] fps=1 rss_mb=16.0 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+3.871 [metrics] fps=1 rss_mb=16.0 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+4.879 [metrics] fps=6 rss_mb=19.1 feed_frames/s=26 quote_rows/s=50033 applies/s=4 apply_us_avg=3906 chart_paints/s=2 chart_paint_us_avg=302 conn=Ready
+5.891 [metrics] fps=1 rss_mb=19.1 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+6.908 [metrics] fps=1 rss_mb=19.1 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+7.925 [metrics] fps=18 rss_mb=19.1 feed_frames/s=123 quote_rows/s=6150 applies/s=18 apply_us_avg=310 chart_paints/s=34 chart_paint_us_avg=159 conn=Ready
+8.941 [metrics] fps=48 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10155 applies/s=48 apply_us_avg=137 chart_paints/s=96 chart_paint_us_avg=110 conn=Ready
+10.150 [metrics] fps=43 rss_mb=19.1 feed_frames/s=194 quote_rows/s=10168 applies/s=43 apply_us_avg=177 chart_paints/s=86 chart_paint_us_avg=113 conn=Ready
+10.974 [metrics] fps=50 rss_mb=19.1 feed_frames/s=202 quote_rows/s=10167 applies/s=50 apply_us_avg=165 chart_paints/s=100 chart_paint_us_avg=119 conn=Ready
+11.974 [metrics] fps=52 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10004 applies/s=52 apply_us_avg=116 chart_paints/s=104 chart_paint_us_avg=94 conn=Ready
+12.989 [metrics] fps=51 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10147 applies/s=51 apply_us_avg=122 chart_paints/s=102 chart_paint_us_avg=99 conn=Ready
+13.990 [metrics] fps=57 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10008 applies/s=57 apply_us_avg=98 chart_paints/s=114 chart_paint_us_avg=92 conn=Ready
+14.991 [metrics] fps=54 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10000 applies/s=54 apply_us_avg=108 chart_paints/s=108 chart_paint_us_avg=98 conn=Ready
+16.007 [metrics] fps=49 rss_mb=19.1 feed_frames/s=204 quote_rows/s=10200 applies/s=49 apply_us_avg=115 chart_paints/s=98 chart_paint_us_avg=100 conn=Ready
+17.007 [metrics] fps=54 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10000 applies/s=54 apply_us_avg=111 chart_paints/s=108 chart_paint_us_avg=100 conn=Ready
+18.024 [metrics] fps=49 rss_mb=19.1 feed_frames/s=202 quote_rows/s=10155 applies/s=49 apply_us_avg=135 chart_paints/s=98 chart_paint_us_avg=101 conn=Ready
+19.071 [metrics] fps=53 rss_mb=19.1 feed_frames/s=207 quote_rows/s=10350 applies/s=53 apply_us_avg=156 chart_paints/s=106 chart_paint_us_avg=101 conn=Ready
+20.165 [metrics] fps=53 rss_mb=19.1 feed_frames/s=220 quote_rows/s=11012 applies/s=53 apply_us_avg=128 chart_paints/s=106 chart_paint_us_avg=98 conn=Ready
+21.173 [metrics] fps=55 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10138 applies/s=55 apply_us_avg=111 chart_paints/s=110 chart_paint_us_avg=100 conn=Ready
+22.173 [metrics] fps=46 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10000 applies/s=46 apply_us_avg=144 chart_paints/s=92 chart_paint_us_avg=99 conn=Ready
+23.193 [metrics] fps=45 rss_mb=19.1 feed_frames/s=204 quote_rows/s=10202 applies/s=45 apply_us_avg=138 chart_paints/s=90 chart_paint_us_avg=99 conn=Ready
+24.206 [metrics] fps=51 rss_mb=19.1 feed_frames/s=202 quote_rows/s=10123 applies/s=50 apply_us_avg=132 chart_paints/s=102 chart_paint_us_avg=102 conn=Ready
+25.223 [metrics] fps=53 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10150 applies/s=53 apply_us_avg=114 chart_paints/s=104 chart_paint_us_avg=96 conn=Ready
+26.239 [metrics] fps=55 rss_mb=19.1 feed_frames/s=204 quote_rows/s=10200 applies/s=55 apply_us_avg=104 chart_paints/s=110 chart_paint_us_avg=96 conn=Ready
+27.240 [metrics] fps=54 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10000 applies/s=54 apply_us_avg=110 chart_paints/s=108 chart_paint_us_avg=97 conn=Ready
+28.257 [metrics] fps=55 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10150 applies/s=55 apply_us_avg=109 chart_paints/s=110 chart_paint_us_avg=101 conn=Ready
+29.562 [metrics] fps=45 rss_mb=19.1 feed_frames/s=224 quote_rows/s=11200 applies/s=45 apply_us_avg=272 chart_paints/s=90 chart_paint_us_avg=121 conn=Ready
+30.390 [metrics] fps=48 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10150 applies/s=48 apply_us_avg=144 chart_paints/s=96 chart_paint_us_avg=100 conn=Ready
+31.405 [metrics] fps=52 rss_mb=19.1 feed_frames/s=202 quote_rows/s=10153 applies/s=52 apply_us_avg=129 chart_paints/s=104 chart_paint_us_avg=100 conn=Ready
+32.406 [metrics] fps=52 rss_mb=19.1 feed_frames/s=199 quote_rows/s=10000 applies/s=52 apply_us_avg=122 chart_paints/s=104 chart_paint_us_avg=99 conn=Ready
+33.423 [metrics] fps=56 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10150 applies/s=56 apply_us_avg=116 chart_paints/s=112 chart_paint_us_avg=99 conn=Ready
+34.440 [metrics] fps=53 rss_mb=19.1 feed_frames/s=203 quote_rows/s=10150 applies/s=53 apply_us_avg=124 chart_paints/s=106 chart_paint_us_avg=99 conn=Ready
+35.455 [metrics] fps=52 rss_mb=19.1 feed_frames/s=204 quote_rows/s=10200 applies/s=52 apply_us_avg=125 chart_paints/s=104 chart_paint_us_avg=98 conn=Ready
+36.456 [metrics] fps=50 rss_mb=19.1 feed_frames/s=200 quote_rows/s=10000 applies/s=50 apply_us_avg=119 chart_paints/s=100 chart_paint_us_avg=86 conn=Ready
+37.457 [metrics] fps=44 rss_mb=19.1 feed_frames/s=158 quote_rows/s=8469 applies/s=42 apply_us_avg=114 chart_paints/s=86 chart_paint_us_avg=85 conn=Ready
+38.474 [metrics] fps=1 rss_mb=19.1 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+39.490 [metrics] fps=1 rss_mb=19.1 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready
+40.506 [metrics] fps=1 rss_mb=19.1 feed_frames/s=0 quote_rows/s=0 applies/s=0 apply_us_avg=0 chart_paints/s=0 chart_paint_us_avg=0 conn=Ready

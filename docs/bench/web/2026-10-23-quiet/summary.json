@@ -1,0 +1,419 @@
+{
+ "runs": {},
+ "failed": [
+  {
+   "app": "gpui-web",
+   "mode": "ticks:s1k",
+   "run": 1,
+   "error": "tickgen 等不到 start"
+  }
+ ],
+ "egui-web": {
+  "main": {
+   "n": 2,
+   "first_frame_s": 0.4,
+   "first_quote_s": 0.4,
+   "rss10_mb": 1247.3,
+   "pss10_mb": 564.5,
+   "rss60_mb": 1254.2,
+   "pss60_mb": 545.5,
+   "renderer_pss60_mb": 174.9,
+   "gpu_pss60_mb": 142.7,
+   "js_heap60_mb": 3.6,
+   "wasm60_mb": 10.0,
+   "cpu_pct": 128.8,
+   "cpu_nollvm_pct": 14.7,
+   "fps": 19.4,
+   "bytes_transferred": 7563480.0,
+   "loadavg": [
+    "1.53",
+    "2.61"
+   ]
+  },
+  "stress": {
+   "n": 2,
+   "cpu_tick_pct": 249.8,
+   "cpu_tick_nollvm_pct": 25.8,
+   "cpu_scroll_pct": 302.6,
+   "cpu_scroll_nollvm_pct": 29.4,
+   "rss_tick_mb": 1235.5,
+   "pss_tick_mb": 545.1,
+   "pss_scroll_mb": 543.0,
+   "wasm_tick_mb": 12.7,
+   "tick_fps": 34.1,
+   "scroll_fps": 42.0,
+   "scroll_jank": 172.0,
+   "tick_paint_ms": 0.2,
+   "scroll_paint_ms": 0.3,
+   "loadavg": [
+    "2.93",
+    "1.92"
+   ]
+  },
+  "heavy": {
+   "n": 2,
+   "heavy_frame_s": 0.7,
+   "loadavg": [
+    "4.85",
+    "5.12"
+   ],
+   "ticks": {
+    "fps": 32.5,
+    "paint_ms": 1.1,
+    "cpu_pct": 480.7,
+    "cpu_nollvm_pct": 60.4,
+    "rss_mb": 1298.1,
+    "pss_mb": 613.4,
+    "wasm_mb": 16.2
+   },
+   "crosshair": {
+    "fps": 32.5,
+    "paint_ms": 1.3,
+    "cpu_pct": 485.2,
+    "cpu_nollvm_pct": 60.5,
+    "rss_mb": 1317.5,
+    "pss_mb": 629.9,
+    "wasm_mb": 16.2
+   },
+   "pan": {
+    "fps": 32.7,
+    "paint_ms": 0.9,
+    "cpu_pct": 471.4,
+    "cpu_nollvm_pct": 58.2,
+    "rss_mb": 1321.2,
+    "pss_mb": 622.5,
+    "wasm_mb": 17.0
+   }
+  },
+  "ticks_s1k": {
+   "n": 2,
+   "lat_p50": 31.8,
+   "lat_p99": 64.1,
+   "lat_max": 105.7,
+   "transport_p50": 0.0,
+   "recv_to_apply_p50": 2.7,
+   "apply_to_present_p50": 16.7,
+   "first5_p50": 31.6,
+   "last5_p50": 31.8,
+   "loss": [
+    0,
+    0
+   ],
+   "sent": 29996.5,
+   "fps": 55.0,
+   "cpu_pct": 344.9,
+   "cpu_nollvm_pct": 39.4,
+   "rss_end_mb": 1243.6,
+   "pss_end_mb": 558.0,
+   "rss_growth_mb": -8.9,
+   "wasm_end_mb": 22.2,
+   "loadavg": [
+    "6.28",
+    "5.27"
+   ]
+  },
+  "ticks_s10k": {
+   "n": 1,
+   "lat_p50": 31.6,
+   "lat_p99": 119.2,
+   "lat_max": 309.3,
+   "transport_p50": -0.6,
+   "recv_to_apply_p50": 2.9,
+   "apply_to_present_p50": 16.7,
+   "first5_p50": 32.3,
+   "last5_p50": 31.7,
+   "loss": [
+    0
+   ],
+   "sent": 299951,
+   "fps": 52,
+   "cpu_pct": 363,
+   "cpu_nollvm_pct": 49.5,
+   "rss_end_mb": 1245.9,
+   "pss_end_mb": 557.9,
+   "rss_growth_mb": 0.3,
+   "wasm_end_mb": 19.1,
+   "loadavg": [
+    "0.77"
+   ]
+  },
+  "ticks_s50k": {
+   "n": 1,
+   "lat_p50": 31.5,
+   "lat_p99": 63.9,
+   "lat_max": 150.2,
+   "transport_p50": -0.3,
+   "recv_to_apply_p50": 3,
+   "apply_to_present_p50": 16.4,
+   "first5_p50": 31.5,
+   "last5_p50": 32,
+   "loss": [
+    0
+   ],
+   "sent": 1499755,
+   "fps": 55,
+   "cpu_pct": 333,
+   "cpu_nollvm_pct": 45.8,
+   "rss_end_mb": 1239.3,
+   "pss_end_mb": 555.3,
+   "rss_growth_mb": -10.7,
+   "wasm_end_mb": 21.2,
+   "loadavg": [
+    "3.48"
+   ]
+  },
+  "ticks_s100k": {
+   "n": 1,
+   "lat_p50": 31.5,
+   "lat_p99": 65,
+   "lat_max": 162.9,
+   "transport_p50": -0.4,
+   "recv_to_apply_p50": 3.2,
+   "apply_to_present_p50": 16.2,
+   "first5_p50": 31.6,
+   "last5_p50": 30.7,
+   "loss": [
+    0
+   ],
+   "sent": 2999709,
+   "fps": 54,
+   "cpu_pct": 331,
+   "cpu_nollvm_pct": 51.5,
+   "rss_end_mb": 1239,
+   "pss_end_mb": 553.9,
+   "rss_growth_mb": -4.3,
+   "wasm_end_mb": 19.1,
+   "loadavg": [
+    "3.00"
+   ]
+  },
+  "ticks_burst": {
+   "n": 1,
+   "lat_p50": 31.2,
+   "lat_p99": 64.5,
+   "lat_max": 166.5,
+   "transport_p50": -0.6,
+   "recv_to_apply_p50": 2.8,
+   "apply_to_present_p50": 16.6,
+   "first5_p50": 31.2,
+   "last5_p50": 30.3,
+   "loss": [
+    0
+   ],
+   "sent": 599957,
+   "fps": 55,
+   "cpu_pct": 331.2,
+   "cpu_nollvm_pct": 41,
+   "rss_end_mb": 1242,
+   "pss_end_mb": 556.2,
+   "rss_growth_mb": 1,
+   "wasm_end_mb": 19.1,
+   "loadavg": [
+    "3.39"
+   ]
+  }
+ },
+ "gpui-web": {
+  "main": {
+   "n": 2,
+   "first_frame_s": 0.5,
+   "first_quote_s": 0.6,
+   "rss10_mb": 1288.0,
+   "pss10_mb": 606.3,
+   "rss60_mb": 1264.3,
+   "pss60_mb": 574.5,
+   "renderer_pss60_mb": 199.8,
+   "gpu_pss60_mb": 151.2,
+   "js_heap60_mb": 2.7,
+   "wasm60_mb": 14.9,
+   "cpu_pct": 256.2,
+   "cpu_nollvm_pct": 56.6,
+   "fps": 19.1,
+   "bytes_transferred": 13070599.0,
+   "loadavg": [
+    "2.67",
+    "1.51"
+   ]
+  },
+  "stress": {
+   "n": 2,
+   "cpu_tick_pct": 458.8,
+   "cpu_tick_nollvm_pct": 36.3,
+   "cpu_scroll_pct": 523.5,
+   "cpu_scroll_nollvm_pct": 38.6,
+   "rss_tick_mb": 1271.6,
+   "pss_tick_mb": 582.7,
+   "pss_scroll_mb": 589.0,
+   "wasm_tick_mb": 19.4,
+   "tick_fps": 39.5,
+   "scroll_fps": 48.7,
+   "scroll_jank": 21.0,
+   "tick_paint_ms": 0.1,
+   "scroll_paint_ms": 0.1,
+   "loadavg": [
+    "3.35",
+    "2.35"
+   ]
+  },
+  "heavy": {
+   "n": 2,
+   "heavy_frame_s": 1.0,
+   "loadavg": [
+    "5.75",
+    "4.47"
+   ],
+   "ticks": {
+    "fps": 25.9,
+    "paint_ms": 2.3,
+    "cpu_pct": 556.2,
+    "cpu_nollvm_pct": 59.0,
+    "rss_mb": 1355.5,
+    "pss_mb": 657.4,
+    "wasm_mb": 48.8
+   },
+   "crosshair": {
+    "fps": 26.0,
+    "paint_ms": 2.3,
+    "cpu_pct": 556.4,
+    "cpu_nollvm_pct": 59.5,
+    "rss_mb": 1356.6,
+    "pss_mb": 656.8,
+    "wasm_mb": 54.0
+   },
+   "pan": {
+    "fps": 25.8,
+    "paint_ms": 1.8,
+    "cpu_pct": 547.0,
+    "cpu_nollvm_pct": 57.4,
+    "rss_mb": 1355.4,
+    "pss_mb": 655.4,
+    "wasm_mb": 54.0
+   }
+  },
+  "ticks_s1k": {
+   "n": 1,
+   "lat_p50": 47.6,
+   "lat_p99": 59.7,
+   "lat_max": 63.2,
+   "transport_p50": -0.8,
+   "recv_to_apply_p50": 2.4,
+   "apply_to_present_p50": 25.8,
+   "first5_p50": 48.1,
+   "last5_p50": 47.8,
+   "loss": [
+    0
+   ],
+   "sent": 29995,
+   "fps": 40,
+   "cpu_pct": 428.3,
+   "cpu_nollvm_pct": 41.3,
+   "rss_end_mb": 1277.8,
+   "pss_end_mb": 593.7,
+   "rss_growth_mb": -23.5,
+   "wasm_end_mb": 28.2,
+   "loadavg": [
+    "4.58"
+   ]
+  },
+  "ticks_s10k": {
+   "n": 1,
+   "lat_p50": 47.8,
+   "lat_p99": 60.8,
+   "lat_max": 173.9,
+   "transport_p50": -0.6,
+   "recv_to_apply_p50": 2.7,
+   "apply_to_present_p50": 25.8,
+   "first5_p50": 48.3,
+   "last5_p50": 48,
+   "loss": [
+    0
+   ],
+   "sent": 299988,
+   "fps": 40,
+   "cpu_pct": 422.4,
+   "cpu_nollvm_pct": 43.9,
+   "rss_end_mb": 1288.1,
+   "pss_end_mb": 600.9,
+   "rss_growth_mb": -20.1,
+   "wasm_end_mb": 29.9,
+   "loadavg": [
+    "2.93"
+   ]
+  },
+  "ticks_s50k": {
+   "n": 1,
+   "lat_p50": 47.9,
+   "lat_p99": 61,
+   "lat_max": 175.2,
+   "transport_p50": -0.1,
+   "recv_to_apply_p50": 2.6,
+   "apply_to_present_p50": 25.2,
+   "first5_p50": 47.5,
+   "last5_p50": 48.5,
+   "loss": [
+    0
+   ],
+   "sent": 1499984,
+   "fps": 40,
+   "cpu_pct": 409.7,
+   "cpu_nollvm_pct": 47.8,
+   "rss_end_mb": 1293.2,
+   "pss_end_mb": 604.6,
+   "rss_growth_mb": -12.2,
+   "wasm_end_mb": 27.5,
+   "loadavg": [
+    "2.92"
+   ]
+  },
+  "ticks_s100k": {
+   "n": 1,
+   "lat_p50": 48.8,
+   "lat_p99": 111.4,
+   "lat_max": 162.8,
+   "transport_p50": -0.4,
+   "recv_to_apply_p50": 2.9,
+   "apply_to_present_p50": 25.3,
+   "first5_p50": 49.1,
+   "last5_p50": 48.9,
+   "loss": [
+    0
+   ],
+   "sent": 2999748,
+   "fps": 39,
+   "cpu_pct": 421,
+   "cpu_nollvm_pct": 56.3,
+   "rss_end_mb": 1291.8,
+   "pss_end_mb": 605.4,
+   "rss_growth_mb": -13.1,
+   "wasm_end_mb": 27.5,
+   "loadavg": [
+    "2.89"
+   ]
+  },
+  "ticks_burst": {
+   "n": 1,
+   "lat_p50": 48.6,
+   "lat_p99": 61.1,
+   "lat_max": 183.7,
+   "transport_p50": 0.1,
+   "recv_to_apply_p50": 2.5,
+   "apply_to_present_p50": 25.8,
+   "first5_p50": 49.3,
+   "last5_p50": 48.5,
+   "loss": [
+    0
+   ],
+   "sent": 599966,
+   "fps": 39,
+   "cpu_pct": 411,
+   "cpu_nollvm_pct": 44.3,
+   "rss_end_mb": 1277.2,
+   "pss_end_mb": 590.2,
+   "rss_growth_mb": -21.6,
+   "wasm_end_mb": 25.4,
+   "loadavg": [
+    "3.92"
+   ]
+  }
+ }
+}
