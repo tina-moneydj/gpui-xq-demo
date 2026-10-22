@@ -17,6 +17,8 @@ mod table;
 mod theme;
 mod tick_tape;
 mod tickbench;
+mod layers;
+mod zstress;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};

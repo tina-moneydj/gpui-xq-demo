@@ -15,6 +15,9 @@ pub struct Entry {
     pub cfg: Option<IndCfg>,
     #[serde(default)]
     pub drawings: Vec<Drawing>,
+    /// 圖層（layers.rs）；舊存檔沒有 → 一個預設層
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub layers: Vec<crate::layers::Layer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
