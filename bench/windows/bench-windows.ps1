@@ -1,9 +1,9 @@
 ﻿<#
 .SYNOPSIS
-  XQ 三方壓測（wry / gpui / egui）Windows 版：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
+  XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
 .DESCRIPTION
   與 Linux 版 scripts/bench-main-window.sh、bench-ticks.sh、bench-multi.sh 同情境、同量法（3 輪取中位數）。
-  執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「bench-latest」自動下載（egui 是私人 repo：需要 gh 已登入或 GITHUB_TOKEN）。
+  執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「windows-bench-latest」自動下載（egui 是私人 repo：需要 gh 已登入或 GITHUB_TOKEN）。
   結果：results\<時間>-<電腦名>\ 內的 results.json、summary.md（中文、結論在前）、log、截圖，以及同名 .zip。
 .EXAMPLE
   .\bench-windows.ps1                 # 全部（約 75 分鐘）
@@ -16,7 +16,7 @@ param(
     [int]$Runs = 3,
     [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi"),
     [string[]]$Ticks = @("s1k", "s10k", "s50k", "s100k", "burst"),
-    [string[]]$Apps = @("wry", "gpui", "egui"),
+    [string[]]$Apps = @("gpui", "egui"),
     [string[]]$Windows = @("1", "4"),
     [switch]$Quick,
     [switch]$Update,
@@ -26,7 +26,7 @@ param(
     [string]$OutDir = "",
     [switch]$NoZip,
     [string]$Owner = "tina-moneydj",
-    [string]$Tag = "bench-latest"
+    [string]$Tag = "windows-bench-latest"
 )
 
 Set-StrictMode -Version 2
@@ -55,14 +55,12 @@ function EnvInt($k, $d) { $v = [Environment]::GetEnvironmentVariable($k); if ($v
 $CLICK = @{
     gpui = @{ "2330" = @(30, (EnvInt "GPUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "GPUI_ROW1_Y" 484)) }
     egui = @{ "2330" = @(30, (EnvInt "EGUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "EGUI_ROW1_Y" 484)) }
-    wry  = @{ "2330" = @(30, (EnvInt "WRY_ROW0_Y" 501));  "2317" = @(30, (EnvInt "WRY_ROW1_Y" 524)) }
 }
 $WATCH = @("2330","2317","2454","0050","2303","2881","2882","2308","2412","2382","3711","2891","2886","1301","1303",
            "2002","3008","2357","2603","2609","3231","6505","2884","2892","5880","2207","1216","2379","3034","2345",
            "AAPL","TSLA","NVDA")
 $EXES = [ordered]@{
-    wry      = @{ file = "wry-xq-demo.exe";  repo = "wry-xq-demo";  private = $false }
-    feedhost = @{ file = "WryFeedHost.exe";  repo = "wry-xq-demo";  private = $false }
+    demofeed = @{ file = "xq-demofeed.exe";  repo = "gpui-xq-demo"; private = $false }
     gpui     = @{ file = "gpui-xq-demo.exe"; repo = "gpui-xq-demo"; private = $false }
     tickgen  = @{ file = "xq-tickgen.exe";   repo = "gpui-xq-demo"; private = $false }
     egui     = @{ file = "egui-xq-demo.exe"; repo = "egui-xq-demo"; private = $true }
@@ -152,11 +150,10 @@ function Download-Asset($repo, $file, $dest, $private) {
 }
 
 function Build-FromSource($bin) {
-    if (-not $SrcRoot) { throw "-Build 需要 -SrcRoot（放三個 repo 的資料夾：gpui-xq-demo、wry-xq-demo、egui-xq-demo）" }
-    foreach ($t in @("cargo", "dotnet")) { if (-not (Get-Command $t -ErrorAction SilentlyContinue)) { throw "-Build 需要 $t（rustup / .NET 8 SDK；gpui 另需 Visual Studio Build Tools＋Windows SDK 的 fxc.exe）" } }
+    if (-not $SrcRoot) { throw "-Build 需要 -SrcRoot（放兩個 repo 的資料夾：gpui-xq-demo、egui-xq-demo）" }
+    if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw "-Build 需要 cargo（rustup；gpui 另需 Visual Studio Build Tools＋Windows SDK 的 fxc.exe）" }
     $jobs = @(
-        @{ dir = "gpui-xq-demo"; args = "build --release -p gpui-xq-demo -p xq-feed --bins"; out = @("gpui-xq-demo.exe", "xq-tickgen.exe") },
-        @{ dir = "wry-xq-demo";  args = "build --release"; out = @("wry-xq-demo.exe") },
+        @{ dir = "gpui-xq-demo"; args = "build --release -p gpui-xq-demo -p xq-feed --bins"; out = @("gpui-xq-demo.exe", "xq-tickgen.exe", "xq-demofeed.exe") },
         @{ dir = "egui-xq-demo"; args = "build --release"; out = @("egui-xq-demo.exe") }
     )
     foreach ($j in $jobs) {
@@ -165,13 +162,6 @@ function Build-FromSource($bin) {
         Say "cargo $($j.args)（$d）"
         Push-Location $d; try { & cargo $j.args.Split(" "); if ($LASTEXITCODE) { throw "cargo 失敗：$d" } } finally { Pop-Location }
         foreach ($o in $j.out) { Copy-Item (Join-Path $d "target\release\$o") $bin -Force }
-    }
-    $fh = Join-Path $SrcRoot "wry-xq-demo\feedhost\WryFeedHost\WryFeedHost.csproj"
-    if (Test-Path $fh) {
-        Say "dotnet publish WryFeedHost"
-        & dotnet publish $fh -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o (Join-Path $bin "feedhost-out")
-        if ($LASTEXITCODE) { throw "dotnet publish 失敗" }
-        Copy-Item (Join-Path $bin "feedhost-out\WryFeedHost.exe") $bin -Force
     }
 }
 
@@ -205,12 +195,6 @@ function Get-MachineInfo {
     $build = [int]$nt.CurrentBuild
     $prod = [string]$nt.ProductName; if ($build -ge 22000) { $prod = $prod -replace "Windows 10", "Windows 11" }
     $disp = Get-P $nt "DisplayVersion"; if (-not $disp) { $disp = Get-P $nt "ReleaseId" }
-    $wv2 = $null
-    foreach ($k in @("HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
-                     "HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
-                     "HKCU:\Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}")) {
-        if (Test-Path $k) { $wv2 = Get-P (Get-ItemProperty $k) "pv"; if ($wv2) { break } }
-    }
     $power = $null; try { $power = ((powercfg /getactivescheme) | Out-String).Trim() } catch { }
     $bat = @(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue)
     $mons = @([XqBench]::Monitors() | ForEach-Object {
@@ -229,7 +213,6 @@ function Get-MachineInfo {
         gpus = @($gpu | ForEach-Object { [ordered]@{ name = $_.Name; driver = $_.DriverVersion; driverDate = "$($_.DriverDate)"
                     mode = "$($_.CurrentHorizontalResolution)x$($_.CurrentVerticalResolution)@$($_.CurrentRefreshRate)Hz"; status = $_.Status } })
         monitors = $mons
-        webview2 = $wv2
         powerPlan = $power
         onBattery = [bool](@($bat | Where-Object { $_.BatteryStatus -eq 1 }).Count)
         dpiAwareness = $DpiMode
@@ -240,7 +223,7 @@ function Get-MachineInfo {
 # ---------------------------------------------------------------- 程式啟動／輸出解析
 function New-Env($name, $extra) {
     $e = @{ XQ_BENCH = "1"; APPDATA = $Script:AppData }
-    if ($name -ne "wry") { $e["XQ_PERIOD"] = "D" }
+    $e["XQ_PERIOD"] = "D"
     if ($name -eq "egui") { $e["XQ_RENDERER"] = "glow"; $e["XQ_EGUI_STATE"] = (Join-Path $Script:Work "egui-bench-state.json") }
     if ($name -eq "gpui") { $e["XQ_GPUI_STATE"] = (Join-Path $Script:Work "gpui-bench-state.json") }
     foreach ($k in $extra.Keys) { $e[$k] = $extra[$k] }
@@ -249,40 +232,7 @@ function New-Env($name, $extra) {
 function Reset-State($name) {
     foreach ($f in @("egui-bench-state.json", "gpui-bench-state.json")) { Remove-Item (Join-Path $Script:Work $f) -ErrorAction SilentlyContinue }
     foreach ($d in @("gpui-xq-demo", "egui-xq-demo")) { Remove-Item (Join-Path $Script:AppData $d) -Recurse -Force -ErrorAction SilentlyContinue }
-    if ($name -eq "wry") {
-        $dir = Join-Path $Script:AppData "wry-xq-demo"; New-Item -ItemType Directory -Force $dir | Out-Null
-        [IO.File]::WriteAllText((Join-Path $dir "state.json"), (Get-WryBenchState), (New-Object Text.UTF8Encoding $false))
-    }
 }
-function Off($h) { $o = [ordered]@{ on = $false }; foreach ($k in $h.Keys) { $o[$k] = $h[$k] }; return $o }
-function Get-WryBenchState {
-    # 同 Linux 版 wry_bench_state()：2330 日線＋MA5/20/60＋量、左下組合分頁 6 欄、右下空白
-    $cfg = [ordered]@{
-        atr = (Off @{ n = 14 }); bb = (Off ([ordered]@{ k = 2; n = 20 })); dmi = (Off @{ n = 14 }); ema = (Off ([ordered]@{ p1 = 12; p2 = 26 }))
-        kd = (Off ([ordered]@{ d = 3; k = 3; n = 14 })); ma = [ordered]@{ on = $true; p1 = 5; p2 = 20; p3 = 60 }
-        macd = (Off ([ordered]@{ fast = 12; sig = 9; slow = 26 })); obv = (Off @{}); rsi = (Off @{ n = 14 })
-        sar = (Off ([ordered]@{ max = 0.2; step = 0.02 })); vol = [ordered]@{ on = $true }; volma = (Off ([ordered]@{ p1 = 5; p2 = 20 })); wr = (Off @{ n = 14 })
-    }
-    $key = [ordered]@{ cfg = $cfg; drawings = @(); overlays = @(@(5, 20, 60) | ForEach-Object { [ordered]@{ period = $_; type = "ma" } }) }
-    $cols = @(
-        @("symbol", "c-sym", "代號", 58), @("name", "c-name", "名稱", 92), @("price", "c-px", "成交", 76),
-        @("change", "c-ch", "漲跌", 70), @("pct", "c-pct", "漲幅%", 64), @("volume", "c-vol", "成交量", 92)
-    ) | ForEach-Object { [ordered]@{ field = $_[0]; id = $_[1]; label = $_[2]; width = $_[3] } }
-    $st = [ordered]@{
-        v = 2
-        ui = [ordered]@{ feed = "engine"; period = "D"; subLayout = [ordered]@{ left = 1; right = 3 } }
-        watchlist = $WATCH
-        keys = [ordered]@{ "2330|D" = $key; "chart-1|2330|D" = $key }
-        groups = [ordered]@{ activeGroupId = "g-watch"; columns = @($cols); groups = @([ordered]@{ id = "g-watch"; name = "自選"; symbols = $WATCH }) }
-        panes = [ordered]@{
-            top = [ordered]@{ active = "chart-1"; tabs = @([ordered]@{ id = "chart-1"; kind = "chart"; period = "D"; symbol = "2330"; title = "2330 台積電" }) }
-            left = [ordered]@{ active = "group-1"; tabs = @([ordered]@{ id = "group-1"; kind = "group"; title = "組合" }) }
-            right = [ordered]@{ active = "web-home"; tabs = @([ordered]@{ id = "web-home"; kind = "web"; title = "空白網頁"; url = "about:blank" }) }
-        }
-    }
-    return ($st | ConvertTo-Json -Depth 12)
-}
-
 function Start-Proc($exe, $argline, $envs) {
     $r = New-Object XqRunner -ArgumentList $exe, $argline, (Split-Path $exe), $envs
     return @{ R = $r; Pid = $r.P.Id; Idx = 0; T0 = [XqBench]::Now(); Ev = @{}
@@ -443,13 +393,13 @@ function Shot($path, $all) {
     } catch { Say "截圖失敗：$($_.Exception.Message)" "Yellow"; return $null }
 }
 
-# ---------------------------------------------------------------- feed（主視窗／5 萬列／重圖表用 WryFeedHost --demo-ticks，每輪重啟）
+# ---------------------------------------------------------------- feed（主視窗／5 萬列／重圖表用 xq-demofeed：合成行情，約 40Hz 整批跳價，每輪重啟）
 $Script:Feed = $null
-function Stop-Feed { if ($Script:Feed) { Stop-Proc $Script:Feed; Save-Log $Script:Feed "feedhost.log" "feed"; $Script:Feed = $null } }
+function Stop-Feed { if ($Script:Feed) { Stop-Proc $Script:Feed; Save-Log $Script:Feed "demofeed.log" "feed"; $Script:Feed = $null } }
 function Restart-Feed {
     if ($Script:Feed) { Stop-Feed; Start-Sleep -Milliseconds 500 }
-    $Script:Feed = Start-Proc $Bins.feedhost "--demo-ticks" @{}
-    if (-not (Wait-Port 30)) { throw "WryFeedHost 起不來（127.0.0.1:$Port）" }
+    $Script:Feed = Start-Proc $Bins.demofeed "--addr $Addr" @{}
+    if (-not (Wait-Port 30)) { throw "xq-demofeed 起不來（127.0.0.1:$Port）" }
     Start-Sleep -Milliseconds 1000   # 讓探測連線斷乾淨
 }
 function EvMs($st, $k) { if ($st.Ev.ContainsKey($k)) { return R1 ($st.Ev[$k] * 1000) } return $null }
@@ -506,7 +456,7 @@ function Run-Stress($name, $shot) {
 function Run-Heavy($name, $shot) {
     Restart-Feed; Reset-State $name
     $x = @{ XQ_CHART_STRESS = "1"; XQ_CHART_WARM_MS = "3000"; XQ_CHART_PHASE_MS = "10000"; XQ_CHART_DRAWINGS = "1000" }
-    if ($name -eq "wry") { $x["XQ_CHART_TOP_RATIO"] = "0.8" } else { $x["XQ_TOP_FRAC"] = "0.8" }
+    $x["XQ_TOP_FRAC"] = "0.8"
     $st = Start-Proc $Bins[$name] "" (New-Env $name $x)
     try {
         $win = @(Find-Wins $st 1 20 $name)[0]; $pl = Place-Main $win
@@ -533,7 +483,6 @@ function Run-Heavy($name, $shot) {
 
 # ---------------------------------------------------------------- 情境：高頻進價（ticks）與多視窗（multi），行情＝xq-tickgen
 function Counters($name, $j) {
-    if ($name -eq "wry") { return @{ recv = [double](Get-P $j "raw"); toUi = [double](Get-P $j "rows"); applied = [double](Get-P $j "applied"); batches = [double](Get-P $j "pushes") } }
     return @{ recv = [double](Get-P $j "rowsIn"); toUi = [double](Get-P $j "inboxRows"); applied = [double](Get-P $j "applied"); batches = [double](Get-P $j "applies") }
 }
 function Run-Feedgen($name, $scen, $nwin, $shot, $tag) {
@@ -759,7 +708,7 @@ function Summarize($all) {
 }
 
 # ---------------------------------------------------------------- summary.md（中文、結論在前、標出贏家）
-$AppLabel = @{ wry = "wry（WebView2）"; gpui = "GPUI（DirectX 11）"; egui = "egui（glow／OpenGL）" }
+$AppLabel = @{ gpui = "GPUI（DirectX 11）"; egui = "egui（glow／OpenGL）" }
 function Fmt($v, $unit) { if ($null -eq $v) { return "—" } return ("{0:0.#}{1}" -f [double]$v, $unit) }
 function Pick($S, $path, $lower) {
     $vals = [ordered]@{}
@@ -804,7 +753,7 @@ function Write-Summary($S, $mi, $path) {
         Conclude "主視窗記憶體（60 秒 Working Set）" "main.ws60_mb" " MB" $true
         Conclude "主視窗待機 CPU" "main.cpu_pct" "%" $true
         Conclude "啟動到第一筆報價" "main.first_quote_ms" " ms" $true
-        Table "主視窗（內容區 1200×720 邏輯像素、WryFeedHost --demo-ticks；CPU／FPS 取第 30–60 秒）" @(
+        Table "主視窗（內容區 1200×720 邏輯像素、xq-demofeed；CPU／FPS 取第 30–60 秒）" @(
             @("視窗出現", "main.window_ms", " ms", $true), @("第一幀", "main.first_frame_ms", " ms", $true), @("第一筆報價畫出", "main.first_quote_ms", " ms", $true),
             @("Working Set 10 秒", "main.ws10_mb", " MB", $true), @("Working Set 60 秒", "main.ws60_mb", " MB", $true),
             @("Working Set - Private 60 秒", "main.wsPrivate60_mb", " MB", $true), @("Private Bytes 60 秒", "main.private60_mb", " MB", $true),
@@ -867,12 +816,12 @@ function Write-Summary($S, $mi, $path) {
     $gpus = (@($mi.gpus) | ForEach-Object { "$($_.name)（驅動 $($_.driver)）" }) -join "、"
     $tally = (@($Apps | Sort-Object { - $Script:WinCount[$_] }) | ForEach-Object { "$_ $($Script:WinCount[$_]) 項" }) -join "、"
     $md = New-Object System.Collections.Generic.List[string]
-    $md.Add("# XQ 三方壓測結果（Windows）— $($mi.computer)，$(Get-Date -Format 'yyyy-MM-dd HH:mm')"); $md.Add("")
+    $md.Add("# XQ 壓測結果（Windows）：GPUI vs egui— $($mi.computer)，$(Get-Date -Format 'yyyy-MM-dd HH:mm')"); $md.Add("")
     $md.Add("## 結論"); $md.Add("")
     $md.Add("表格中各列最佳的標 🏆（平手不標）；勝出次數：$tally。括號是落後倍數（≥ 1.15× 才標）。"); $md.Add("")
     foreach ($c in $Script:Concl) { $md.Add($c) }
     $md.Add("")
-    $md.Add("- 每個數字是 $Runs 輪的中位數；CPU 100%＝一顆邏輯核心（本機 $($mi.logicalProcessors) 顆）；記憶體＝整棵程序樹（wry 含 msedgewebview2.exe 子程序）。")
+    $md.Add("- 每個數字是 $Runs 輪的中位數；CPU 100%＝一顆邏輯核心（本機 $($mi.logicalProcessors) 顆）；記憶體＝整棵程序樹。")
     $md.Add("- 延遲＝產生器送出時間 → 該筆所在畫面幀畫完（app 自己回報，是上界、最多多約 1 幀）；兩端用同一台機器的系統時鐘。")
     if (@($failures).Count) { $md.Add("- ⚠️ 有 $(@($failures).Count) 次執行失敗（已自動重跑一次），見 results.json 的 failures。") }
     $md.Add("")
@@ -884,7 +833,6 @@ function Write-Summary($S, $mi, $path) {
     $md.Add("| RAM | $($mi.ramGB) GB |")
     $md.Add("| GPU | $gpus |")
     $md.Add("| 螢幕 | $(@($mi.monitors).Count) 個：$mons |")
-    $md.Add("| WebView2 | $(if ($mi.webview2) { $mi.webview2 } else { '—（找不到版本；wry 需要 WebView2 Runtime）' }) |")
     $md.Add("| 電源 | $(([string]$mi.powerPlan) -replace '\s+', ' ')$(if ($mi.onBattery) { '，⚠️ 用電池' }) |")
     $md.Add("| 執行檔 | $((@($Script:BinInfo) | ForEach-Object { "$($_.file) $($_.mb) MB" }) -join '、') |")
     $md.Add("")
@@ -909,14 +857,14 @@ $Script:AppData = Join-Path $Script:Work "appdata"
 New-Item -ItemType Directory -Force $Script:AppData | Out-Null
 $failures = New-Object System.Collections.Generic.List[string]
 
-Say "XQ 三方壓測 Windows 版；結果放 $($Script:Out)" "Cyan"
+Say "XQ 壓測 Windows 版（GPUI vs egui）；結果放 $($Script:Out)" "Cyan"
 $running = @()
-foreach ($e in @("wry-xq-demo.exe", "gpui-xq-demo.exe", "egui-xq-demo.exe", "xq-tickgen.exe", "WryFeedHost.exe")) { $running += @([XqBench]::FindByExe($e) | ForEach-Object { "$e（PID $_）" }) }
+foreach ($e in @("gpui-xq-demo.exe", "egui-xq-demo.exe", "xq-tickgen.exe", "xq-demofeed.exe")) { $running += @([XqBench]::FindByExe($e) | ForEach-Object { "$e（PID $_）" }) }
 if ($running.Count) { throw "這些程式正在執行，請先關掉再跑（會互搶 127.0.0.1:$Port）：$($running -join '、')" }
-if (Port-Busy) { throw "127.0.0.1:$Port 已被其他程式佔用，請先關掉（例如正在跑的 WryFeedHost）" }
+if (Port-Busy) { throw "127.0.0.1:$Port 已被其他程式佔用，請先關掉（例如 XQ 或上次沒結束的測試程式）" }
 
 $Bins = Resolve-Bins
-$missing = @(@("feedhost", "tickgen") | Where-Object { -not $Bins.ContainsKey($_) })
+$missing = @(@("demofeed", "tickgen") | Where-Object { -not $Bins.ContainsKey($_) })
 if ($missing.Count) { throw "缺少 $(($missing | ForEach-Object { $EXES[$_].file }) -join '、')：請放進 $PSScriptRoot\bin 或用 -BinDir 指定" }
 $Apps = @($Apps | Where-Object {
     if ($Bins.ContainsKey($_)) { $true } else {
@@ -928,8 +876,8 @@ $Script:BinInfo = @($Bins.Keys | Sort-Object | ForEach-Object {
     [ordered]@{ key = $_; file = $f.Name; mb = [math]::Round($f.Length / 1MB, 1); sha256 = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.Substring(0, 16); modified = $f.LastWriteTime.ToString("s") } })
 foreach ($b in $Script:BinInfo) { Say ("  {0,-18} {1,6} MB  {2}" -f $b.file, $b.mb, $b.sha256) }
 $buildInfo = [ordered]@{}
-foreach ($t in @("gpui-build.txt", "wry-build.txt", "egui-build.txt")) {
-    foreach ($d in @((Split-Path $Bins.tickgen), (Split-Path $Bins.feedhost))) { $p = Join-Path $d $t; if ((Test-Path $p) -and -not $buildInfo.Contains($t)) { $buildInfo[$t] = (Get-Content $p -Raw).Trim(); Say "  $t：$($buildInfo[$t])" } }
+foreach ($t in @("gpui-build.txt", "egui-build.txt")) {
+    foreach ($d in @((Split-Path $Bins.tickgen), (Split-Path $Bins.demofeed))) { $p = Join-Path $d $t; if ((Test-Path $p) -and -not $buildInfo.Contains($t)) { $buildInfo[$t] = (Get-Content $p -Raw).Trim(); Say "  $t：$($buildInfo[$t])" } }
 }
 
 $mi = Get-MachineInfo

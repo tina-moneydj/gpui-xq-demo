@@ -1,11 +1,13 @@
-# Windows release build：gpui-xq-demo.exe＋xq-tickgen.exe＋Windows 壓測工具包（bench/windows）
-# 每次 push main（或手動）都在 windows-latest 上建 release exe，上傳 artifact，並更新 `bench-latest` 預發行版，
-# 讓測試的人不用裝 Rust 就能下載。
+# Windows 預先編譯版：gpui-xq-demo.exe＋xq-tickgen.exe＋xq-demofeed.exe＋Windows 壓測工具包（bench/windows）
+# 產出：
+#   - artifact xq-bench-windows-gpui
+#   - 預發行版 windows-bench-latest：xq-bench-windows-gpui.zip（只有 GPUI，公開）＋各 exe
+# egui-xq-demo（私人 repo）的 Windows workflow 會下載這個 zip、加進 egui，發佈完整版 xq-bench-windows.zip（私人 release）。
 name: windows
 
 on:
   push:
-    branches: [main]
+    branches: [windows-bench-ci]
   workflow_dispatch:
 
 permissions:
@@ -18,6 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - name: Rust toolchain
@@ -27,6 +30,14 @@ jobs:
           rustup default stable
           rustc -V
       - uses: Swatinem/rust-cache@v2
+      - name: PowerShell 語法檢查（Windows PowerShell 5.1）
+        shell: powershell
+        run: |
+          $errs = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD\bench\windows\bench-windows.ps1", [ref]$null, [ref]$errs)
+          if ($errs.Count) { $errs | ForEach-Object { Write-Host "$($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+          Add-Type -TypeDefinition ([IO.File]::ReadAllText("$PWD\bench\windows\XqBench.cs", [Text.Encoding]::UTF8)) -Language CSharp -ReferencedAssemblies System.Core
+          "ok"
       - name: Build (release)
         shell: pwsh
         run: cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
@@ -37,23 +48,37 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist, kit/xq-bench-windows/bin | Out-Null
-          Copy-Item target/release/gpui-xq-demo.exe, target/release/xq-tickgen.exe dist/
-          Copy-Item bench/windows/* kit/xq-bench-windows/ -Recurse
+          Copy-Item target/release/gpui-xq-demo.exe, target/release/xq-tickgen.exe, target/release/xq-demofeed.exe dist/
+          Copy-Item bench/windows/* kit/xq-bench-windows/ -Recurse -Exclude results, bin
           Copy-Item dist/*.exe kit/xq-bench-windows/bin/
-          "gpui-xq-demo $env:GITHUB_SHA $(Get-Date -Format o)" | Set-Content kit/xq-bench-windows/bin/gpui-build.txt
-          Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows.zip -Force
+          "gpui-xq-demo $env:GITHUB_SHA ($env:GITHUB_REF_NAME) $(Get-Date -Format o)" | Set-Content kit/xq-bench-windows/bin/gpui-build.txt
+          Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows-gpui.zip -Force
           Get-ChildItem dist | Format-Table Name, Length
+      - name: 工具包冒煙測試（CI 機器沒有實體 GPU，只確認腳本能跑完 GPUI 主視窗一輪；數字不具參考性）
+        continue-on-error: true
+        shell: powershell
+        run: |
+          & "$PWD\kit\xq-bench-windows\bench-windows.ps1" -Scenarios main -Runs 1 -Apps gpui -NoDownload -NoZip -OutDir "$PWD\smoke"
+          Get-ChildItem smoke | Format-Table Name, Length
+          if (Test-Path smoke\summary.md) { Get-Content smoke\summary.md -Encoding UTF8 | Select-Object -First 40 }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-results
+          path: smoke/*
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         with:
-          name: gpui-xq-demo-windows-x64
+          name: xq-bench-windows-gpui
           path: dist/*
-      - name: Publish bench-latest pre-release
-        if: github.ref == 'refs/heads/main'
+      - name: Publish windows-bench-latest pre-release
+        if: github.ref == 'refs/heads/windows-bench-ci'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete bench-latest --cleanup-tag -y 2>$null
-          gh release create bench-latest dist/* --prerelease --target $env:GITHUB_SHA `
-            --title "Windows bench build (main $($env:GITHUB_SHA.Substring(0,7)))" `
-            --notes "main 最新版的 Windows release build（自動產生）。測試工具包：下載 xq-bench-windows.zip，解壓後雙擊 run-bench.cmd。說明見 bench/windows/README.md。"
+          gh release delete windows-bench-latest --cleanup-tag -y 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create windows-bench-latest dist/* --prerelease --target $env:GITHUB_SHA `
+            --title "Windows 壓測包（GPUI 版，windows-bench-ci $($env:GITHUB_SHA.Substring(0,7))）" `
+            --notes "自動產生的 Windows 預先編譯版。xq-bench-windows-gpui.zip 只含 GPUI；含 egui 的完整版在 egui-xq-demo 的 windows-bench-latest（私人）。下載 → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。說明：bench/windows/README.md"

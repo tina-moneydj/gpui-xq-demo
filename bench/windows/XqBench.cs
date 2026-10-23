@@ -257,7 +257,7 @@ public static class XqBench {
         } finally { PdhCloseQuery(q); }
     }
 
-    // GPU 使用率取樣（背景執行緒，每秒一次；每次重算程序樹，wry 的 WebView2 GPU 程序也算進去）
+    // GPU 使用率取樣（背景執行緒，每秒一次；每次重算程序樹，子程序也算進去）
     static Thread gpuThread; static volatile bool gpuRun; static XqGpu gpuRes; static int gpuRoot;
     static Regex pidRe = new Regex("pid_(\\d+)_"), engRe = new Regex("engtype_([A-Za-z0-9]+)");
     public static void GpuStart(int root) {
