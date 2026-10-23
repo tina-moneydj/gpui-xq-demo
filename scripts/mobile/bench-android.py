@@ -17,6 +17,7 @@ import argparse, json, os, re, statistics, subprocess, sys, time
 AP = argparse.ArgumentParser()
 AP.add_argument("--apps", default="egui-glow,egui-wgpu,gpui")
 AP.add_argument("--runs", type=int, default=3)
+AP.add_argument("--run-start", type=int, default=1, help="輪次從幾號開始（中斷後續跑用）")
 AP.add_argument("--phases", default="touch,heavy,ticks")
 AP.add_argument("--rates", default="1000,10000,100000")
 AP.add_argument("--out", required=True)
@@ -103,9 +104,12 @@ def host_cpu():
         return None
 
 def pss_mb(pkg):
-    s = sh(f"dumpsys meminfo {pkg}", timeout=240)
-    m = re.search(r"TOTAL PSS:\s+(\d+)", s) or re.search(r"^\s*TOTAL\s+(\d+)", s, re.M)
-    return round(int(m.group(1)) / 1024, 1) if m else None
+    for _ in range(3):  # TCG 下 dumpsys 偶爾逾時，重試
+        s = sh(f"dumpsys meminfo {pkg}", timeout=240)
+        m = re.search(r"TOTAL PSS:\s+(\d+)", s) or re.search(r"^\s*TOTAL\s+(\d+)", s, re.M)
+        if m:
+            return round(int(m.group(1)) / 1024, 1)
+    return None
 
 def host_load():
     return float(open("/proc/loadavg").read().split()[0])
@@ -323,7 +327,7 @@ def phase_ticks(app, run):
             tg_log.close()
             adb("reverse", "tcp:47631", "tcp:47631")
 
-for run in range(1, A.runs + 1):
+for run in range(A.run_start, A.run_start + A.runs):
     for app in A.apps.split(","):
         for ph in A.phases.split(","):
             log(f"=== run {run} {app} {ph}")
