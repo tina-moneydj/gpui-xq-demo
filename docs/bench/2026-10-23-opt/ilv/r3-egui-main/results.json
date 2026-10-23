@@ -1,0 +1,114 @@
+{
+ "baseline": [
+  {
+   "app": "egui",
+   "window_s": 0.1470992140020826,
+   "first_frame_s": 0.15995569900042028,
+   "first_quote_s": 0.18246737200024654,
+   "idle10": {
+    "rss_mb": 124.0390625,
+    "pss_mb": 85.1630859375,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.0,
+      "pss_mb": 85.2,
+      "threads": 19
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 124.0625,
+    "pss_mb": 85.1181640625,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 124.1,
+      "pss_mb": 85.1,
+      "threads": 19
+     }
+    ]
+   },
+   "cpu_threads": {
+    "egui-xq-demo/llvmpipe": 34.6,
+    "egui-xq-demo/egui-xq-demo": 3.4
+   },
+   "cpu_pct": 38.216674064828695,
+   "fps_avg": 19.833333333333332,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 1
+  }
+ ],
+ "stress": [
+  {
+   "app": "egui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30012,
+    "fps": 49.8,
+    "paints": 1470,
+    "avgPaintMs": 0.118,
+    "avgCellsPerPaint": 72,
+    "cellUpdates": 105840
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 49.8,
+    "scrollFps": 75.9,
+    "scrollJankCount": 0,
+    "scrollJankAvgMs": 0.0,
+    "fps": 75.9,
+    "paints": 744,
+    "avgPaintMs": 0.207,
+    "avgCellsPerPaint": 71,
+    "cellUpdates": 53358
+   },
+   "cpu_tick_pct": 92.21264915088359,
+   "cpu_tick_threads": {
+    "egui-xq-demo/llvmpipe": 85.0,
+    "egui-xq-demo/egui-xq-demo": 7.0
+   },
+   "cpu_scroll_pct": 141.47298473378646,
+   "mem_tick": {
+    "rss_mb": 131.3046875,
+    "pss_mb": 92.361328125,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.3,
+      "pss_mb": 92.4,
+      "threads": 19
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 131.63671875,
+    "pss_mb": 92.693359375,
+    "threads": 19,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "egui-xq-demo",
+      "rss_mb": 131.6,
+      "pss_mb": 92.7,
+      "threads": 19
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/opt-20261023/ilv/r3-egui-main/egui-stress.png",
+   "run": 1
+  }
+ ]
+}

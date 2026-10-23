@@ -16,3 +16,12 @@ r2-egui-multi
 r2-after-ticks
 r2-before-ticks
 r2-egui-ticks
+r3-before-main
+r3-after-main
+r3-egui-main
+r3-before-multi
+r3-after-multi
+r3-egui-multi
+r3-before-ticks
+r3-after-ticks
+r3-egui-ticks
