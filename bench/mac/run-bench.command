@@ -8,13 +8,23 @@ if ! /usr/bin/xcrun --find python3 >/dev/null 2>&1 && ! command -v python3 >/dev
   read -r -p "按 Enter 關閉…" _; exit 1
 fi
 PY="$(command -v python3)"
-need_build=0
-for b in gpui-xq-demo egui-xq-demo xq-tickgen xq-demofeed; do [ -x "bin/$b" ] || need_build=1; done
+# 下載的預先編譯包（GitHub release）已經有 bin/，不用編譯；從原始碼跑才會編譯
+need_build=0; only_gpui=0
+for b in gpui-xq-demo xq-tickgen xq-demofeed; do [ -x "bin/$b" ] || need_build=1; done
+if [ $need_build = 0 ] && [ ! -x bin/egui-xq-demo ]; then
+  if [ -f ../../Cargo.toml ]; then need_build=1   # 在原始碼資料夾裡：照舊一起編 egui
+  else only_gpui=1; echo "這個包沒有 egui 執行檔（公開的 GPUI 版），這次只測 GPUI。完整版請下載 egui-xq-demo 的 mac-bench-latest。"; fi
+fi
 for a in "$@"; do [ "$a" = "--rebuild" ] && need_build=1; done
+if [ -x bin/gpui-xq-demo ] && [ $need_build = 0 ]; then
+  # 預先編譯包：清掉「從網路下載」的隔離標記（若使用者還沒做），避免 macOS 擋執行檔
+  xattr -dr com.apple.quarantine . 2>/dev/null || true
+fi
 if [ $need_build = 1 ]; then
   ./build-mac.sh || { echo; echo "編譯失敗，請把上面的訊息截圖傳回來。"; read -r -p "按 Enter 關閉…" _; exit 1; }
 fi
 args=(); for a in "$@"; do [ "$a" = "--rebuild" ] || args+=("$a"); done
+[ $only_gpui = 1 ] && args+=(--apps gpui)
 # 測試期間不讓螢幕關閉／睡眠（caffeinate 只在這次執行期間有效，跑完自動恢復）
 caffeinate -dimsu "$PY" xq_bench_mac.py ${args[@]+"${args[@]}"}
 rc=$?
