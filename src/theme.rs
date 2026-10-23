@@ -3,7 +3,11 @@
 use gpui::{rgb, Rgba};
 
 pub const UI_FONT: &str = "Noto Sans CJK TC";
+#[cfg(not(target_os = "android"))]
 pub const MONO_FONT: &str = "Noto Sans Mono CJK TC";
+/// Android 系統字型沒有 Mono CJK：等寬字也用 Noto Sans CJK TC（egui 手機版同樣做法）
+#[cfg(target_os = "android")]
+pub const MONO_FONT: &str = "Noto Sans CJK TC";
 
 pub fn bg() -> Rgba { rgb(0x0b0e14) }
 pub fn panel() -> Rgba { rgb(0x10141c) }

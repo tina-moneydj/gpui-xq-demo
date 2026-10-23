@@ -915,6 +915,23 @@ impl Model {
         f
     }
 
+    /// 手機版：觸控平移（GPUI 把單指拖曳轉成帶 touch_phase 的捲動事件），dx 為像素，往右拖＝看更早的 K 棒
+    #[allow(dead_code)]
+    pub fn pan_by(&mut self, dx: f32) -> u8 {
+        if dx == 0.0 {
+            return 0;
+        }
+        let n = self.s.bars.len();
+        let Some(g) = self.geo_now() else { return 0 };
+        let plot_w = g.plot_w as f64;
+        if let Some(v) = &mut self.view {
+            v.right -= dx as f64 / v.bar_w;
+            Self::clamp_view(v, n, plot_w);
+        }
+        self.touch();
+        PLOT | DRAW | LIVE
+    }
+
     pub fn wheel(&mut self, dy: f32) -> u8 {
         if dy == 0.0 {
             return 0;

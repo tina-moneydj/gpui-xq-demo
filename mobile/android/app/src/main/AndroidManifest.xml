@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.vulkan.level" android:required="false" android:version="0" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+    <application
+        android:label="XQ GPUI"
+        android:debuggable="true"
+        android:theme="@android:style/Theme.Black.NoTitleBar">
+        <!-- GpuiInputActivity（長橋 gpui-mobile）：NativeActivity 子類，提供多段組字輸入法用的 InputConnection -->
+        <activity
+            android:name="dev.gpui.mobile.GpuiInputActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode|density"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data android:name="android.app.lib_name" android:value="xq_mobile_gpui" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -1,0 +1,37 @@
+[package]
+name = "xq-mobile-gpui"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "XQ 風格看盤 demo 手機版（Android，GPUI + longbridge/gpui-mobile）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
+
+[lib]
+name = "xq_mobile_gpui"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+xq-feed = { path = "../crates/xq-feed" }
+xq-tape = { path = "../crates/xq-tape" }
+# 桌面版用 gpui-pre 0.3.7；gpui-mobile（長橋版）綁 0.3.9，手機版跟著升
+gpui = { package = "gpui-pre", version = "=0.3.9", default-features = false }
+gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/longbridge/gpui-mobile", rev = "c24a130", default-features = false }
+futures = "0.3.34"
+parking_lot = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+log = "0.4"
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { version = "0.6", features = ["native-activity"] }
+android_logger = "0.15"
+
+[profile.release]
+strip = true
+debug = false
+lto = "thin"
+codegen-units = 4
+
+# 獨立 workspace（不跟桌面版共用 Cargo.lock）
+[workspace]
