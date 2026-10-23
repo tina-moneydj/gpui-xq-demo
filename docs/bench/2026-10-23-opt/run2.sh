@@ -7,14 +7,16 @@ D=/workspace/zorder/gpui/docs/bench/2026-10-23-opt/ilv
 M=$B/markers; mkdir -p $B; touch $M
 unset XQ_FEED_ADDR XQ_TAPE XQ_NO_VIEW_CACHE XQ_LAYER_MODE XQ_DEBUG XQ_PROBE XQ_APPLY XQ_SYNC_CHECK
 export WRY_DIR=/workspace/zorder/wry EGUI_DIR=/workspace/zorder/egui
+export BENCH_SHARED_BOX=1  # 同機有別的 executor 在跑自己的 gpui-xq-demo（不同 DISPLAY／埠）
 export FEED_DLL=/workspace/zorder/feedhost-bin/WryFeedHost.dll FEED_PORT=47761 TICK_ADDR=127.0.0.1:47781 MULTI_DISPLAY=:62
 declare -A DIR=([before]=/workspace/zorder/gpui-base [after]=/workspace/zorder/gpui-after [egui]=/workspace/zorder/gpui-after)
 save() {
   mkdir -p $D && cp -r $B/. $D/ && find $D -name xdg -type d -prune -exec rm -rf {} + ; cd /workspace/zorder/gpui && git add docs/bench/2026-10-23-opt &&
   git commit -q -m "bench 2026-10-23 優化前後（交錯）：$1" && git push -q origin main; echo "SAVED $1 $? $(date '+%T')"
 }
-one() { # round ver kind
-  local r=$1 v=$2 k=$3 n="r$1-$2-$3"; grep -qx $n $M && return
+one() { one_ "$@" || { echo "RETRY r$1-$2-$3" | tee -a $B/loads.log; sleep 5; rm -rf $B/r$1-$2-$3; one_ "$@"; }; }
+one_() { # round ver kind
+  local r=$1 v=$2 k=$3 n="r$1-$2-$3"; grep -qx $n $M && return 0
   local app=gpui; [ $v = egui ] && app=egui
   local o=$B/$n; mkdir -p $o; echo "RUN $n $(date '+%T') load=$(cut -d' ' -f1-3 /proc/loadavg)" | tee -a $B/loads.log
   cd /workspace/zorder/gpui/scripts
@@ -26,6 +28,7 @@ one() { # round ver kind
   esac
   local rc=$?; echo "END $n rc=$rc $(date '+%T') load=$(cut -d' ' -f1-3 /proc/loadavg)" | tee -a $B/loads.log
   [ $rc = 0 ] && echo $n >> $M
+  return $rc
 }
 echo "START $(date '+%F %T %z')"
 for r in 1 2 3; do

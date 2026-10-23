@@ -328,7 +328,7 @@ def summarize(results):
     return out
 
 def main():
-    for p in os.listdir("/proc"):
+    for p in ([] if os.environ.get("BENCH_SHARED_BOX") else os.listdir("/proc")):  # BENCH_SHARED_BOX=1：同機有別人的程式在跑（用不同 DISPLAY／埠，不會互搶 feed）時略過這個檢查
         if p.isdigit() and comm(int(p)) in ("wry-xq-demo", "gpui-xq-demo", "egui-xq-demo", "xq-tickgen"):
             raise SystemExit(f"有程式在跑（pid {p} {comm(int(p))}），先關掉再量")
     import socket
