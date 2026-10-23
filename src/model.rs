@@ -194,8 +194,8 @@ impl IndCfg {
 #[derive(Default, Clone, Copy, Debug)]
 pub struct LayerStats {
     /// 0 底圖、1 畫線（下段＋上段）、2 live、3 選取那片
-    pub paints: [u64; 4],
-    pub paint_us: [u64; 4],
+    pub paints: [u64; 5],
+    pub paint_us: [u64; 5],
     pub rebuilds: u64,
     pub rebuild_us: u64,
 }

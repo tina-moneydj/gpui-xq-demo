@@ -1,0 +1,14 @@
+wry old {'ticks': (23.2, 11.486), 'ticks_cpu%': 250, 'crosshair': (21, 12.468), 'crosshair_cpu%': 241, 'pan': (32.1, 6.606), 'pan_cpu%': 293}
+wry new {'ticks': (18, 12.083), 'ticks_cpu%': 229, 'crosshair': (18.4, 12.658), 'crosshair_cpu%': 229, 'pan': (35.2, 6.458), 'pan_cpu%': 277}
+wry old {'ticks': (20.5, 11.524), 'ticks_cpu%': 238, 'crosshair': (19.8, 12.588), 'crosshair_cpu%': 232, 'pan': (34.3, 6.408), 'pan_cpu%': 278}
+wry new {'ticks': (19.5, 11.958), 'ticks_cpu%': 234, 'crosshair': (17.5, 13.085), 'crosshair_cpu%': 220, 'pan': (30.7, 6.654), 'pan_cpu%': 262}
+wry old {'ticks': (26.9, 12.086), 'ticks_cpu%': 257, 'crosshair': (24.8, 13.081), 'crosshair_cpu%': 242, 'pan': (32.7, 6.442), 'pan_cpu%': 278}
+wry new {'ticks': (19.6, 12.254), 'ticks_cpu%': 244, 'crosshair': (20.2, 12.421), 'crosshair_cpu%': 233, 'pan': (36.3, 6.459), 'pan_cpu%': 275}
+wry old {'ticks': (23, 11.374), 'ticks_cpu%': 240, 'crosshair': (22.8, 12.051), 'crosshair_cpu%': 233, 'pan': (33.1, 6.6), 'pan_cpu%': 286}
+wry new-L1 {'ticks': (22.1, 11.857), 'ticks_cpu%': 250, 'crosshair': (22.6, 12.662), 'crosshair_cpu%': 246, 'pan': (33.4, 6.751), 'pan_cpu%': 266}
+wry old {'ticks': (20.6, 12.21), 'ticks_cpu%': 236, 'crosshair': (22.5, 12.221), 'crosshair_cpu%': 239, 'pan': (32.8, 6.437), 'pan_cpu%': 259}
+wry new-L1 {'ticks': (22.4, 11.156), 'ticks_cpu%': 246, 'crosshair': (21.9, 11.788), 'crosshair_cpu%': 241, 'pan': (37.3, 6.254), 'pan_cpu%': 269}
+wry new-L100 {'ticks': (18.5, 12.351), 'ticks_cpu%': 240, 'crosshair': (19.5, 12.991), 'crosshair_cpu%': 241, 'pan': (34.1, 6.571), 'pan_cpu%': 272}
+wry new-L1 {'ticks': (23.3, 11.893), 'ticks_cpu%': 234, 'crosshair': (23, 12.835), 'crosshair_cpu%': 229, 'pan': (32.6, 6.474), 'pan_cpu%': 255}
+wry new-L100 {'ticks': (17.7, 11.766), 'ticks_cpu%': 227, 'crosshair': (18.4, 13.144), 'crosshair_cpu%': 230, 'pan': (36.4, 6.502), 'pan_cpu%': 277}
+wry new-L1 {'ticks': (22.3, 11.634), 'ticks_cpu%': 245, 'crosshair': (22.2, 11.679), 'crosshair_cpu%': 242, 'pan': (35.4, 6.319), 'pan_cpu%': 261}

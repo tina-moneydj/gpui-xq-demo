@@ -604,16 +604,28 @@ impl PaintCache {
         PaintCache { paths, labels, h_tags, built_us: t0.elapsed().as_micros() as u64 }
     }
 
-    /// 貼上快取（dx = 平移量）。clip 到主圖窗格。
-    /// Path 不包 paint_layer：各自依重疊關係拿到遞增的 order，整段併成一批、合成時一張聯集貼圖；
-    /// 字包一個整窗格的 layer → order 在整段幾何之上，不會把 path 批次切碎。
-    pub fn paint(&self, window: &mut Window, cx: &mut App, xf: &Xf, dx: f32) {
-        // 價格軸標籤先畫（窗格外、order 最低，不插進 path 批次中間）
-        for (y, l) in &self.h_tags {
-            gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(0x8a6a00));
-            gfx::paint_line(window, cx, l, xf.plot_r + 5.0, *y, 11.0);
+    /// 貼上快取（dx = 平移量）。clip 到主圖窗格。b = 整個圖面（order 隔板用）。
+    ///
+    /// GPUI 的 path 是「一批一次」：每一批都要把整窗大小的 MSAA 中介貼圖清掉、光柵化、再合成，軟體 Vulkan 上很貴。
+    /// 一批 path 只要中間插進別種圖元（字、quad）的 order 就會被切斷，所以：
+    /// 1. 價格軸標籤整組包一個 layer（同一個 order，不會一個標籤佔兩個 order 夾在 path 中間）；
+    /// 2. path 前先放一個空的整圖 layer 當隔板 → 之後每條 path 的 order 都比圖上已有的東西高，不會跟主圖／標籤交錯；
+    /// 3. Path 本身不包 layer：依重疊關係拿遞增 order（z 順序正確），整段一批、合成時一張聯集貼圖；
+    /// 4. 字包一個整窗格的 layer → order 在整段幾何之上。
+    pub fn paint(&self, window: &mut Window, cx: &mut App, xf: &Xf, dx: f32, b: Bounds<Pixels>) {
+        if !self.h_tags.is_empty() {
+            let tb = Bounds::new(gpui::point(px(xf.plot_r), px(xf.pane_top)), gpui::size(px(66.0), px(xf.pane_h)));
+            window.paint_layer(tb, |window| {
+                for (y, l) in &self.h_tags {
+                    gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(0x8a6a00));
+                    gfx::paint_line(window, cx, l, xf.plot_r + 5.0, *y, 11.0);
+                }
+            });
         }
         let lb = xf.clip();
+        if !self.paths.is_empty() {
+            window.paint_layer(b, |_| {});
+        }
         window.with_content_mask(Some(ContentMask { bounds: lb }), |window| {
             for (path, c) in &self.paths {
                 window.paint_path(gfx::shifted(path, dx), *c);
@@ -626,6 +638,10 @@ impl PaintCache {
                 });
             }
         });
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.labels.is_empty() && self.h_tags.is_empty()
     }
 
     pub fn vertex_count(&self) -> usize {

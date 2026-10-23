@@ -1,0 +1,12 @@
+egui old {'ticks': 60.3, 'ticks_cpu%': 286, 'crosshair': 60.9, 'crosshair_cpu%': 289, 'pan': 60.8, 'pan_cpu%': 284}
+egui new {'ticks': 61.3, 'ticks_cpu%': 288, 'crosshair': 60.4, 'crosshair_cpu%': 289, 'pan': 60.5, 'pan_cpu%': 288}
+wry old {'ticks': 24.5, 'ticks_cpu%': 266, 'crosshair': 20.9, 'crosshair_cpu%': 257, 'pan': 35.2, 'pan_cpu%': 313}
+wry new {'ticks': 21.6, 'ticks_cpu%': 260, 'crosshair': 20.5, 'crosshair_cpu%': 249, 'pan': 36.9, 'pan_cpu%': 310}
+egui old {'ticks': 61.8, 'ticks_cpu%': 282, 'crosshair': 60.5, 'crosshair_cpu%': 285, 'pan': 60.8, 'pan_cpu%': 282}
+egui new {'ticks': 61.6, 'ticks_cpu%': 286, 'crosshair': 60.6, 'crosshair_cpu%': 289, 'pan': 60.1, 'pan_cpu%': 294}
+wry old {'ticks': 25.1, 'ticks_cpu%': 260, 'crosshair': 21.5, 'crosshair_cpu%': 245, 'pan': 33.4, 'pan_cpu%': 299}
+wry new {'ticks': 22.6, 'ticks_cpu%': 259, 'crosshair': 21.5, 'crosshair_cpu%': 247, 'pan': 33.7, 'pan_cpu%': 308}
+egui old {'ticks': 58.6, 'ticks_cpu%': 291, 'crosshair': 59.1, 'crosshair_cpu%': 289, 'pan': 59.8, 'pan_cpu%': 285}
+egui new {'ticks': 58.5, 'ticks_cpu%': 293, 'crosshair': 58.3, 'crosshair_cpu%': 291, 'pan': 59.4, 'pan_cpu%': 286}
+wry old {'ticks': 23.8, 'ticks_cpu%': 256, 'crosshair': 22.2, 'crosshair_cpu%': 249, 'pan': 32.5, 'pan_cpu%': 302}
+wry new {'ticks': 18.1, 'ticks_cpu%': 251, 'crosshair': 19.1, 'crosshair_cpu%': 245, 'pan': 34.4, 'pan_cpu%': 303}

@@ -130,7 +130,7 @@ layer_render!(PlotLayer, paint_plot, 0, true);
 layer_render!(DrawLayer, paint_draw, 1, false);
 layer_render!(LiveLayer, paint_live, 2, true);
 layer_render!(SelLayer, paint_sel, 3, false);
-layer_render!(AboveLayer, paint_above, 1, false);
+layer_render!(AboveLayer, paint_above, 4, false);
 
 /// 圖層分法（GPUI 的 path 每一批都要清一次全視窗 MSAA 中介貼圖再合成，軟體 Vulkan 上很貴）：
 /// - split（XQ_LAYER_MODE=split）：quad 一個 scene layer、path 不包 layer（各自 order 連號 → 一批、合成時一張聯集貼圖）、字一個 layer
@@ -391,7 +391,7 @@ fn paint_draw(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
     let Some(dx) = ensure_draw_cache(m, b, window) else { return };
     let xf = m.geo(b).xf();
     if let Some(c) = &m.pc {
-        c.below.paint(window, cx, &xf, dx);
+        c.below.paint(window, cx, &xf, dx, b);
     }
 }
 
@@ -400,10 +400,14 @@ fn paint_above(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut A
     if m.selected.is_none() {
         return;
     }
+    // 選取那條已在最上面 → 上段是空的，不畫（快取由 DrawLayer 建，這裡只讀）
+    if m.pc.as_ref().is_none_or(|c| c.above.is_empty()) {
+        return;
+    }
     let Some(dx) = ensure_draw_cache(m, b, window) else { return };
     let xf = m.geo(b).xf();
     if let Some(c) = &m.pc {
-        c.above.paint(window, cx, &xf, dx);
+        c.above.paint(window, cx, &xf, dx, b);
     }
 }
 
@@ -788,6 +792,8 @@ pub struct ChartView {
     focus: FocusHandle,
     menu_open: bool,
     layers_open: bool,
+    /// 上一次通知時有選取（上段／選取段有內容）
+    sandwich_live: bool,
     store: Store,
     persist: bool,
     save_gen: u64,
@@ -848,6 +854,7 @@ impl ChartView {
             focus: cx.focus_handle(),
             menu_open: false,
             layers_open: false,
+            sandwich_live: false,
             store,
             persist,
             save_gen: 0,
@@ -881,12 +888,20 @@ impl ChartView {
             self.plot.update(cx, |_, cx| cx.notify());
         }
         let draw = f & DRAW != 0 || (f & PLOT != 0 && self.m.borrow_mut().draw_layer_stale());
+        // 沒有選取時畫線層就是一整份快取（上段、選取段都是空的）：不叫它們重畫，
+        // 壓測的進價／十字線／平移段每幀只有一份畫線快取在畫。選取剛取消的那一次還是要通知（清掉上一幀的內容）。
+        let selected = self.m.borrow().selected.is_some();
         if draw {
             self.draw.update(cx, |_, cx| cx.notify());
+        }
+        if (draw || f & SEL != 0) && (selected || self.sandwich_live) {
             self.above.update(cx, |_, cx| cx.notify());
         }
-        if f & SEL != 0 || draw {
+        if (f & SEL != 0 || draw) && (selected || self.sandwich_live) {
             self.sel.update(cx, |_, cx| cx.notify());
+        }
+        if f & (SEL | DRAW) != 0 || draw {
+            self.sandwich_live = selected;
         }
         if f & LIVE != 0 {
             self.live.update(cx, |_, cx| cx.notify());
@@ -1092,12 +1107,12 @@ impl ChartView {
                     let s1 = self.snap();
                     let secs = s1.t.duration_since(s0.t).as_secs_f64();
                     let frames = s1.frames - s0.frames;
-                    let lp: Vec<u64> = (0..4).map(|k| s1.st.paints[k] - s0.st.paints[k]).collect();
-                    let lu: Vec<u64> = (0..4).map(|k| s1.st.paint_us[k] - s0.st.paint_us[k]).collect();
+                    let lp: Vec<u64> = (0..5).map(|k| s1.st.paints[k] - s0.st.paints[k]).collect();
+                    let lu: Vec<u64> = (0..5).map(|k| s1.st.paint_us[k] - s0.st.paint_us[k]).collect();
                     let tot_us: u64 = lu.iter().sum();
                     let per = |k: usize| if lp[k] > 0 { lu[k] as f64 / lp[k] as f64 / 1000.0 } else { 0.0 };
                     eprintln!(
-                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
+                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"abovePaints\":{},\"aboveMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
                         mode.name(),
                         secs,
                         frames,
@@ -1112,6 +1127,8 @@ impl ChartView {
                         per(2),
                         lp[3],
                         per(3),
+                        lp[4],
+                        per(4),
                         s1.st.rebuilds - s0.st.rebuilds,
                         (s1.st.rebuild_us - s0.st.rebuild_us) as f64 / 1000.0,
                         crate::rss_mb(),
