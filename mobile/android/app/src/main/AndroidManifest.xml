@@ -6,7 +6,7 @@
     <application
         android:label="XQ GPUI"
         android:debuggable="true"
-        android:theme="@android:style/Theme.Black.NoTitleBar">
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
         <!-- GpuiInputActivity（長橋 gpui-mobile）：NativeActivity 子類，提供多段組字輸入法用的 InputConnection -->
         <activity
             android:name="dev.gpui.mobile.GpuiInputActivity"

@@ -539,6 +539,11 @@ pub fn rss_mb() -> f64 {
 fn android_main(app: android_activity::AndroidApp) {
     droid::init(app.internal_data_path());
     gpui_mobile::android::jni::install_panic_hook();
+    // XQ_GPU=gl：跳過 Vulkan，直接用 GLES（模擬器上走主機 GL 轉譯，和 egui 同一條路）
+    if std::env::var("XQ_GPU").map(|v| v.eq_ignore_ascii_case("gl")).unwrap_or(false) {
+        gpui_mobile::android::host::set_gpu_backend(gpui_mobile::android::host::GpuBackend::Gl);
+        eprintln!("[gpui] XQ_GPU=gl → GLES backend");
+    }
     let _platform = gpui_mobile::android::jni::init_platform(&app);
     let Some(shared) = gpui_mobile::android::jni::shared_platform() else {
         eprintln!("[gpui] shared_platform() = None");
