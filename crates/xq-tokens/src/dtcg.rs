@@ -114,7 +114,8 @@ fn parse_value(ty: &str, v: &Value) -> Result<Tok, String> {
             }
             _ => Err("dimension 格式錯".into()),
         },
-        "fontFamily" => match v {
+        // Figma 把字型存成 String 變數，匯出時可能是 "string"（Figma 自己加的型別）；一樣當字型名稱
+        "fontFamily" | "string" => match v {
             Value::String(s) => Ok(Tok::Font(s.clone())),
             Value::Array(a) => a.first().and_then(Value::as_str).map(|s| Tok::Font(s.to_string())).ok_or_else(|| "fontFamily 陣列是空的".into()),
             _ => Err("fontFamily 格式錯".into()),
