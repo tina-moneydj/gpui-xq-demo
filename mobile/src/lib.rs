@@ -92,6 +92,7 @@ struct MobileRoot {
     stats: Stats,
     metrics_log: bool,
     flog: droid::FrameLog,
+    ind: droid::IndDelta,
     bench: bool,
     bench_frame_logged: bool,
     bench_quote_logged: bool,
@@ -111,7 +112,14 @@ impl MobileRoot {
         let counters = bridge.counters.clone();
         let table = cx.new(|_| QuoteTable::new(names::WATCH));
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
-        let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
+        let chart = cx.new(|cx| {
+            let mut c = ChartView::new(sym, name, period, cx);
+            if droid::ind_bench_reps() > 0 {
+                let (b, v) = c.ind_microbench(droid::ind_bench_reps());
+                droid::ind_bench_report(b, v);
+            }
+            c
+        });
         let search = cx.new(SearchInput::new);
         let subs = vec![
             cx.subscribe(&table, |this: &mut Self, _, ev: &TableEvent, cx| match ev {
@@ -180,6 +188,7 @@ impl MobileRoot {
             stats: Stats::default(),
             metrics_log: std::env::var_os("XQ_METRICS").is_some(),
             flog: droid::FrameLog::default(),
+            ind: droid::IndDelta::default(),
             bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
             bench_frame_logged: false,
             bench_quote_logged: false,
@@ -360,7 +369,7 @@ impl MobileRoot {
         };
         if self.metrics_log {
             let s = &self.stats;
-            self.flog.report(&format!(",\"rssMb\":{:.1},\"rowsIn\":{},\"applies\":{},\"applyUs\":{},\"screen\":\"{}\"", s.rss_mb, s.quote_rows_in, s.applies, s.apply_us_avg, if self.screen == Screen::Chart { "chart" } else { "list" }));
+            self.flog.report(&(format!(",\"rssMb\":{:.1},\"rowsIn\":{},\"applies\":{},\"applyUs\":{},\"screen\":\"{}\"", s.rss_mb, s.quote_rows_in, s.applies, s.apply_us_avg, if self.screen == Screen::Chart { "chart" } else { "list" }) + &self.ind.json(model::ind_counters())));
         }
         if let Some(tb) = self.tick.as_mut() {
             tb.report(rows_in, frames_in, self.stats.fps, self.stats.rss_mb);

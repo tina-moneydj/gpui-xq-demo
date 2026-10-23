@@ -977,6 +977,12 @@ impl ChartView {
 
     // ───── 資料 ─────
 
+    /// 指標純計算微基準（手機版 XQ_IND_BENCH 用）
+    #[allow(dead_code)]
+    pub fn ind_microbench(&mut self, reps: usize) -> (usize, Vec<f64>) {
+        self.m.borrow_mut().ind_microbench(reps)
+    }
+
     pub fn load(&mut self, symbol: &str, name: &str, period: Period, quote: Option<(f64, f64, i64)>, cx: &mut Context<Self>) {
         self.m.borrow_mut().load(symbol, name, period, quote);
         self.restore_saved();
