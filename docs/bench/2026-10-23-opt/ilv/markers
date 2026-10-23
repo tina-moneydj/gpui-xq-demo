@@ -7,3 +7,12 @@ r1-egui-multi
 r1-before-ticks
 r1-after-ticks
 r1-egui-ticks
+r2-after-main
+r2-before-main
+r2-egui-main
+r2-after-multi
+r2-before-multi
+r2-egui-multi
+r2-after-ticks
+r2-before-ticks
+r2-egui-ticks
