@@ -42,6 +42,8 @@ use theme::*;
 pub static FRAMES: AtomicU64 = AtomicU64::new(0);
 
 const TITLE_H: f32 = 26.0;
+/// 主視窗超過這麼久沒畫（被蓋住／縮小），後備計時器直接套用行情
+const FALLBACK_MS: u64 = 25;
 const STATUS_H: f32 = 22.0;
 const SPLIT: f32 = 5.0;
 
@@ -66,6 +68,8 @@ struct Stats {
 struct InfoPane {
     symbol: SharedString,
     name: SharedString,
+    /// 上一次 render 畫出的成交價（XQ_SYNC_CHECK 比對用）
+    shown_price: f64,
     price: f64,
     change: f64,
     volume: i64,
@@ -74,6 +78,7 @@ struct InfoPane {
 
 impl Render for InfoPane {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        self.shown_price = self.price;
         let has = self.price > 0.0;
         let color = dir_color(self.change);
         let kv = |k: &'static str, v: String, c: gpui::Rgba| {
@@ -145,11 +150,28 @@ impl Render for InfoPane {
     }
 }
 
+/// XQ_SYNC_CHECK=1：多視窗報價同步驗證。每個視窗每一幀（root render 開頭）比對「上一幀畫在畫面上的價」
+/// （資訊格、走勢圖標題列）和共用報價表裡同一檔的價。不一致時，落後時間＝現在 − 報價表那一列被改的時間；
+/// 如果報價表在「上一幀開始之前」就改了、上一幀卻沒畫出來，就算「落後超過一幀」（違規）。每秒印一行 `SYNC|{json}`。
+#[derive(Default)]
+struct SyncCheck {
+    frames: u64,
+    checks: u64,
+    /// 畫面與報價表不一致的次數（新價在上一幀之後才到、下一幀就會畫：正常）
+    mismatches: u64,
+    /// 落後超過一幀的次數（新價在上一幀開始前就到了，上一幀卻沒畫：不該發生）
+    violations: u64,
+    max_stale_us: u64,
+    /// 落後時間樣本（µs，只收不一致的）與幀間隔樣本（µs）
+    stale: Vec<u64>,
+    intervals: Vec<u64>,
+    prev_render_us: u64,
+}
+
 struct Terminal {
     /// 只有主視窗（win 0）持有行情連線；XQ_WINDOWS>1 的其他視窗共用主視窗的報價表與計數器
     bridge: Option<FeedBridge>,
     counters: Arc<Counters>,
-    #[allow(dead_code)]
     win: usize,
     window_id: WindowId,
     /// 其他視窗：主視窗每次套用行情後，用同一份 Inbox 更新它們的走勢圖／資訊格（不重複解碼、不重複合併）
@@ -185,6 +207,14 @@ struct Terminal {
     jank_ms: f64,
     /// XQ_TICK_BENCH=1：高頻進價壓測量測（預設 None，熱路徑不多做事）
     tick: Option<tickbench::TickBench>,
+    /// 主視窗：行情在 root render 開頭套用（預設）；false＝舊的「喚醒就套用＋睡 16ms」（XQ_APPLY=timer）
+    render_apply: bool,
+    /// 這個視窗上一次 root render 的時間（後備套用判斷主視窗是不是停畫了）
+    last_render: Option<Instant>,
+    /// 後備計時器代為套用的次數（主視窗被蓋住／縮小時才會 > 0）
+    fallback_applies: u64,
+    /// XQ_SYNC_CHECK=1：多視窗報價同步驗證（每幀比對畫面上的價與共用報價表）
+    sync: Option<SyncCheck>,
     _tasks: Vec<Task<()>>,
     _subs: Vec<Subscription>,
 }
@@ -212,6 +242,7 @@ impl Terminal {
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
             name: name.into(),
+            shown_price: 0.0,
             price: 0.0,
             change: 0.0,
             volume: 0,
@@ -236,13 +267,32 @@ impl Terminal {
             }),
         ];
 
-        // 行情：背景喚醒 → 套用一次 → 睡到下一個 frame（≤ ~60 次/秒）
+        // 行情（2026-10-23 改成跟著畫面走）：背景喚醒 → 只標記主視窗要畫 → 下一幀 root render 開頭才套用（同一幀就畫出來）。
+        //   舊做法是「喚醒就套用、再固定睡 16ms」，套用時間點跟刷新格點不同步，常常多等一幀；XQ_APPLY=timer 可切回舊做法對照。
+        //   後備：主視窗被蓋住／縮小時不會畫（GPUI 停掉它的刷新），改由下面的後備計時器直接套用，其他視窗與報價表照樣即時。
+        let render_apply = std::env::var("XQ_APPLY").as_deref() != Ok("timer");
         let feed_task = wake_rx.map(|mut wake_rx| cx.spawn(async move |this, cx| {
             while wake_rx.next().await.is_some() {
-                if this.update(cx, |t, cx| t.apply_feed(cx)).is_err() {
+                let r = this.update(cx, |t, cx| if t.render_apply { cx.notify() } else { t.apply_feed(cx) });
+                if r.is_err() {
                     break;
                 }
-                cx.background_executor().timer(Duration::from_millis(16)).await;
+                if !render_apply {
+                    cx.background_executor().timer(Duration::from_millis(16)).await;
+                }
+            }
+        }));
+        let fallback_task = (primary && render_apply).then(|| cx.spawn(async move |this, cx| loop {
+            cx.background_executor().timer(Duration::from_millis(FALLBACK_MS)).await;
+            let r = this.update(cx, |t, cx| {
+                let stale = t.last_render.is_none_or(|r| r.elapsed() >= Duration::from_millis(FALLBACK_MS));
+                if stale && t.bridge.as_ref().is_some_and(|b| b.pending()) {
+                    t.fallback_applies += 1;
+                    t.apply_feed(cx);
+                }
+            });
+            if r.is_err() {
+                break;
             }
         }));
         // 每秒取樣 FPS / RSS（不跟 tick 綁）
@@ -287,7 +337,11 @@ impl Terminal {
             jank_n: 0,
             jank_ms: 0.0,
             tick: xq_feed::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
-            _tasks: feed_task.into_iter().chain([stats_task]).collect(),
+            render_apply,
+            last_render: None,
+            fallback_applies: 0,
+            sync: (std::env::var_os("XQ_SYNC_CHECK").is_some_and(|v| v != "0")).then(SyncCheck::default),
+            _tasks: feed_task.into_iter().chain(fallback_task).chain([stats_task]).collect(),
             _subs: subs,
         };
         if !primary {
@@ -473,10 +527,13 @@ impl Terminal {
                 };
                 self.chart.update(cx, |c, cx| c.apply_quote(q.price, q.change, q.volume, &name, cx));
                 self.info.update(cx, |i, cx| {
-                    i.price = q.price;
-                    i.change = q.change;
-                    i.volume = q.volume;
-                    cx.notify();
+                    // 沒變就不 notify：這個視窗顯示的東西都沒變時，GPUI 就不會重畫它
+                    if i.price != q.price || i.change != q.change || i.volume != q.volume {
+                        i.price = q.price;
+                        i.change = q.change;
+                        i.volume = q.volume;
+                        cx.notify();
+                    }
                 });
             }
         }
@@ -526,6 +583,7 @@ impl Terminal {
         if let Some(tb) = self.tick.as_mut() {
             tb.report(rows_in, frames_in, self.stats.fps, self.stats.rss_mb);
         }
+        self.sync_report();
         self.last_frames_in = frames_in;
         self.last_rows_in = rows_in;
         self.last_paints = paints;
@@ -539,6 +597,57 @@ impl Terminal {
             cx.notify();
         });
         cx.notify();
+    }
+
+    fn sync_check(&mut self, cx: &mut Context<Self>) {
+        let now = xq_feed::unix_us();
+        let sym = self.chart.read(cx).symbol();
+        let shown = [self.info.read(cx).shown_price, self.chart.read(cx).shown_price];
+        let row = self.table.read(cx).row(&sym).map(|r| (r.price, r.changed_us));
+        let Some(sc) = self.sync.as_mut() else { return };
+        sc.frames += 1;
+        let prev = std::mem::replace(&mut sc.prev_render_us, now);
+        let Some((px_, changed_us)) = row else { return };
+        if prev == 0 || px_ <= 0.0 {
+            return;
+        }
+        sc.intervals.push(now - prev);
+        for s in shown {
+            sc.checks += 1;
+            if s != px_ {
+                sc.mismatches += 1;
+                let st = now.saturating_sub(changed_us);
+                sc.max_stale_us = sc.max_stale_us.max(st);
+                sc.stale.push(st);
+                if changed_us < prev {
+                    sc.violations += 1;
+                }
+            }
+        }
+    }
+
+    fn sync_report(&mut self) {
+        let Some(sc) = self.sync.as_mut() else { return };
+        let q = |v: &mut Vec<u64>, p: f64| -> f64 {
+            if v.is_empty() {
+                return 0.0;
+            }
+            v.sort_unstable();
+            v[((v.len() - 1) as f64 * p) as usize] as f64 / 1000.0
+        };
+        let (s50, s99) = (q(&mut sc.stale, 0.5), q(&mut sc.stale, 0.99));
+        let (i50, i99) = (q(&mut sc.intervals, 0.5), q(&mut sc.intervals, 0.99));
+        eprintln!(
+            "SYNC|{{\"win\":{},\"now\":{},\"frames\":{},\"checks\":{},\"mismatch\":{},\"violations\":{},\"maxStaleMs\":{:.1},\"staleP50\":{s50:.1},\"staleP99\":{s99:.1},\"frameMsP50\":{i50:.1},\"frameMsP99\":{i99:.1},\"fallbackApplies\":{}}}",
+            self.win, xq_feed::unix_us(), sc.frames, sc.checks, sc.mismatches, sc.violations, sc.max_stale_us as f64 / 1000.0, self.fallback_applies
+        );
+        sc.frames = 0;
+        sc.checks = 0;
+        sc.mismatches = 0;
+        sc.violations = 0;
+        sc.max_stale_us = 0;
+        sc.stale.clear();
+        sc.intervals.clear();
     }
 
     fn on_drag(&mut self, ev: &MouseMoveEvent, window: &mut Window, cx: &mut Context<Self>) {
@@ -591,8 +700,16 @@ impl Render for Terminal {
                 }
             }
         }
+        self.last_render = Some(Instant::now());
+        // 行情在這一幀開頭套用：子 view 在這之後才 prepaint，被 notify 的會在同一幀重畫
+        if self.render_apply && self.bridge.as_ref().is_some_and(|b| b.pending()) {
+            self.apply_feed(cx);
+        }
         if let Some(tb) = self.tick.as_mut() {
             tb.on_render(window);
+        }
+        if self.sync.is_some() {
+            self.sync_check(cx);
         }
         if self.bench {
             if !self.bench_frame_logged {

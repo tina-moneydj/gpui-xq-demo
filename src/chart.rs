@@ -592,73 +592,97 @@ enum Icon {
     Clear,
 }
 
-/// 圖示用 path 畫（不需要 SVG 資源）
-fn paint_icon(icon: Icon, b: Bounds<Pixels>, color: Hsla, window: &mut Window) {
-    let (x0, y0) = (f32::from(b.origin.x), f32::from(b.origin.y));
-    let s = f32::from(b.size.width) / 24.0;
-    let q = |x: f32, y: f32| p(x0 + x * s, y0 + y * s);
-    let mut t = Tris::default();
-    let w = 1.7;
-    let mut dots: Vec<P> = Vec::new();
-    let poly = |t: &mut Tris, pts: &[(f32, f32)]| {
-        for k in 1..pts.len() {
-            t.seg(q(pts[k - 1].0, pts[k - 1].1), q(pts[k].0, pts[k].1), w);
+/// 圖示：自己產生 SVG 文字交給 `paint_svg`（GPUI 光柵化一次放進字形／圖示貼圖集，之後每幀只是一個貼圖 quad）。
+/// 2026-10-23 改：以前用 path 畫，11 個圖示每幀都要走 path 管線（每一批清一次全視窗 4× MSAA 中介貼圖），
+/// 在沒 GPU 的機器上光是工具列就佔每幀約 3ms；改成 SVG 貼圖後工具列幾乎不花時間。不需要 SVG 資源檔。
+fn icon_svg(icon: Icon) -> (&'static str, String) {
+    use std::fmt::Write;
+    let mut d = String::with_capacity(160);
+    let mut dots: Vec<(f32, f32)> = Vec::new();
+    let mut poly = |pts: &[(f32, f32)]| {
+        for (k, (x, y)) in pts.iter().enumerate() {
+            let _ = write!(d, "{}{x} {y}", if k == 0 { "M" } else { "L" });
         }
     };
-    match icon {
-        Icon::Cursor => poly(&mut t, &[(6.0, 4.0), (18.0, 12.5), (12.5, 14.0), (9.5, 20.0), (6.0, 4.0)]),
+    let key = match icon {
+        Icon::Cursor => {
+            poly(&[(6.0, 4.0), (18.0, 12.5), (12.5, 14.0), (9.5, 20.0), (6.0, 4.0)]);
+            "xq-icon/cursor"
+        }
         Icon::Tool(Tool::Trend) => {
-            poly(&mut t, &[(4.0, 18.0), (20.0, 6.0)]);
-            dots.extend([q(4.0, 18.0), q(20.0, 6.0)]);
+            poly(&[(4.0, 18.0), (20.0, 6.0)]);
+            dots.extend([(4.0, 18.0), (20.0, 6.0)]);
+            "xq-icon/trend"
         }
         Icon::Tool(Tool::Ray) => {
-            poly(&mut t, &[(5.0, 18.0), (19.0, 6.0), (22.0, 4.5)]);
-            dots.push(q(5.0, 18.0));
+            poly(&[(5.0, 18.0), (19.0, 6.0), (22.0, 4.5)]);
+            dots.push((5.0, 18.0));
+            "xq-icon/ray"
         }
         Icon::Tool(Tool::Hline) => {
-            poly(&mut t, &[(3.0, 12.0), (21.0, 12.0)]);
-            dots.push(q(12.0, 12.0));
+            poly(&[(3.0, 12.0), (21.0, 12.0)]);
+            dots.push((12.0, 12.0));
+            "xq-icon/hline"
         }
         Icon::Tool(Tool::Vline) => {
-            poly(&mut t, &[(12.0, 3.0), (12.0, 21.0)]);
-            dots.push(q(12.0, 12.0));
+            poly(&[(12.0, 3.0), (12.0, 21.0)]);
+            dots.push((12.0, 12.0));
+            "xq-icon/vline"
         }
         Icon::Tool(Tool::Channel) => {
-            poly(&mut t, &[(4.0, 16.0), (16.0, 4.0)]);
-            poly(&mut t, &[(8.0, 20.0), (20.0, 8.0)]);
-            dots.extend([q(4.0, 16.0), q(16.0, 4.0)]);
+            poly(&[(4.0, 16.0), (16.0, 4.0)]);
+            poly(&[(8.0, 20.0), (20.0, 8.0)]);
+            dots.extend([(4.0, 16.0), (16.0, 4.0)]);
+            "xq-icon/channel"
         }
         Icon::Tool(Tool::Fib) => {
             for y in [5.0, 10.0, 14.0, 19.0] {
-                poly(&mut t, &[(4.0, y), (20.0, y)]);
+                poly(&[(4.0, y), (20.0, y)]);
             }
-            poly(&mut t, &[(4.0, 5.0), (4.0, 19.0)]);
+            poly(&[(4.0, 5.0), (4.0, 19.0)]);
+            "xq-icon/fib"
         }
-        Icon::Tool(Tool::Rect) => poly(&mut t, &[(4.0, 6.0), (20.0, 6.0), (20.0, 18.0), (4.0, 18.0), (4.0, 6.0)]),
+        Icon::Tool(Tool::Rect) => {
+            poly(&[(4.0, 6.0), (20.0, 6.0), (20.0, 18.0), (4.0, 18.0), (4.0, 6.0)]);
+            "xq-icon/rect"
+        }
         Icon::Tool(Tool::Text) => {
-            poly(&mut t, &[(5.0, 6.0), (19.0, 6.0)]);
-            poly(&mut t, &[(12.0, 6.0), (12.0, 18.0)]);
-            poly(&mut t, &[(8.0, 18.0), (16.0, 18.0)]);
+            poly(&[(5.0, 6.0), (19.0, 6.0)]);
+            poly(&[(12.0, 6.0), (12.0, 18.0)]);
+            poly(&[(8.0, 18.0), (16.0, 18.0)]);
+            "xq-icon/text"
         }
         Icon::Delete => {
-            poly(&mut t, &[(5.0, 7.0), (19.0, 7.0)]);
-            poly(&mut t, &[(9.0, 7.0), (9.0, 5.0), (15.0, 5.0), (15.0, 7.0)]);
-            poly(&mut t, &[(8.0, 7.0), (9.0, 19.0), (15.0, 19.0), (16.0, 7.0)]);
+            poly(&[(5.0, 7.0), (19.0, 7.0)]);
+            poly(&[(9.0, 7.0), (9.0, 5.0), (15.0, 5.0), (15.0, 7.0)]);
+            poly(&[(8.0, 7.0), (9.0, 19.0), (15.0, 19.0), (16.0, 7.0)]);
+            "xq-icon/delete"
         }
         Icon::Clear => {
-            poly(&mut t, &[(5.0, 6.0), (19.0, 6.0)]);
-            poly(&mut t, &[(6.2, 6.0), (7.2, 20.0), (16.8, 20.0), (17.8, 6.0)]);
+            poly(&[(5.0, 6.0), (19.0, 6.0)]);
+            poly(&[(6.2, 6.0), (7.2, 20.0), (16.8, 20.0), (17.8, 6.0)]);
             for x in [9.0, 12.0, 15.0] {
-                poly(&mut t, &[(x, 10.0), (x, 16.0)]);
+                poly(&[(x, 10.0), (x, 16.0)]);
             }
+            "xq-icon/clear"
         }
+    };
+    let mut svg = String::with_capacity(d.len() + 64 * dots.len() + 200);
+    let _ = write!(
+        svg,
+        r##"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="{d}" fill="none" stroke="#000" stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter"/>"##
+    );
+    for (x, y) in dots {
+        let _ = write!(svg, r##"<circle cx="{x}" cy="{y}" r="1.6" fill="#000"/>"##);
     }
-    for d in dots {
-        gfx::dot(window, d.x, d.y, 1.6 * s, color);
-    }
-    if let Some(path) = t.take() {
-        window.paint_path(path, color);
-    }
+    svg.push_str("</svg>");
+    (key, svg)
+}
+
+fn paint_icon(icon: Icon, b: Bounds<Pixels>, color: Hsla, window: &mut Window, cx: &mut App) {
+    // 只有工具列重畫（換工具、可刪除狀態改變、視窗縮放）時才會走到這裡；SVG 只在貼圖集沒有時才光柵化
+    let (key, svg) = icon_svg(icon);
+    let _ = window.paint_svg(b, key.into(), Some(svg.as_bytes()), gpui::TransformationMatrix::unit(), color, cx);
 }
 
 struct Tip(SharedString);
@@ -685,7 +709,7 @@ impl Rail {
             .when(enabled, |d| d.cursor_pointer().hover(|s| s.bg(gpui::rgb(0x2a2a2a))))
             .tooltip(move |_, cx| cx.new(|_| Tip(title.into())).into())
             .when(enabled, |d| d.on_click(cx.listener(move |_, _, _, cx| cx.emit(ev()))))
-            .child(canvas(|_, _, _| (), move |b, _, window, _| paint_icon(icon, b, color, window)).w(px(18.)).h(px(18.)))
+            .child(canvas(|_, _, _| (), move |b, _, window, cx| paint_icon(icon, b, color, window, cx)).w(px(18.)).h(px(18.)))
     }
 }
 
@@ -801,6 +825,8 @@ pub struct ChartView {
     zs: ZState,
     stress_started: bool,
     total_steps: u64,
+    /// 上一次 render 標題列畫出的成交價（XQ_SYNC_CHECK 比對用）
+    pub shown_price: f64,
     _subs: Vec<Subscription>,
 }
 
@@ -862,6 +888,7 @@ impl ChartView {
             stress,
             stress_started: false,
             total_steps: 0,
+            shown_price: 0.0,
             _subs: subs,
         };
         v.restore_saved();
@@ -1601,6 +1628,7 @@ impl Render for ChartView {
             let m = self.m.borrow();
             (format!("{} {}", m.symbol(), m.name), m.price, m.change, m.volume, m.period(), m.tool, m.drawings.len())
         };
+        self.shown_price = price;
         let color = dir_color(change);
         let has = price > 0.0;
         let period_btn = |p: Period, cx: &mut Context<Self>| {

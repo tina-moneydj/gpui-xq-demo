@@ -2,9 +2,9 @@
 //!
 //! 背景執行緒（xq-feed）每收到一包就在 `Inbox` 裡 O(1) 合併：
 //! 同代號的報價只留最新一筆、分時快照只留最新、分鐘線依序累積。
-//! 只有 inbox 從「空」變成「有東西」時才送一個喚醒訊號；UI 端每次
-//! 喚醒後整包取走，套用完再睡到下一個 frame（~16ms），
-//! 所以不管引擎推多快，UI 最多每 frame 套用一次。
+//! 只有 inbox 從「空」變成「有東西」時才送一個喚醒訊號；UI 端被喚醒只標記「要畫下一幀」，
+//! 在下一幀 root render 開頭整包取走（main.rs `Terminal::render`），
+//! 所以不管引擎推多快，UI 最多每 frame 套用一次，而且套用完馬上畫在同一幀。
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -78,6 +78,11 @@ impl FeedBridge {
     pub fn take(&self) -> Inbox {
         self.pending.store(false, Ordering::Release);
         std::mem::take(&mut *self.inbox.lock())
+    }
+
+    /// 背景有新東西還沒被 UI 取走（render 套用／後備套用用）
+    pub fn pending(&self) -> bool {
+        self.pending.load(Ordering::Acquire)
     }
 
     pub fn subscribe(&mut self, sub: Subscribe) {
