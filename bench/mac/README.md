@@ -8,20 +8,30 @@
 
 wry 已經淘汰，不在這次的比較裡。
 
-**你只要做三件事：**
-1. 照下面的步驟裝好工具。
-2. 雙擊（或在終端機執行）`run-bench.command`。
-3. 跑完把產生的 **zip 檔傳回來**。
+**你只要做五件事（不用裝 Xcode、不用裝 Rust、不用編譯）：**
+
+1. **下載**完整版：[egui-xq-demo → mac-bench-latest → `xq-bench-mac.zip`](https://github.com/tina-moneydj/egui-xq-demo/releases/tag/mac-bench-latest)
+   - egui-xq-demo 是**私人 repo**，要先在瀏覽器登入 GitHub（tina-moneydj）才看得到這個下載頁。
+   - 沒登入的人只能下載公開的 GPUI 版：[gpui-xq-demo → mac-bench-latest → `xq-bench-mac-gpui.zip`](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/mac-bench-latest)，這個版本只會測 GPUI。
+2. **解壓縮**：在「下載項目」裡雙擊 zip，會出現 `xq-bench-mac` 資料夾。（Safari 可能已經自動解壓好了。）
+3. **解除「從網路下載」的封鎖**：打開「終端機」（應用程式 → 工具程式），貼上這行，按 Enter：
+   ```
+   xattr -dr com.apple.quarantine ~/Downloads/xq-bench-mac
+   ```
+   資料夾不在「下載項目」的話，先打 `xattr -dr com.apple.quarantine `（最後有空格），再把資料夾拖進終端機視窗，按 Enter。
+4. **執行**：在同一個終端機貼上這兩行：
+   ```
+   cd ~/Downloads/xq-bench-mac
+   ./run-bench.command
+   ```
+   測試視窗會自己開、自己關，**跑完之前不要動滑鼠鍵盤**。
+5. **傳回結果**：跑完 Finder 會自動選取結果 zip（在 `results/` 裡，檔名像 `20261024-101500-MacBook-Pro.zip`），**把這個 zip 傳回來就好。**
 
 跑完後，結果資料夾裡的 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
-> 目前還沒有任何 Mac 實測數字，這個工具包就是要量出第一份。
+> 目前還沒有任何 Mac 實機數字，這個工具包就是要量出第一份。程式已經在 GitHub 的 Mac 雲端機器上編好並實際跑過一輪，確認能開視窗、收行情、量到數字（雲端機器沒有真的顯示卡，那份數字不算數）。
 
----
-
-## 步驟
-
-### 0. 測試前準備（很重要）
+### 跑之前（很重要）
 
 | 項目 | 怎麼做 |
 |---|---|
@@ -30,80 +40,15 @@ wry 已經淘汰，不在這次的比較裡。
 | 螢幕 | 有外接螢幕就接上，解析度和縮放維持平常的設定，不用特別調整 |
 | 測試中 | **不要動滑鼠和鍵盤**，也不要把終端機拖到測試視窗上面。被蓋住的視窗 macOS 會停止重畫，數字就不準了 |
 
-### 1. 安裝 Apple 開發工具（只要裝一次）
-
-打開「終端機」（在「應用程式 → 工具程式」裡面），貼上這行，按 Enter：
-
-```
-xcode-select --install
-```
-
-會跳出安裝視窗，按「安裝」，大約 5–10 分鐘。這裡面已經包含 git 和 python3。
-
-> **選擇性：** 如果你已經裝了完整的 Xcode，GPUI 會用跟正式產品一樣的「預先編譯 shader」。沒裝也能測，工具會自動改成「執行時編譯 shader」，只是 GPUI 的啟動時間會稍微多一點。結果檔會記錄這次用的是哪一種。
-> 有 Xcode 的話，請再執行：
-> ```
-> sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-> xcodebuild -downloadComponent MetalToolchain
-> ```
-
-### 2. 安裝 Rust（只要裝一次）
-
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-```
-
-裝好之後，**關掉終端機再開一個新的**。
-
-### 3. 下載兩個程式的原始碼
-
-```
-mkdir -p ~/xq-mac && cd ~/xq-mac
-git clone -b mac-bench https://github.com/tina-moneydj/gpui-xq-demo.git
-git clone -b mac-bench https://github.com/tina-moneydj/egui-xq-demo.git
-```
-
-- `egui-xq-demo` 是**私人 repo**。第二行會要你輸入 GitHub 帳號：
-  - Username 填 `tina-moneydj`
-  - Password **不是**登入密碼，要填 GitHub 的 Personal Access Token
-- 如果不想用 token，可以改用瀏覽器下載：
-  1. 登入 GitHub，打開 tina-moneydj/egui-xq-demo。
-  2. 左上角分支切到 `mac-bench`。
-  3. 按綠色的 **Code**，選 **Download ZIP**。
-  4. 解壓縮，資料夾改名成 `egui-xq-demo`，放進 `~/xq-mac/`。
-  5. 打開終端機，執行 `xattr -dr com.apple.quarantine ~/xq-mac`，清除「從網路下載」的標記。
-
-完成後，兩個資料夾要放在同一層：
-
-```
-~/xq-mac/gpui-xq-demo
-~/xq-mac/egui-xq-demo
-```
-
-### 4. 開始測試
-
-```
-cd ~/xq-mac/gpui-xq-demo/bench/mac
-./run-bench.command
-```
-
-也可以在 Finder 裡雙擊 `run-bench.command`。
-
-- **第一次**執行會先編譯三支程式，大約 10–20 分鐘，畫面會一直捲動文字，是正常的。之後再跑就不用重新編譯。
-- 編譯完會自動開始測試。畫面上會顯示預估時間，測試視窗會自己開、自己關。
-- 測試期間 Mac 不會進入睡眠，跑完就恢復原本的設定。
-
-### 5. 傳回結果
-
-跑完後，Finder 會自動選取結果 zip，檔名像 `results/20261024-101500-MacBook-Pro.zip`。**把這個 zip 傳回來就好。**
+Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列）版，Intel Mac 上 egui 那兩項會失敗，只會有 GPUI 的數字。需要 Intel 版的話，到 egui-xq-demo 的 Actions 手動執行 macos workflow 並勾選 universal。
 
 ---
 
 ## 要多久
 
-| 模式 | 指令 | 時間（編譯另計） | 內容 |
+| 模式 | 指令 | 時間 | 內容 |
 |---|---|---|---|
-| 完整（預設） | `./run-bench.command` | 約 75 分鐘 | 3 輪中位數、三種 app、五大情境全跑 |
+| 完整（預設） | `./run-bench.command` | 約 75 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑 |
 | 快速 | `./run-bench.command --quick` | 約 20 分鐘 | 1 輪；高頻只跑 10k、100k、爆量 |
 | 只比兩個 | `./run-bench.command --apps gpui,egui-wgpu` | 約 50 分鐘 | 只跑 GPUI 和 egui（Metal） |
 
@@ -135,7 +80,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
 
 ## 結果檔
 
-結果在 `bench/mac/results/<日期時間>-<電腦名稱>/`，旁邊還有一個同名的 `.zip`。
+結果在 `xq-bench-mac/results/<日期時間>-<電腦名稱>/`（從原始碼跑是 `bench/mac/results/`），旁邊還有一個同名的 `.zip`。
 
 | 檔案 | 內容 |
 |---|---|
@@ -149,12 +94,12 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
 - **「無法打開，因為無法驗證開發者」或「已損毀」**
   檔案是用瀏覽器下載的，帶有隔離標記。請執行下面這行，再重跑：
   ```
-  xattr -dr com.apple.quarantine ~/xq-mac
+  xattr -dr com.apple.quarantine ~/Downloads/xq-bench-mac
   ```
-  用 `git clone` 下載的不會有這個問題。
+  （從原始碼跑的話換成 `~/xq-mac`。用 `git clone` 下載的不會有這個問題。）
 
 - **雙擊 run-bench.command 沒反應，或顯示「沒有權限」**
-  在終端機執行 `chmod +x ~/xq-mac/gpui-xq-demo/bench/mac/*.command ~/xq-mac/gpui-xq-demo/bench/mac/*.sh`。
+  在終端機執行 `chmod +x ~/Downloads/xq-bench-mac/*.command ~/Downloads/xq-bench-mac/*.sh`（從原始碼跑的話是 `~/xq-mac/gpui-xq-demo/bench/mac/`）。
 
 - **跳出「是否允許接受連入網路連線」**
   測試只用本機的 127.0.0.1，按「允許」或「拒絕」都不影響結果。
@@ -165,11 +110,83 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
 - **終端機在 Rosetta 下執行**
   工具會提醒你。請到 Finder 對「終端機」按「取得資訊」，取消勾選「使用 Rosetta 打開」。
 
-- **想重新編譯**（例如程式更新了）
-  先執行 `git pull`（兩個資料夾都要），再執行 `./run-bench.command --rebuild`。
+- **程式更新了**
+  重新下載最新的 zip 就好。（從原始碼跑的話：兩個資料夾都 `git pull`，再執行 `./run-bench.command --rebuild`。）
 
 - **某一項失敗**
   工具會自動重跑一次。還是失敗就跳過，其他項目照跑，失敗原因記在 `results.json` 的 `failures`。
+
+---
+
+
+## 附錄：從原始碼自己編譯（一般不需要）
+
+只有想測自己改過的程式才需要。預先編譯包已經用跟正式產品一樣的「預先編譯 Metal shader」。
+
+#### 1. 安裝 Apple 開發工具（只要裝一次）
+
+打開「終端機」（在「應用程式 → 工具程式」裡面），貼上這行，按 Enter：
+
+```
+xcode-select --install
+```
+
+會跳出安裝視窗，按「安裝」，大約 5–10 分鐘。這裡面已經包含 git 和 python3。
+
+> **選擇性：** 如果你已經裝了完整的 Xcode，GPUI 會用跟正式產品一樣的「預先編譯 shader」。沒裝也能測，工具會自動改成「執行時編譯 shader」，只是 GPUI 的啟動時間會稍微多一點。結果檔會記錄這次用的是哪一種。
+> 有 Xcode 的話，請再執行：
+> ```
+> sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+> xcodebuild -downloadComponent MetalToolchain
+> ```
+
+#### 2. 安裝 Rust（只要裝一次）
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+```
+
+裝好之後，**關掉終端機再開一個新的**。
+
+#### 3. 下載兩個程式的原始碼
+
+```
+mkdir -p ~/xq-mac && cd ~/xq-mac
+git clone -b mac-bench https://github.com/tina-moneydj/gpui-xq-demo.git
+git clone -b mac-bench https://github.com/tina-moneydj/egui-xq-demo.git
+```
+
+- `egui-xq-demo` 是**私人 repo**。第二行會要你輸入 GitHub 帳號：
+  - Username 填 `tina-moneydj`
+  - Password **不是**登入密碼，要填 GitHub 的 Personal Access Token
+- 如果不想用 token，可以改用瀏覽器下載：
+  1. 登入 GitHub，打開 tina-moneydj/egui-xq-demo。
+  2. 左上角分支切到 `mac-bench`。
+  3. 按綠色的 **Code**，選 **Download ZIP**。
+  4. 解壓縮，資料夾改名成 `egui-xq-demo`，放進 `~/xq-mac/`。
+  5. 打開終端機，執行 `xattr -dr com.apple.quarantine ~/xq-mac`，清除「從網路下載」的標記。
+
+完成後，兩個資料夾要放在同一層：
+
+```
+~/xq-mac/gpui-xq-demo
+~/xq-mac/egui-xq-demo
+```
+
+#### 4. 開始測試
+
+```
+cd ~/xq-mac/gpui-xq-demo/bench/mac
+./run-bench.command
+```
+
+也可以在 Finder 裡雙擊 `run-bench.command`。
+
+- **第一次**執行會先編譯三支程式，大約 10–20 分鐘，畫面會一直捲動文字，是正常的。之後再跑就不用重新編譯。
+- 編譯完會自動開始測試。畫面上會顯示預估時間，測試視窗會自己開、自己關。
+- 測試期間 Mac 不會進入睡眠，跑完就恢復原本的設定。
+
+從原始碼跑的話，第一次會先編譯三支程式，大約 10–20 分鐘，之後再跑就不用重新編譯。
 
 ---
 
@@ -206,12 +223,9 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
     - 自身 RSS：`proc_pidinfo`
   - 兩邊都加了 `XQ_WIN_RECTS`。
 - **還沒做：** 高頻情境的「點報價列切換」反應時間。要自動點擊得開「輔助使用」權限，這版先略過。
-- **CI：** `ci/macos.yml` 是 GitHub Actions 的工作流程：
-  - 在 macos-26 上產生 arm64＋x86_64 通用執行檔，加 ad-hoc 簽章，打包成 zip。
-  - 推送用的 token 沒有 `workflow` 權限，所以還沒放進 `.github/workflows/`，也還沒啟用。
-  - 有權限的人執行 `git mv bench/mac/ci/macos.yml .github/workflows/` 就能啟用。
-  - 用 CI 產生的 zip 時：
-    1. 先執行 `xattr -dr com.apple.quarantine <資料夾>`。
-    2. 把 `egui-xq-demo` 放進 `bin/`。
-    3. 執行 `python3 xq_bench_mac.py`。
+- **CI：** `.github/workflows/macos.yml`（gpui-xq-demo、egui-xq-demo 各一份，推 `mac-bench` 分支就會跑）：
+  - gpui-xq-demo：在 macos-26（Xcode 26）上編 GPUI＋`xq-tickgen`＋`xq-demofeed` 的 arm64＋x86_64 通用執行檔，預先編譯 Metal shader，ad-hoc 簽章，打包成 `xq-bench-mac-gpui.zip`，發佈公開預發行版 `mac-bench-latest`；並實際跑一輪 GPUI 主視窗＋重圖表當冒煙測試（artifact `smoke-mac-gpui`）。
+  - egui-xq-demo：編 egui（預設只編 arm64，省私人 repo 的 macOS 分鐘數；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui，發佈私人預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
+  - 兩個 repo 同時推時，egui 那邊可能拿到上一版 GPUI 包；要確定是最新的，等 gpui 的 run 跑完再推 egui（或手動重跑 egui 的 workflow）。
+  - 下載的包會先清隔離標記（`xattr -dr com.apple.quarantine`）；`run-bench.command` 偵測到 `bin/` 已有執行檔就不會編譯。
 - **自行編譯：** `./build-mac.sh` 只編本機的架構；`./build-mac.sh --universal` 用 lipo 合成通用執行檔。
