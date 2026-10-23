@@ -816,7 +816,7 @@ function Write-Summary($S, $mi, $path) {
     $gpus = (@($mi.gpus) | ForEach-Object { "$($_.name)（驅動 $($_.driver)）" }) -join "、"
     $tally = (@($Apps | Sort-Object { - $Script:WinCount[$_] }) | ForEach-Object { "$_ $($Script:WinCount[$_]) 項" }) -join "、"
     $md = New-Object System.Collections.Generic.List[string]
-    $md.Add("# XQ 壓測結果（Windows）：GPUI vs egui— $($mi.computer)，$(Get-Date -Format 'yyyy-MM-dd HH:mm')"); $md.Add("")
+    $md.Add("# XQ 壓測結果（Windows）：GPUI vs egui（$($mi.computer)，$(Get-Date -Format 'yyyy-MM-dd HH:mm')）"); $md.Add("")
     $md.Add("## 結論"); $md.Add("")
     $md.Add("表格中各列最佳的標 🏆（平手不標）；勝出次數：$tally。括號是落後倍數（≥ 1.15× 才標）。"); $md.Add("")
     foreach ($c in $Script:Concl) { $md.Add($c) }
