@@ -57,6 +57,16 @@ jobs:
           file $K/bin/*
           ( $K/bin/xq-demofeed --addr 127.0.0.1:47631 & echo $! > /tmp/feed.pid; sleep 2; kill $(cat /tmp/feed.pid) ) || true
           python3 -m py_compile $K/xq_bench_mac.py
+      - name: 實際跑一輪（GPUI 主視窗＋重圖表；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情、量到數字）
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          cd xq-bench-mac
+          python3 xq_bench_mac.py --apps gpui --scenarios main,heavy --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
+          ls -la "$GITHUB_WORKSPACE/smoke"; head -60 "$GITHUB_WORKSPACE/smoke/summary.md" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-mac-gpui, path: smoke, if-no-files-found: ignore, retention-days: 14 }
       - uses: actions/upload-artifact@v4
         with: { name: xq-bench-mac-gpui, path: xq-bench-mac-gpui.zip, retention-days: 30 }
       - name: Publish mac-bench-latest pre-release
