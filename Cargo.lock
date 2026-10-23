@@ -2460,6 +2460,7 @@ dependencies = [
  "serde_json",
  "xq-feed",
  "xq-tape",
+ "xq-tokens",
 ]
 
 [[package]]
@@ -6921,6 +6922,13 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "xq-feed",
+]
+
+[[package]]
+name = "xq-tokens"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

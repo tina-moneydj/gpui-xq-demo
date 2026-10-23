@@ -6,7 +6,7 @@ use gpui::{
     TextAlign, TextRun, Window,
 };
 
-use crate::theme::MONO_FONT;
+use crate::theme::mono_font;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct P {
@@ -172,7 +172,7 @@ pub fn vdash(window: &mut Window, x: f32, y0: f32, y1: f32, color: Hsla, dash: f
 }
 
 pub fn run(len: usize, color: Hsla) -> TextRun {
-    TextRun { len, font: font(MONO_FONT), color, background_color: None, underline: None, strikethrough: None }
+    TextRun { len, font: font(mono_font()), color, background_color: None, underline: None, strikethrough: None }
 }
 
 pub fn shape(window: &mut Window, s: impl Into<SharedString>, size_px: f32, color: Hsla) -> ShapedLine {

@@ -41,11 +41,11 @@ use theme::*;
 /// 根 view 畫過的 frame 總數（走勢圖壓測算 FPS 用）
 pub static FRAMES: AtomicU64 = AtomicU64::new(0);
 
-const TITLE_H: f32 = 26.0;
+fn title_h() -> f32 { xq_tokens::t().layout.title_bar }
 /// 主視窗超過這麼久沒畫（被蓋住／縮小），後備計時器直接套用行情
 const FALLBACK_MS: u64 = 25;
-const STATUS_H: f32 = 22.0;
-const SPLIT: f32 = 5.0;
+fn status_h() -> f32 { xq_tokens::t().layout.status_bar }
+fn split() -> f32 { xq_tokens::t().layout.splitter }
 
 #[derive(Clone, Copy, PartialEq)]
 enum Drag {
@@ -88,7 +88,7 @@ impl Render for InfoPane {
                 .justify_between()
                 .h(px(20.))
                 .child(div().text_color(dim()).child(k))
-                .child(div().font_family(MONO_FONT).text_color(c).child(v))
+                .child(div().font_family(mono_font()).text_color(c).child(v))
         };
         let s = &self.stats;
         div()
@@ -96,11 +96,11 @@ impl Render for InfoPane {
             .flex_col()
             .size_full()
             .bg(panel())
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
-                    .h(px(26.))
+                    .h(px(tk().layout.title_bar))
                     .px_2()
                     .flex()
                     .items_center()
@@ -120,7 +120,7 @@ impl Render for InfoPane {
                             .flex()
                             .flex_col()
                             .w(px(220.))
-                            .child(div().text_size(px(15.)).pb_1().child(format!("{} {}", self.symbol, self.name)))
+                            .child(div().text_size(px(tk().font.xl)).pb_1().child(format!("{} {}", self.symbol, self.name)))
                             .child(kv("成交", if has { format!("{:.2}", self.price) } else { "--".into() }, color))
                             .child(kv("漲跌", if has { fmt_change(self.change) } else { "--".into() }, color))
                             .child(kv("幅度", if has { format!("{:+.2}%", pct(self.price, self.change)) } else { "--".into() }, color))
@@ -132,7 +132,7 @@ impl Render for InfoPane {
                             .flex()
                             .flex_col()
                             .w(px(240.))
-                            .child(div().text_size(px(13.)).pb_1().text_color(dim()).child("效能（每秒取樣）"))
+                            .child(div().text_size(px(tk().font.lg)).pb_1().text_color(dim()).child("效能（每秒取樣）"))
                             .child(kv("引擎封包", format!("{}/s", s.frames_in), text()))
                             .child(kv("報價筆數（未合併）", format!("{}/s", fmt_int(s.quote_rows_in as i64)), text()))
                             .child(kv("UI 套用（合併後）", format!("{}/s", s.applies), text()))
@@ -144,7 +144,7 @@ impl Render for InfoPane {
                 div()
                     .px_3()
                     .text_color(dim())
-                    .text_size(px(11.))
+                    .text_size(px(tk().font.sm))
                     .child("右下網頁格：GPUI 版不內嵌 WebView（gpui-wry 的子視窗不受 GPUI 裁切），此格先做資訊／效能面板。"),
             )
     }
@@ -659,8 +659,8 @@ impl Terminal {
         let vp = window.viewport_size();
         match d {
             Drag::Horizontal => {
-                let avail = f32::from(vp.height) - TITLE_H - STATUS_H - SPLIT;
-                let y = f32::from(ev.position.y) - TITLE_H;
+                let avail = f32::from(vp.height) - title_h() - status_h() - split();
+                let y = f32::from(ev.position.y) - title_h();
                 self.top_frac = (y / avail).clamp(0.15, 0.85);
             }
             Drag::Vertical => {
@@ -723,7 +723,7 @@ impl Render for Terminal {
             }
         }
         let vp = window.viewport_size();
-        let avail = f32::from(vp.height) - TITLE_H - STATUS_H - SPLIT;
+        let avail = f32::from(vp.height) - title_h() - status_h() - split();
         let top_h = (avail * self.top_frac).floor();
         let (conn_text, conn_color) = match self.conn {
             Conn::Connecting => ("連線中…", dim()),
@@ -745,8 +745,8 @@ impl Render for Terminal {
             .flex_col()
             .size_full()
             .bg(bg())
-            .font_family(UI_FONT)
-            .text_size(px(12.))
+            .font_family(ui_font())
+            .text_size(px(tk().font.md))
             .text_color(text())
             .on_mouse_move(cx.listener(Self::on_drag))
             .on_any_mouse_down(|ev, _, _| {
@@ -761,7 +761,7 @@ impl Render for Terminal {
             }))
             .child(
                 div()
-                    .h(px(TITLE_H))
+                    .h(px(title_h()))
                     .flex()
                     .flex_row()
                     .items_center()
@@ -778,7 +778,7 @@ impl Render for Terminal {
             .child(
                 div()
                     .id("hsplit")
-                    .h(px(SPLIT))
+                    .h(px(split()))
                     .w_full()
                     .cursor_row_resize()
                     .bg(if dragging == Some(Drag::Horizontal) { accent() } else { border() })
@@ -799,7 +799,7 @@ impl Render for Terminal {
                     .child(
                         div()
                             .id("vsplit")
-                            .w(px(SPLIT))
+                            .w(px(split()))
                             .h_full()
                             .cursor_col_resize()
                             .bg(if dragging == Some(Drag::Vertical) { accent() } else { border() })
@@ -811,13 +811,13 @@ impl Render for Terminal {
                     )
                     .child(div().flex_1().h_full().child(view(self.info.clone().into())))
                     .when_some(self.tape.clone(), |d, tape| {
-                        d.child(div().w(px(SPLIT)).h_full().bg(border()))
-                            .child(div().w(px(276.)).h_full().flex_none().child(view(tape.into())))
+                        d.child(div().w(px(split())).h_full().bg(border()))
+                            .child(div().w(px(tk().layout.tape_width)).h_full().flex_none().child(view(tape.into())))
                     }),
             )
             .child(
                 div()
-                    .h(px(STATUS_H))
+                    .h(px(status_h()))
                     .flex()
                     .flex_row()
                     .items_center()
@@ -826,12 +826,12 @@ impl Render for Terminal {
                     .bg(header())
                     .border_t_1()
                     .border_color(border())
-                    .text_size(px(11.))
+                    .text_size(px(tk().font.sm))
                     .child(div().text_color(conn_color).child(format!("● {conn_text} {addr}")))
                     .child(div().flex_1())
-                    .child(div().font_family(MONO_FONT).child(format!("FPS {}", s.fps)))
-                    .child(div().font_family(MONO_FONT).child(format!("RSS {:.1} MB", s.rss_mb)))
-                    .child(div().font_family(MONO_FONT).text_color(dim()).child(format!(
+                    .child(div().font_family(mono_font()).child(format!("FPS {}", s.fps)))
+                    .child(div().font_family(mono_font()).child(format!("RSS {:.1} MB", s.rss_mb)))
+                    .child(div().font_family(mono_font()).text_color(dim()).child(format!(
                         "封包 {}/s → 套用 {}/s",
                         s.frames_in, s.applies
                     ))),
@@ -855,9 +855,34 @@ fn window_options(k: usize, cx: &mut App) -> WindowOptions {
     }
 }
 
+gpui::actions!(xq_theme, [ToggleTheme]);
+
 fn main() {
     gpui_platform::application().run(|cx: &mut App| {
         tick_tape::bind_keys(cx);
+        // 設計 token：F8 切換深色／淺色；refresh_windows 會略過 view 快取整個重畫
+        cx.bind_keys([gpui::KeyBinding::new("f8", ToggleTheme, None)]);
+        cx.on_action(|_: &ToggleTheme, cx: &mut App| {
+            let m = xq_tokens::toggle_mode();
+            eprintln!("[xq-tokens] 主題：{}", m.name());
+            cx.refresh_windows();
+        });
+        // 熱更新（XQ_TOKENS_DIR＋debug 版或 XQ_TOKENS_WATCH=1）：背景執行緒重載 token，這裡每 300ms 看版本號，變了就整個重畫。
+        // 沒開熱更新時不建這個 task，壓測數字不受影響。
+        if xq_tokens::watch() {
+            cx.spawn(async move |cx| {
+                let mut seen = xq_tokens::generation();
+                loop {
+                    cx.background_executor().timer(Duration::from_millis(300)).await;
+                    let g = xq_tokens::generation();
+                    if g != seen {
+                        seen = g;
+                        cx.update(|cx| cx.refresh_windows());
+                    }
+                }
+            })
+            .detach();
+        }
         let opts = window_options(0, cx);
         let main = cx
             .open_window(opts, |window, cx| cx.new(|cx| Terminal::new(0, None, window, cx)))

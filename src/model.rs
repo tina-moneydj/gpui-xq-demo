@@ -9,8 +9,8 @@ use crate::gfx::{p, P};
 use crate::indicators::{OvSpec, Overlay, Sub, SubCfg, SubKind, MAX_OVERLAYS, MAX_SUBS, SUB_ORDER};
 use crate::series::{self, Period, Series, K};
 
-pub const AXIS_W: f32 = 66.0;
-pub const TIME_H: f32 = 18.0;
+pub fn axis_w() -> f32 { xq_tokens::t().layout.axis_width }
+pub fn time_h() -> f32 { xq_tokens::t().layout.time_axis }
 pub const PLOT_L: f32 = 4.0;
 
 /// 要重畫哪幾層
@@ -497,7 +497,7 @@ impl Model {
     fn compute_geo(&mut self, b: Bounds<Pixels>) -> Geo {
         let (bx, by, bw, bh) = (f32::from(b.origin.x), f32::from(b.origin.y), f32::from(b.size.width), f32::from(b.size.height));
         let plot_l = bx + PLOT_L;
-        let plot_r = (plot_l + 80.0).max(bx + bw - AXIS_W);
+        let plot_r = (plot_l + 80.0).max(bx + bw - axis_w());
         let plot_w = plot_r - plot_l;
         let n = self.s.bars.len();
         let mut v = self.view.unwrap_or_else(|| self.init_view(plot_w as f64));
@@ -510,7 +510,7 @@ impl Model {
         } else {
             ((idx_at(plot_l).floor().max(0.0) as usize).min(n - 1), (idx_at(plot_r).ceil().max(0.0) as usize).min(n - 1))
         };
-        let avail = (bh - TIME_H).max(60.0);
+        let avail = (bh - time_h()).max(60.0);
         let nb = self.subs.len();
         let (mut price_h, mut below_h) = (avail, 0.0);
         if nb > 0 {
