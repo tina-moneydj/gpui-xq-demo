@@ -1,0 +1,62 @@
+{
+ "date": "2026-10-23 12:09 +0800",
+ "runs": 1,
+ "mode": "all",
+ "apps": [
+  "gpui"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "gpui": {
+  "binary_mb": 25.632034301757812,
+  "baseline": {
+   "window_ms": 210.4925550011103,
+   "first_frame_ms": 233.4545640005672,
+   "first_quote_ms": 409.9797349990695,
+   "rss10_mb": 183.515625,
+   "pss10_mb": 146.013671875,
+   "rss60_mb": 183.83203125,
+   "pss60_mb": 146.3330078125,
+   "cpu_pct": 149.6029337788938,
+   "fps": 21.586206896551722,
+   "nproc": 1,
+   "threads": 52,
+   "procs60_last": [
+    {
+     "comm": "gpui-xq-demo",
+     "rss_mb": 183.8,
+     "pss_mb": 146.3,
+     "threads": 52
+    }
+   ],
+   "cpu_threads_last": {
+    "gpui-xq-demo/llvmpipe": 136.8,
+    "gpui-xq-demo/gpui-xq-demo": 11.6
+   }
+  },
+  "stress": {
+   "rss_tick_mb": 187.640625,
+   "pss_tick_mb": 128.052734375,
+   "rss_scroll_mb": 187.80859375,
+   "pss_scroll_mb": 128.220703125,
+   "cpu_tick_pct": 240.1588716773214,
+   "cpu_scroll_pct": 213.06024568532513,
+   "tick_fps": 35.2,
+   "scroll_fps": 32.4,
+   "tick_avg_paint_ms": 0.058,
+   "tick_cells_per_paint": 84,
+   "tick_paints": 1055,
+   "scroll_avg_paint_ms": 0.057,
+   "scroll_cells_per_paint": 84,
+   "scroll_paints": 324,
+   "scroll_jank_count": 160,
+   "scroll_jank_avg_ms": 33.5,
+   "rows": 50033,
+   "cols": 6,
+   "cpu_tick_threads_last": {
+    "gpui-xq-demo/llvmpipe": 224.1,
+    "gpui-xq-demo/gpui-xq-demo": 14.1,
+    "gpui-xq-demo/WSI swapchain q": 1.5
+   }
+  }
+ }
+}
