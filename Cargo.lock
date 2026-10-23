@@ -2455,6 +2455,7 @@ dependencies = [
  "futures",
  "gpui-pre",
  "gpui-pre-platform",
+ "libc",
  "parking_lot",
  "serde",
  "serde_json",

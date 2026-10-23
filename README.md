@@ -5,6 +5,8 @@
 
 > **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
 
+> **Mac 壓測包（mac-bench 分支）**：在自己的 Mac 上比 GPUI vs egui，一個指令跑完、結果 zip 傳回來 → [bench/mac/README.md](bench/mac/README.md)（目前還沒有 Mac 實測數字）。
+
 ![分時](screenshot.png)
 
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
@@ -886,7 +888,8 @@ GPUI 三層的細項（中位數那次）：主圖層 ≈ 1.2 ms／幀；畫線�
 - **macOS**：GPUI 的主平台（Zed 編輯器），Metal 繪圖，最成熟。
 - **Windows**：已有官方支援（DirectX 11 / DirectComposition），Zed Windows 版已釋出；中文輸入法、HiDPI 要實測。
 - **Linux**：X11 與 Wayland 都支援，這個版本（`gpui-pre 0.3.7`）繪圖走 wgpu（Vulkan 為主）；需要可用的 Vulkan/GL 驅動。
-- **iOS / iPadOS / Android**：GPUI **不支援**行動平台；全平台要另做行動端（共用 `xq-feed` 協議／Rust 核心）。
+- **iOS / iPadOS**：2026-10-14 Zed 合併**實驗性** `gpui_ios`（[zed#63068](https://github.com/zed-industries/zed/pull/63068)：UIKit、Metal、觸控、軟鍵盤輸入；編輯選單、Return 鍵等還沒做），crates.io 有 `gpui-pre-ios 0.3.9`（2026-10-19）。這個 repo 目前鎖 `0.3.7`，還沒接 iOS。
+- **Android**：官方沒有；社群 [longbridge/gpui-mobile](https://github.com/longbridge/gpui-mobile)（zed#43207 未合併）。
 - 依賴：`gpui-pre` 是社群發佈的 Zed GPUI 快照（crates.io 上官方 `gpui` 0.2.x 版本較舊），API 仍在變動，版本鎖在 `=0.3.7`。
 
 ## 跟 wry 版相比還沒做的

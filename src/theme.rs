@@ -2,8 +2,15 @@
 
 use gpui::{rgb, Rgba};
 
+#[cfg(not(target_os = "macos"))]
 pub const UI_FONT: &str = "Noto Sans CJK TC";
+#[cfg(not(target_os = "macos"))]
 pub const MONO_FONT: &str = "Noto Sans Mono CJK TC";
+/// macOS：系統內建的蘋方-繁；等寬用 Menlo（中文字由 CoreText 字型後援補上）
+#[cfg(target_os = "macos")]
+pub const UI_FONT: &str = "PingFang TC";
+#[cfg(target_os = "macos")]
+pub const MONO_FONT: &str = "Menlo";
 
 pub fn bg() -> Rgba { rgb(0x0b0e14) }
 pub fn panel() -> Rgba { rgb(0x10141c) }

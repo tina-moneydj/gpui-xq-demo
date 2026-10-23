@@ -671,6 +671,18 @@ impl Terminal {
     }
 }
 
+/// macOS：目前程序的常駐記憶體（resident size，相當於 Linux RSS），用 proc_pidinfo(PROC_PIDTASKINFO)
+#[cfg(target_os = "macos")]
+pub fn rss_mb() -> f64 {
+    unsafe {
+        let mut ti: libc::proc_taskinfo = std::mem::zeroed();
+        let sz = std::mem::size_of::<libc::proc_taskinfo>() as libc::c_int;
+        let n = libc::proc_pidinfo(libc::getpid(), libc::PROC_PIDTASKINFO, 0, &mut ti as *mut _ as *mut libc::c_void, sz);
+        if n == sz { ti.pti_resident_size as f64 / (1024.0 * 1024.0) } else { 0.0 }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -845,11 +857,33 @@ fn window_count() -> usize {
     std::env::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
 }
 
+/// 壓測用視窗位置：`XQ_WIN_RECTS="x,y,w,h[,did,dx,dy];…"`（第 k 個給第 k 個視窗）。
+/// x,y,w,h＝全域座標（邏輯點，左上角原點＝主螢幕左上）的內容區；did＝該螢幕的 display id（macOS CGDirectDisplayID），
+/// dx,dy＝該螢幕左上角的全域座標。GPUI 的視窗位置是「相對於所在螢幕」，所以換算成 (x-dx, y-dy) 並指定 display。
+/// 沒設定時照舊：1240×760 置中。macOS 測試包（bench/mac）用這個把視窗放到指定螢幕、指定大小（不需要輔助使用權限）。
+pub fn win_rect(k: usize) -> Option<(f32, f32, f32, f32, Option<(u64, f32, f32)>)> {
+    let v = std::env::var("XQ_WIN_RECTS").ok()?;
+    let e = v.split(';').filter(|e| !e.trim().is_empty()).nth(k)?;
+    let n: Vec<f64> = e.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+    if n.len() < 4 {
+        return None;
+    }
+    let disp = (n.len() >= 7).then(|| (n[4] as u64, n[5] as f32, n[6] as f32));
+    Some((n[0] as f32, n[1] as f32, n[2] as f32, n[3] as f32, disp))
+}
+
 fn window_options(k: usize, cx: &mut App) -> WindowOptions {
-    let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
+    let (bounds, display_id) = match win_rect(k) {
+        Some((x, y, w, h, Some((did, dx, dy)))) => {
+            (Bounds::new(gpui::point(px(x - dx), px(y - dy)), size(px(w), px(h))), Some(gpui::DisplayId::new(did)))
+        }
+        Some((x, y, w, h, None)) => (Bounds::new(gpui::point(px(x), px(y)), size(px(w), px(h))), None),
+        None => (Bounds::centered(None, size(px(1240.0), px(760.0)), cx), None),
+    };
     let title = if k == 0 { "XQ 風格測試（GPUI）".to_string() } else { format!("XQ 風格測試（GPUI） #{}", k + 1) };
     WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
+        display_id,
         titlebar: Some(TitlebarOptions { title: Some(title.into()), ..Default::default() }),
         ..Default::default()
     }
