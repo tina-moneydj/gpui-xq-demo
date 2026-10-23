@@ -5,7 +5,10 @@
 //!   純平移（view.right 改變）沿用快取，只把頂點整批水平位移（不重新三角化、不重新排字）。
 //! - 重建時先用 bounding box 剔除不在可視區（左右各多留半個寬度給平移）的畫線。
 //! - hit-test 用 64px 格子的空間索引，只測游標附近 3×3 格的候選。
-//! - 被選取／繪製中的那條不進快取，在 live 層每幀即時畫（含控制點）。
+//! - 圖層／上下順序（z-order，見 layers.rs）：嚴格依（圖層順位, 圖層內順位）由下往上畫。
+//!   幾何（填色＋線）全部用 Path，依 z 順序排，相鄰同色合併成一條 Path；字（標籤）在每一段幾何之上。
+//! - 選取的那條不進快取，在「它自己的位置」即時畫：畫線層切成 下面（快取）／選取（每幀）／上面（快取）三明治，
+//!   拖曳時只重畫中間那片，上下兩段只在選取改變、順序或圖層改變時重建。控制點在 live 層（最上面）。
 
 use gpui::{px, App, Bounds, ContentMask, Hsla, Path, Pixels, ShapedLine, Window};
 use serde::{Deserialize, Serialize};
@@ -62,6 +65,19 @@ pub struct Drawing {
     pub pts: Vec<Pt>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub text: String,
+    /// 圖層 id（layers.rs；舊存檔沒有 → 0，0 不寫出，與舊版／wry 相容）
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub layer: u32,
+}
+
+fn is_zero(v: &u32) -> bool {
+    *v == 0
+}
+
+impl Drawing {
+    pub fn new(kind: Tool, pts: Vec<Pt>, text: String) -> Drawing {
+        Drawing { kind, pts, text, layer: 0 }
+    }
 }
 
 pub const FIB: [f64; 7] = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
@@ -381,7 +397,8 @@ pub struct GeomCache {
 }
 
 impl GeomCache {
-    pub fn build(list: &[Drawing], xf: &Xf, key: CacheKey) -> GeomCache {
+    /// hidden(k)：隱藏圖層的畫線不建幾何（不畫、點不到）
+    pub fn build(list: &[Drawing], xf: &Xf, key: CacheKey, hidden: impl Fn(usize) -> bool) -> GeomCache {
         let w = xf.plot_r - xf.plot_l;
         // 左右各多留半個寬度：平移快取時從邊緣移入的畫線也已經在快取裡
         let (cl, cr) = (xf.plot_l - w * 0.5, xf.plot_r + w * 0.5);
@@ -389,7 +406,11 @@ impl GeomCache {
         let mut visible = 0;
         let geoms: Vec<Option<Geom>> = list
             .iter()
-            .map(|d| {
+            .enumerate()
+            .map(|(k, d)| {
+                if hidden(k) {
+                    return None;
+                }
                 let g = geom(d, xf);
                 let b = g.bbox;
                 if b[2] < cl || b[0] > cr || b[3] < ct || b[1] > cb {
@@ -406,15 +427,14 @@ impl GeomCache {
     }
 }
 
-/// 畫線層的已建好圖元（重建後，平移只位移）
+/// 畫線層一段（下面或上面）的已建好圖元（重建後，平移只位移）
 #[derive(Default)]
 pub struct PaintCache {
-    /// 填色矩形（fib 帶、矩形底色、文字框）
-    quads: Vec<([f32; 4], Hsla, Option<Hsla>)>,
+    /// 依 z 順序的幾何（填色＋線），相鄰同色合併
     paths: Vec<(Path<Pixels>, Hsla)>,
+    /// 字（fib 標籤、文字註記）：畫在這一段的幾何之上
     labels: Vec<(ShapedLine, f32, f32, f32)>,
-    /// 水平線：橫跨整個寬度，平移時不位移（與 wry 一樣即時畫的效果）
-    h_paths: Vec<(Path<Pixels>, Hsla)>,
+    /// 水平線的價格標籤（右側價格軸上，不位移）
     h_tags: Vec<(f32, ShapedLine)>,
     pub built_us: u64,
 }
@@ -423,187 +443,212 @@ fn fmt_p(v: f64) -> String {
     if v.is_finite() { format!("{v:.2}") } else { "--".into() }
 }
 
-/// 一條畫線的所有圖元（快取重建與 live 層共用）
-pub struct Emit {
-    pub quads: Vec<([f32; 4], Hsla, Option<Hsla>)>,
-    pub main: Tris,
-    pub main_sel: Tris,
-    pub dash: Tris,
-    pub fib: [Tris; 7],
-    pub fill_ch: Tris,
-    pub fill_rect: Tris,
+/// 依 z 順序收集圖元：每條畫線的填色、線依序加入，顏色和上一段相同就併進同一條 Path
+/// （GPUI 一批 path 內的頂點依序光柵化＋混色，所以順序就是畫面上的上下關係）。
+#[derive(Default)]
+pub struct ZEmit {
+    /// (三角形, 顏色, 這段的外框)
+    runs: Vec<(Tris, Hsla, [f32; 4])>,
     pub labels: Vec<(String, f32, f32, f32, Hsla)>,
-    pub handles: Vec<P>,
+    /// 目前這條畫線的外框（t() 合併用）
+    cur_bb: [f32; 4],
 }
 
-impl Emit {
-    pub fn new() -> Emit {
-        Emit {
-            quads: Vec::new(),
-            main: Tris::default(),
-            main_sel: Tris::default(),
-            dash: Tris::default(),
-            fib: Default::default(),
-            fill_ch: Tris::default(),
-            fill_rect: Tris::default(),
-            labels: Vec::new(),
-            handles: Vec::new(),
+/// 往回找同色的段最多看幾段
+const MERGE_LOOKBACK: usize = 64;
+
+fn overlaps(a: &[f32; 4], b: &[f32; 4]) -> bool {
+    a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3]
+}
+
+impl ZEmit {
+    /// 拿顏色 c 的三角形段。往回找同色的段：中間隔著的段只要跟這條畫線的外框都不重疊，
+    /// 把這條的幾何併到那段，畫出來一模一樣（不重疊的圖元先畫後畫結果相同）——
+    /// path 數從「每條畫線好幾段」降到接近「每種顏色幾段」，GPUI 每個 path 的固定成本跟著少。
+    #[inline]
+    fn t(&mut self, c: Hsla) -> &mut Tris {
+        let bb = self.cur_bb;
+        let mut hit = None;
+        for i in (0..self.runs.len()).rev().take(MERGE_LOOKBACK) {
+            let (_, rc, rb) = &self.runs[i];
+            if *rc == c {
+                hit = Some(i);
+                break;
+            }
+            if overlaps(rb, &bb) {
+                break;
+            }
+        }
+        let i = match hit {
+            Some(i) => i,
+            None => {
+                self.runs.push((Tris::default(), c, bb));
+                self.runs.len() - 1
+            }
+        };
+        let r = &mut self.runs[i];
+        r.2 = [r.2[0].min(bb[0]), r.2[1].min(bb[1]), r.2[2].max(bb[2]), r.2[3].max(bb[3])];
+        &mut r.0
+    }
+
+    fn quad(&mut self, x: f32, y: f32, w: f32, h: f32, c: Hsla) {
+        if w > 0.0 && h > 0.0 {
+            self.t(c).poly(&[p(x, y), p(x + w, y), p(x + w, y + h), p(x, y + h)]);
         }
     }
 
-    pub fn drawing(&mut self, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) {
+    /// 一條畫線。hline_ext：水平線往左右各多畫一個寬度（快取平移時不會斷）
+    pub fn drawing(&mut self, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
         let w: f32 = if sel { 2.0 } else { 1.4 };
+        let main = gfx::hex(if sel { SEL_COLOR } else { DRAW_COLOR });
+        // 外框（含線寬餘量；水平線含左右延伸）
+        let ext = if d.kind == Tool::Hline { hline_ext } else { 0.0 };
+        self.cur_bb = [g.bbox[0] - ext - 4.0, g.bbox[1] - 4.0, g.bbox[2] + ext + 4.0, g.bbox[3] + 4.0];
         if let Some(f) = &g.fill {
-            if d.kind == Tool::Rect {
-                self.fill_rect.poly(f);
-            } else {
-                self.fill_ch.poly(f);
-            }
+            let c = gfx::hexa(DRAW_COLOR, if d.kind == Tool::Rect { 0.10 } else { 0.07 });
+            self.t(c).poly(f);
         }
         match d.kind {
             Tool::Fib => {
-                for (n, lv) in g.levels.iter().enumerate() {
-                    let c = FIB_COLORS[lv.k];
-                    if n > 0 {
-                        let prev = &g.levels[n - 1];
-                        let (ya, yb) = (lv.y.min(prev.y), lv.y.max(prev.y));
-                        self.quads.push(([lv.x1, ya, lv.x2 - lv.x1, yb - ya], gfx::hexa(c, 0x14 as f32 / 255.0), None));
-                    }
-                    let t = if sel { &mut self.main_sel } else { &mut self.fib[lv.k] };
-                    t.seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4));
-                    self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, 11.0, gfx::hex(c)));
+                for n in 1..g.levels.len() {
+                    let (lv, prev) = (&g.levels[n], &g.levels[n - 1]);
+                    let (ya, yb) = (lv.y.min(prev.y), lv.y.max(prev.y));
+                    self.quad(lv.x1, ya, lv.x2 - lv.x1, yb - ya, gfx::hexa(FIB_COLORS[lv.k], 0x14 as f32 / 255.0));
+                }
+                for lv in &g.levels {
+                    let c = if sel { main } else { gfx::hex(FIB_COLORS[lv.k]) };
+                    self.t(c).seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4));
+                    self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, 11.0, gfx::hex(FIB_COLORS[lv.k])));
                 }
                 if let Some([a, b]) = g.diag {
-                    self.dash.dashed(a, b, 1.0, 4.0, 4.0);
+                    self.t(gfx::hex(DRAW_COLOR)).dashed(a, b, 1.0, 4.0, 4.0);
                 }
             }
             Tool::Text => {
-                let [x, y, bw, bh] = g.text_box.unwrap();
-                let border = gfx::hex(if sel { SEL_COLOR } else { DRAW_COLOR });
-                self.quads.push(([x, y, bw, bh], gfx::hexa(0x1e1e1e, 0.85), Some(border)));
-                self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, gfx::hex(DRAW_COLOR)));
+                if let Some([x, y, bw, bh]) = g.text_box {
+                    self.quad(x, y, bw, bh, gfx::hexa(0x1e1e1e, 0.85));
+                    let t = self.t(main);
+                    let bwid = if sel { 2.0 } else { 1.0 };
+                    t.poly(&[p(x, y), p(x + bw, y), p(x + bw, y + bwid), p(x, y + bwid)]);
+                    t.poly(&[p(x, y + bh - bwid), p(x + bw, y + bh - bwid), p(x + bw, y + bh), p(x, y + bh)]);
+                    t.poly(&[p(x, y), p(x + bwid, y), p(x + bwid, y + bh), p(x, y + bh)]);
+                    t.poly(&[p(x + bw - bwid, y), p(x + bw, y), p(x + bw, y + bh), p(x + bw - bwid, y + bh)]);
+                    self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, gfx::hex(DRAW_COLOR)));
+                }
+            }
+            Tool::Hline if hline_ext > 0.0 => {
+                let [a, b] = g.segs[0];
+                self.t(main).seg(p(a.x - hline_ext, a.y), p(b.x + hline_ext, b.y), w);
             }
             _ => {
-                let t = if sel { &mut self.main_sel } else { &mut self.main };
+                let t = self.t(main);
                 for s in &g.segs {
                     t.seg(s[0], s[1], w);
                 }
                 if let Some([a, b]) = g.mid {
-                    self.dash.dashed(a, b, 1.0, 4.0, 4.0);
+                    self.t(gfx::hex(DRAW_COLOR)).dashed(a, b, 1.0, 4.0, 4.0);
                 }
             }
-        }
-        if with_handles {
-            self.handles.extend_from_slice(&g.handles);
-        }
-    }
-
-    /// 依序：quad → path → 字（減少 GPU 批次切換）
-    pub fn paint(mut self, window: &mut Window, cx: &mut App, sel_color: u32) {
-        for (b, c, border) in self.quads.drain(..) {
-            match border {
-                Some(bc) => gfx::boxed(window, b[0], b[1], b[2], b[3], c, bc, 1.0),
-                None => gfx::rect(window, b[0], b[1], b[2], b[3], c),
-            }
-        }
-        for (t, c) in self.paths() {
-            window.paint_path(t, c);
-        }
-        let _ = sel_color;
-        for (s, x, y, size, c) in self.labels.drain(..) {
-            gfx::text(window, cx, s, x, y, size, c);
-        }
-        for h in self.handles.drain(..) {
-            let c = gfx::hex(SEL_COLOR);
-            gfx::boxed(window, h.x - 4.5, h.y - 4.5, 9.0, 9.0, c, gfx::hex(0x000000), 1.0);
         }
     }
 
     pub fn paths(&mut self) -> Vec<(Path<Pixels>, Hsla)> {
-        let mut out = Vec::new();
-        let mut push = |t: &mut Tris, c: Hsla| {
-            if let Some(path) = t.take() {
-                out.push((path, c));
-            }
-        };
-        push(&mut self.fill_rect, gfx::hexa(DRAW_COLOR, 0.10));
-        push(&mut self.fill_ch, gfx::hexa(DRAW_COLOR, 0.07));
-        for k in 0..7 {
-            push(&mut self.fib[k], gfx::hex(FIB_COLORS[k]));
+        self.runs.drain(..).filter_map(|(mut t, c, _)| t.take().map(|p| (p, c))).collect()
+    }
+
+    /// 即時畫（選取段／繪製中）：幾何 → 字（字包一個整窗格的 layer，順序一定在這段幾何之上）
+    pub fn paint(mut self, window: &mut Window, cx: &mut App, lb: Bounds<Pixels>) {
+        for (t, c) in self.paths() {
+            window.paint_path(t, c);
         }
-        push(&mut self.dash, gfx::hex(DRAW_COLOR));
-        push(&mut self.main, gfx::hex(DRAW_COLOR));
-        push(&mut self.main_sel, gfx::hex(SEL_COLOR));
-        out
+        if !self.labels.is_empty() {
+            window.paint_layer(lb, |window| {
+                for (s, x, y, size, c) in self.labels.drain(..) {
+                    gfx::text(window, cx, s, x, y, size, c);
+                }
+            });
+        }
+    }
+}
+
+/// 選取畫線的控制點（live 層，永遠在最上面）
+pub fn paint_handles(window: &mut Window, hs: &[P]) {
+    for h in hs {
+        gfx::boxed(window, h.x - 4.5, h.y - 4.5, 9.0, 9.0, gfx::hex(SEL_COLOR), gfx::hex(0x000000), 1.0);
     }
 }
 
 impl PaintCache {
-    /// 由幾何快取建出圖元：只處理可見畫線；選取的那條與水平線分開
-    pub fn build(window: &mut Window, list: &[Drawing], gc: &GeomCache, xf: &Xf) -> PaintCache {
+    /// 由幾何快取建出一段（idxs = 由下到上的畫線索引）的圖元：只處理可見畫線
+    pub fn build(window: &mut Window, list: &[Drawing], gc: &GeomCache, xf: &Xf, idxs: &[u32]) -> PaintCache {
         let t0 = std::time::Instant::now();
-        let mut em = Emit::new();
-        let mut hl = Tris::default();
+        let mut em = ZEmit::default();
         let mut h_tags = Vec::new();
-        for (k, d) in list.iter().enumerate() {
-            if Some(k) == gc.key.selected {
-                continue;
-            }
-            let Some(g) = &gc.geoms[k] else { continue };
+        let ext = xf.plot_r - xf.plot_l;
+        for &k in idxs {
+            let k = k as usize;
+            let (Some(d), Some(Some(g))) = (list.get(k), gc.geoms.get(k)) else { continue };
             if d.kind == Tool::Hline {
-                hl.seg(g.segs[0][0], g.segs[0][1], 1.4);
                 let y = g.segs[0][0].y;
                 if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
                     h_tags.push((y, gfx::shape(window, fmt_p(d.pts[0].p), 11.0, gfx::hex(0xffffff))));
                 }
-                continue;
             }
-            em.drawing(d, g, false, false);
+            em.drawing(d, g, false, ext);
         }
-        let quads = std::mem::take(&mut em.quads);
         let labels = std::mem::take(&mut em.labels)
             .into_iter()
             .map(|(s, x, y, size, c)| (gfx::shape(window, s, size, c), x, y, size))
             .collect();
         let paths = em.paths();
-        let h_paths = hl.take().map(|p| vec![(p, gfx::hex(DRAW_COLOR))]).unwrap_or_default();
-        PaintCache { quads, paths, labels, h_paths, h_tags, built_us: t0.elapsed().as_micros() as u64 }
+        PaintCache { paths, labels, h_tags, built_us: t0.elapsed().as_micros() as u64 }
     }
 
-    /// 貼上快取（dx = 平移量）。clip 到主圖窗格。
-    pub fn paint(&self, window: &mut Window, cx: &mut App, xf: &Xf, dx: f32) {
-        let mask = ContentMask { bounds: xf.clip() };
-        let lb = xf.clip();
-        window.with_content_mask(Some(mask), |window| {
-            crate::chart::maybe_layer(window, lb, |window| {
-                for (b, c, border) in &self.quads {
-                    match border {
-                        Some(bc) => gfx::boxed(window, b[0] + dx, b[1], b[2], b[3], *c, *bc, 1.0),
-                        None => gfx::rect(window, b[0] + dx, b[1], b[2], b[3], *c),
-                    }
+    /// 貼上快取（dx = 平移量）。clip 到主圖窗格。b = 整個圖面（order 隔板用）。
+    ///
+    /// GPUI 的 path 是「一批一次」：每一批都要把整窗大小的 MSAA 中介貼圖清掉、光柵化、再合成，軟體 Vulkan 上很貴。
+    /// 一批 path 只要中間插進別種圖元（字、quad）的 order 就會被切斷，所以：
+    /// 1. 價格軸標籤整組包一個 layer（同一個 order，不會一個標籤佔兩個 order 夾在 path 中間）；
+    /// 2. path 前先放一個空的整圖 layer 當隔板 → 之後每條 path 的 order 都比圖上已有的東西高，不會跟主圖／標籤交錯；
+    /// 3. Path 本身不包 layer：依重疊關係拿遞增 order（z 順序正確），整段一批、合成時一張聯集貼圖；
+    /// 4. 字包一個整窗格的 layer → order 在整段幾何之上。
+    pub fn paint(&self, window: &mut Window, cx: &mut App, xf: &Xf, dx: f32, b: Bounds<Pixels>) {
+        if !self.h_tags.is_empty() {
+            let tb = Bounds::new(gpui::point(px(xf.plot_r), px(xf.pane_top)), gpui::size(px(66.0), px(xf.pane_h)));
+            window.paint_layer(tb, |window| {
+                for (y, l) in &self.h_tags {
+                    gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(0x8a6a00));
+                    gfx::paint_line(window, cx, l, xf.plot_r + 5.0, *y, 11.0);
                 }
             });
+        }
+        let lb = xf.clip();
+        if !self.paths.is_empty() {
+            window.paint_layer(b, |_| {});
+        }
+        window.with_content_mask(Some(ContentMask { bounds: lb }), |window| {
             for (path, c) in &self.paths {
                 window.paint_path(gfx::shifted(path, dx), *c);
             }
-            for (path, c) in &self.h_paths {
-                window.paint_path(path.clone(), *c);
+            if !self.labels.is_empty() {
+                window.paint_layer(lb, |window| {
+                    for (l, x, y, size) in &self.labels {
+                        gfx::paint_line(window, cx, l, x + dx, *y, *size);
+                    }
+                });
             }
-            crate::chart::maybe_layer(window, lb, |window| {
-                for (l, x, y, size) in &self.labels {
-                    gfx::paint_line(window, cx, l, x + dx, *y, *size);
-                }
-            });
         });
-        // 水平線的價格標籤畫在右側價格軸上
-        for (y, l) in &self.h_tags {
-            gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(0x8a6a00));
-            gfx::paint_line(window, cx, l, xf.plot_r + 5.0, *y, 11.0);
-        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.labels.is_empty() && self.h_tags.is_empty()
     }
 
     pub fn vertex_count(&self) -> usize {
-        self.paths.iter().map(|(p, _)| p.vertices.len()).sum::<usize>() + self.h_paths.iter().map(|(p, _)| p.vertices.len()).sum::<usize>()
+        self.paths.iter().map(|(p, _)| p.vertices.len()).sum::<usize>()
+    }
+    pub fn path_count(&self) -> usize {
+        self.paths.len()
     }
 }
 
@@ -630,15 +675,15 @@ pub fn perf_mix(bars: &[crate::series::K], n: usize) -> Vec<Drawing> {
             let p1 = b.c * (1.0 + ((k % 7) as f64 - 3.0) * 0.002);
             let (fi, fj) = (i as f64, j as f64);
             let d = match kind {
-                Tool::Hline | Tool::Vline => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: String::new() },
-                Tool::Fib => Drawing { kind, pts: vec![Pt { i: fi, p: p0.max(p1) }, Pt { i: fj, p: p0.min(p1) }], text: String::new() },
-                Tool::Channel => Drawing {
+                Tool::Hline | Tool::Vline => Drawing::new(kind, vec![Pt { i: fi, p: p0 }], String::new()),
+                Tool::Fib => Drawing::new(kind, vec![Pt { i: fi, p: p0.max(p1) }, Pt { i: fj, p: p0.min(p1) }], String::new()),
+                Tool::Channel => Drawing::new(
                     kind,
-                    pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }, Pt { i: ((i + j) / 2) as f64, p: (p0 + p1) / 2.0 * 1.01 }],
-                    text: String::new(),
-                },
-                Tool::Text => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: format!("T{k}") },
-                _ => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }], text: String::new() },
+                    vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }, Pt { i: ((i + j) / 2) as f64, p: (p0 + p1) / 2.0 * 1.01 }],
+                    String::new(),
+                ),
+                Tool::Text => Drawing::new(kind, vec![Pt { i: fi, p: p0 }], format!("T{k}")),
+                _ => Drawing::new(kind, vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }], String::new()),
             };
             out.push(d);
         }
@@ -652,4 +697,12 @@ pub fn perf_mix(bars: &[crate::series::K], n: usize) -> Vec<Drawing> {
         add(n - placed, Tool::Trend, &mut out);
     }
     out
+}
+
+/// 壓測用：拿哪一條當「拖曳／選取」的目標——perf_mix 裡第 31 個矩形（半透明填色，落在預設可視範圍內）。
+/// wry `__perfPick` 同一個公式。
+pub fn perf_pick(n: usize) -> Option<usize> {
+    let rect_start = n * 40 / 100 + n * 8 / 100 * 3 + n * 12 / 100 * 2;
+    let rects = n * 6 / 100;
+    (rects > 0).then(|| rect_start + 30.min(rects - 1))
 }

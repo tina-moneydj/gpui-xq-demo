@@ -4,6 +4,7 @@
 use gpui::{px, Bounds, Pixels};
 
 use crate::drawings::{self, CacheKey, Drawing, GeomCache, PaintCache, Pt, Tool, Xf};
+use crate::layers::{self, Layer, Order, ZOp};
 use crate::gfx::{p, P};
 use crate::indicators::{OvSpec, Overlay, Sub, SubCfg, SubKind, MAX_OVERLAYS, MAX_SUBS, SUB_ORDER};
 use crate::series::{self, Period, Series, K};
@@ -18,7 +19,9 @@ pub const DRAW: u8 = 2;
 pub const LIVE: u8 = 4;
 pub const HEAD: u8 = 8;
 pub const SAVE: u8 = 16;
-pub const ALL: u8 = PLOT | DRAW | LIVE | HEAD;
+/// 選取的那條（三明治中間那片）：拖曳時只重畫這片＋live
+pub const SEL: u8 = 32;
+pub const ALL: u8 = PLOT | DRAW | LIVE | HEAD | SEL;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct View {
@@ -130,6 +133,14 @@ pub struct DragState {
     pub moved: bool,
 }
 
+/// 畫線層快取：以選取的那條切成 下面／上面 兩段（中間那條每幀即時畫）
+pub struct DrawCache {
+    pub key: CacheKey,
+    pub right: f64,
+    pub below: PaintCache,
+    pub above: PaintCache,
+}
+
 #[derive(Clone, Debug)]
 pub struct TextEdit {
     pub anchor: Pt,
@@ -182,8 +193,9 @@ impl IndCfg {
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct LayerStats {
-    pub paints: [u64; 3],
-    pub paint_us: [u64; 3],
+    /// 0 底圖、1 畫線（下段＋上段）、2 live、3 選取那片
+    pub paints: [u64; 5],
+    pub paint_us: [u64; 5],
     pub rebuilds: u64,
     pub rebuild_us: u64,
 }
@@ -202,6 +214,12 @@ pub struct Model {
     pub subs: Vec<Sub>,
     pub view: Option<View>,
     pub drawings: Vec<Drawing>,
+    /// 圖層（陣列位置 = 由下到上；layers.rs）
+    pub layers: Vec<Layer>,
+    /// 新畫線放進哪一層
+    pub active_layer: u32,
+    /// 繪製順序快取（draw_gen 變了才重算）
+    ord: Option<(u64, Order)>,
     pub selected: Option<usize>,
     pub draw_gen: u64,
     pub pending: Option<Pending>,
@@ -216,7 +234,7 @@ pub struct Model {
     geo_key: (Bounds<Pixels>, u64),
     pub layout_gen: u64,
     pub gc: Option<GeomCache>,
-    pub pc: Option<(CacheKey, f64, PaintCache)>,
+    pub pc: Option<DrawCache>,
     pub text_edit: Option<TextEdit>,
     pub stats: LayerStats,
     cand: Vec<u32>,
@@ -241,6 +259,9 @@ impl Model {
             subs: Vec::new(),
             view: None,
             drawings: Vec::new(),
+            layers: vec![Layer::new(0)],
+            active_layer: 0,
+            ord: None,
             selected: None,
             draw_gen: 0,
             pending: None,
@@ -645,7 +666,7 @@ impl Model {
     pub fn draw_layer_stale(&mut self) -> bool {
         let Some((key, right, _)) = self.draw_key() else { return true };
         match &self.pc {
-            Some((k, r, _)) => *k != key || *r != right,
+            Some(c) => c.key != key || c.right != right,
             None => true,
         }
     }
@@ -659,25 +680,38 @@ impl Model {
         };
         if need {
             let xf = self.geo.as_ref().unwrap().xf();
-            self.gc = Some(GeomCache::build(&self.drawings, &xf, key));
+            self.ensure_order();
+            let ord = &self.ord.as_ref().unwrap().1;
+            self.gc = Some(GeomCache::build(&self.drawings, &xf, key, |k| ord.hidden(k)));
             self.pc = None;
         }
         let gc = self.gc.as_ref().unwrap();
         (-(right - gc.right) * key.bar_w) as f32
     }
 
-    /// 命中：(索引, 控制點)
+    /// 繪製順序（圖層順位, 圖層內順位）；畫線／圖層／選取變了才重算
+    pub fn ensure_order(&mut self) -> &Order {
+        if !matches!(&self.ord, Some((g, _)) if *g == self.draw_gen) {
+            self.ord = Some((self.draw_gen, Order::build(&self.layers, &self.drawings)));
+        }
+        &self.ord.as_ref().unwrap().1
+    }
+
+    /// 命中：(索引, 控制點)。選取那條的控制點優先；其餘依 z 順序「最上面、顯示中、沒鎖定」的那條贏。
     pub fn hit_test(&mut self, q: P) -> Option<(usize, Option<usize>)> {
         let dx = self.ensure_gc();
         let xf = self.geo.as_ref()?.xf();
-        if let Some(sel) = self.selected {
+        self.ensure_order();
+        let ord = &self.ord.as_ref()?.1;
+        let mut best: Option<(u32, usize)> = None;
+        if let Some(sel) = self.selected.filter(|&k| ord.pickable(k)) {
             if let Some(d) = self.drawings.get(sel) {
                 let g = drawings::geom(d, &xf);
                 if let Some(h) = g.handles.iter().position(|h| (h.x - q.x).abs() <= 6.0 && (h.y - q.y).abs() <= 6.0) {
                     return Some((sel, Some(h)));
                 }
                 if drawings::hit_geom(q, &g) {
-                    return Some((sel, None));
+                    best = Some((ord.rank[sel], sel));
                 }
             }
         }
@@ -685,22 +719,24 @@ impl Model {
         let qq = p(q.x - dx, q.y);
         let mut cand = std::mem::take(&mut self.cand);
         gc.grid.candidates(qq, &mut cand);
-        let mut hit = None;
         for &k in &cand {
             let k = k as usize;
-            if Some(k) == self.selected {
+            if Some(k) == self.selected || !ord.pickable(k) {
+                continue;
+            }
+            let r = ord.rank[k];
+            if best.is_some_and(|(br, _)| r <= br) {
                 continue;
             }
             let Some(g) = &gc.geoms[k] else { continue };
             // 水平線不跟著平移位移
             let probe = if self.drawings[k].kind == Tool::Hline { q } else { qq };
             if drawings::hit_geom(probe, g) {
-                hit = Some((k, None));
-                break;
+                best = Some((r, k));
             }
         }
         self.cand = cand;
-        hit
+        best.map(|(_, k)| (k, None))
     }
 
     fn anchor(&mut self, q: P) -> Option<Pt> {
@@ -713,6 +749,16 @@ impl Model {
 
     fn finish(&mut self, mut d: Drawing) -> u8 {
         d.pts.truncate(d.kind.need());
+        // 新畫線放進作用中的圖層（該層隱藏／鎖定就先打開，不然畫完看不到、點不到）
+        let id = self.active_layer;
+        match self.layers.iter_mut().find(|l| l.id == id) {
+            Some(l) => {
+                l.visible = true;
+                l.locked = false;
+                d.layer = id;
+            }
+            None => d.layer = self.layers.last().map_or(0, |l| l.id),
+        }
         self.drawings.push(d);
         self.selected = Some(self.drawings.len() - 1);
         self.pending = None;
@@ -753,9 +799,9 @@ impl Model {
                 return LIVE;
             }
             if tool.need() == 1 {
-                return self.finish(Drawing { kind: tool, pts: vec![a], text: String::new() });
+                return self.finish(Drawing::new(tool, vec![a], String::new()));
             }
-            self.pending = Some(Pending { d: Drawing { kind: tool, pts: vec![a, a], text: String::new() }, dragging: true, sx: q.x, sy: q.y });
+            self.pending = Some(Pending { d: Drawing::new(tool, vec![a, a], String::new()), dragging: true, sx: q.x, sy: q.y });
             return LIVE;
         }
         // 游標：命中 → 選取／拖曳；沒命中 → 平移
@@ -819,8 +865,8 @@ impl Model {
                     }
                 }
                 self.drag.as_mut().unwrap().moved = true;
-                // 選取的那條在 live 層即時畫，不必重建畫線層
-                f |= LIVE;
+                // 選取的那條在三明治中間那片即時畫（在它原本的上下順位），不必重建上下兩段
+                f |= SEL | LIVE;
             }
         }
         f
@@ -829,6 +875,7 @@ impl Model {
     pub fn mouse_up(&mut self, q: P) -> u8 {
         let mut f = 0;
         let was_busy = self.busy || self.pan.is_some() || self.drag.is_some();
+        let was_pan = self.pan.is_some();
         self.pan = None;
         if let Some(dr) = self.drag.take() {
             if dr.moved {
@@ -838,8 +885,13 @@ impl Model {
         if was_busy {
             self.busy = false;
             self.frozen = None;
-            // 平移結束：重建畫線層（補齊移入視窗的邊緣），價格軸恢復自動
-            self.drawings_changed();
+            if was_pan {
+                // 平移結束：重建畫線層（補齊移入視窗的邊緣），價格軸恢復自動
+                self.drawings_changed();
+            } else {
+                // 拖曳結束：被拖的那條仍是選取（不在上下兩段快取裡）→ 不必重建；價格軸恢復自動
+                self.touch();
+            }
             f |= ALL;
         }
         if let Some(pd) = &mut self.pending {
@@ -932,7 +984,7 @@ impl Model {
                 self.drawings_changed();
                 DRAW | LIVE | SAVE | HEAD
             }
-            None if !text.is_empty() => self.finish(Drawing { kind: Tool::Text, pts: vec![te.anchor], text }),
+            None if !text.is_empty() => self.finish(Drawing::new(Tool::Text, vec![te.anchor], text)),
             None => LIVE | HEAD,
         }
     }
@@ -944,10 +996,24 @@ impl Model {
     }
 
     /// 壓測：1000 筆混合畫線
-    pub fn load_perf_drawings(&mut self, n: usize) {
-        self.drawings = drawings::perf_mix(&self.s.bars, n);
+    /// layers：分到幾個圖層（1 = 不分層）。回傳被拖曳／選取測試用的那個半透明矩形的索引（放在疊放順序正中間）
+    pub fn load_perf_drawings(&mut self, n: usize, nlayers: usize) -> Option<usize> {
+        let mut list = drawings::perf_mix(&self.s.bars, n);
+        let pick = drawings::perf_pick(n).filter(|&k| k < list.len()).map(|k| {
+            let d = list.remove(k);
+            list.insert(n / 2, d);
+            n / 2
+        });
+        let layers = layers::perf_layers(&mut list, nlayers);
+        if let Some(k) = pick {
+            list[k].layer = (layers.len() / 2) as u32;
+        }
+        self.drawings = list;
+        self.layers = layers;
+        self.active_layer = self.layers.last().map_or(0, |l| l.id);
         self.selected = None;
         self.drawings_changed();
+        pick
     }
 
     /// 壓測平移：與 wry `__perfContinuous(pan)` 相同的 right = base + sin(f/6)·12
@@ -967,6 +1033,128 @@ impl Model {
             }
             self.touch();
         }
+    }
+
+    // ───────────── 圖層與上下順序 ─────────────
+
+    /// 換代號／讀檔：畫線＋圖層（舊存檔沒有圖層 → 一個預設層）
+    pub fn set_drawings(&mut self, list: Vec<Drawing>, mut layers: Vec<Layer>) {
+        layers::normalize(&mut layers, &list);
+        self.drawings = list;
+        self.active_layer = layers.last().map_or(0, |l| l.id);
+        self.layers = layers;
+        self.selected = None;
+        self.drawings_changed();
+    }
+
+    const LAYER_CHANGED: u8 = DRAW | SEL | LIVE | SAVE | HEAD;
+
+    /// 選取的那條在自己的圖層內上移／下移／移到最上／最下
+    pub fn zop(&mut self, op: ZOp) -> u8 {
+        if self.drag.is_some() || self.text_edit.is_some() {
+            return 0;
+        }
+        let Some(k) = self.selected else { return 0 };
+        match layers::apply_zop(&mut self.drawings, k, op) {
+            Some(nk) => {
+                self.selected = Some(nk);
+                self.drawings_changed();
+                Self::LAYER_CHANGED
+            }
+            None => 0,
+        }
+    }
+
+    /// 選取（壓測／圖層面板用）
+    pub fn select(&mut self, k: Option<usize>) -> u8 {
+        let k = k.filter(|&k| k < self.drawings.len());
+        if self.selected == k {
+            return 0;
+        }
+        self.selected = k;
+        self.drawings_changed();
+        DRAW | SEL | LIVE | HEAD
+    }
+
+    fn layer_mut(&mut self, id: u32) -> Option<&mut Layer> {
+        self.layers.iter_mut().find(|l| l.id == id)
+    }
+
+    /// 圖層改了：選取的那條如果變成隱藏／鎖定就取消選取
+    fn layers_changed(&mut self) -> u8 {
+        if let Some(k) = self.selected {
+            let lid = self.drawings.get(k).map(|d| d.layer);
+            if !self.layers.iter().any(|l| Some(l.id) == lid && l.visible && !l.locked) {
+                self.selected = None;
+                self.drag = None;
+            }
+        }
+        self.drawings_changed();
+        Self::LAYER_CHANGED
+    }
+
+    pub fn layer_toggle_visible(&mut self, id: u32) -> u8 {
+        let Some(l) = self.layer_mut(id) else { return 0 };
+        l.visible = !l.visible;
+        self.layers_changed()
+    }
+
+    pub fn layer_toggle_lock(&mut self, id: u32) -> u8 {
+        let Some(l) = self.layer_mut(id) else { return 0 };
+        l.locked = !l.locked;
+        self.layers_changed()
+    }
+
+    /// 圖層往上（up）／往下移一格
+    pub fn layer_move(&mut self, id: u32, up: bool) -> u8 {
+        if layers::move_layer(&mut self.layers, id, up) { self.layers_changed() } else { 0 }
+    }
+
+    pub fn layer_add(&mut self) -> u8 {
+        match layers::add_layer(&mut self.layers) {
+            Some(id) => {
+                self.active_layer = id;
+                self.layers_changed()
+            }
+            None => 0,
+        }
+    }
+
+    pub fn set_active_layer(&mut self, id: u32) -> u8 {
+        if self.active_layer == id || !self.layers.iter().any(|l| l.id == id) {
+            return 0;
+        }
+        self.active_layer = id;
+        HEAD
+    }
+
+    /// 選取的那條移到某一層（放在該層最上面）
+    pub fn move_selected_to_layer(&mut self, id: u32) -> u8 {
+        let Some(k) = self.selected else { return 0 };
+        if !self.layers.iter().any(|l| l.id == id) || self.drawings.get(k).is_none_or(|d| d.layer == id) {
+            return 0;
+        }
+        let mut d = self.drawings.remove(k);
+        d.layer = id;
+        self.drawings.push(d);
+        self.selected = Some(self.drawings.len() - 1);
+        self.layers_changed()
+    }
+
+    /// 每個圖層有幾條畫線（圖層面板）
+    pub fn layer_counts(&self) -> Vec<usize> {
+        self.layers.iter().map(|l| self.drawings.iter().filter(|d| d.layer == l.id).count()).collect()
+    }
+
+    /// 壓測：開始拖曳第 k 條（等同在 q 按下並命中它的本體）
+    pub fn begin_drag(&mut self, k: usize, q: P) -> u8 {
+        let Some(start) = self.anchor(q) else { return 0 };
+        let Some(d) = self.drawings.get(k) else { return 0 };
+        let orig = d.pts.clone();
+        let f = self.select(Some(k));
+        self.drag = Some(DragState { idx: k, handle: None, start, orig, moved: false });
+        self.busy = true;
+        f | SEL | LIVE
     }
 
     pub fn last_bar(&self) -> Option<&K> {

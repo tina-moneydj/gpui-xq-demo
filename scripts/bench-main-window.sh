@@ -47,7 +47,10 @@ RUNS = int(os.environ["RUNS"]); OUT = os.environ["OUT"]; MODE = os.environ["MODE
 WRY_DIR = os.environ["WRY_DIR"]; GPUI_DIR = os.environ["GPUI_DIR"]; EGUI_DIR = os.environ["EGUI_DIR"]
 NAMES = [n for n in os.environ["APPS_LIST"].split(",") if n]
 FEED_RESTART = os.environ["FEED_RESTART"] == "1"
-FEED_CMD = [os.path.expanduser("~/.dotnet/dotnet"), WRY_DIR + "/feedhost/WryFeedHost/bin/Release/net8.0/WryFeedHost.dll", "--demo-ticks"]
+FEED_DLL = os.environ.get("FEED_DLL") or WRY_DIR + "/feedhost/WryFeedHost/bin/Release/net8.0/WryFeedHost.dll"
+FEED_CMD = [os.path.expanduser("~/.dotnet/dotnet"), FEED_DLL, "--demo-ticks"]
+# FEED_PORT：同一台機器有別的工作在用 47631 時改埠（WryFeedHost 需支援 XQ_FEED_PORT；程式端用 XQ_FEED_ADDR）
+FEED_PORT = int(os.environ.get("FEED_PORT", "47631"))
 feed_proc = None
 W, H = 1200, 720  # 1280×800 Xvfb 扣掉 xfwm4 標題列後放得下的尺寸
 T_IDLE, T_CPU0, T_END = 10.0, 30.0, 60.0
@@ -105,12 +108,12 @@ def restart_feed():
         feed_proc.terminate()
         try: feed_proc.wait(10)
         except subprocess.TimeoutExpired: feed_proc.kill(); feed_proc.wait()
-    feed_proc = subprocess.Popen(FEED_CMD, stdin=subprocess.DEVNULL, stdout=open(f"{OUT}/feedhost.log", "a"),
-                                 stderr=subprocess.STDOUT, cwd=WRY_DIR + "/feedhost/WryFeedHost")
+    feed_proc = subprocess.Popen(FEED_CMD, stdin=subprocess.DEVNULL, env=dict(os.environ, XQ_FEED_PORT=str(FEED_PORT)), stdout=open(f"{OUT}/feedhost.log", "a"),
+                                 stderr=subprocess.STDOUT, cwd=os.path.dirname(FEED_DLL))
     end = time.monotonic() + 30
     while time.monotonic() < end:
         try:
-            socket.create_connection(("127.0.0.1", 47631), 0.5).close(); break
+            socket.create_connection(("127.0.0.1", FEED_PORT), 0.5).close(); break
         except OSError: time.sleep(0.1)
     else: raise SystemExit("feed 起不來")
     time.sleep(1.0)  # 讓那次探測連線斷乾淨
@@ -192,7 +195,9 @@ def screenshot(wid, path):
     d = dict(l.split("=", 1) for l in g.split() if "=" in l)
     return int(d.get("WIDTH", 0)), int(d.get("HEIGHT", 0))
 
-HEAVY_PHASES = ("ticks", "crosshair", "pan")
+# 2026-10-23：加圖層／上下順序四段（drag／select／reorder 各 PHASE_MS，zshot 3 秒正確性截圖場景）；XQ_CHART_LAYERS=LAYERS（預設 100，1 = 不分層對照）
+HEAVY_PHASES = ("ticks", "crosshair", "pan", "drag", "select", "reorder", "zshot")
+LAYERS = os.environ.get("LAYERS", "100")
 HEAVY_ENV = {
     "wry": {"XQ_CHART_STRESS": "1", "XQ_CHART_TOP_RATIO": os.environ.get("WRY_TOP_RATIO", "0.8"),
             "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
@@ -201,6 +206,7 @@ HEAVY_ENV = {
     "egui": {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": os.environ.get("EGUI_TOP_FRAC", os.environ.get("GPUI_TOP_FRAC", "0.8")),
              "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000", "XQ_CHART_DRAWINGS": "1000"},
 }
+for _e in HEAVY_ENV.values(): _e["XQ_CHART_LAYERS"] = LAYERS
 
 STRESS_ENV = {"XQ_GROUP_STRESS": "1", "XQ_STRESS_COLS": "6", "XQ_STRESS_TICK_HZ": "3000",
               "XQ_STRESS_TICK_MS": "30000", "XQ_STRESS_SCROLL_MS": "10000"}
@@ -218,6 +224,7 @@ def run_once_(name, shot, stress=False, heavy=False):
     if name == "wry":
         json.dump(wry_bench_state(), open(STATE, "w"), ensure_ascii=False, indent=2)
     env = dict(os.environ, **app["env"], **(STRESS_ENV if stress else {}), **(HEAVY_ENV[name] if heavy else {}))
+    if FEED_PORT != 47631: env["XQ_FEED_ADDR"] = f"127.0.0.1:{FEED_PORT}"
     events = {}; fps = []; log = []
     t0 = time.monotonic()
     proc = subprocess.Popen(app["cmd"], cwd=app["cwd"], env=env, stdin=subprocess.DEVNULL,
@@ -338,10 +345,12 @@ def measure_heavy(name, app, proc, t0, events, fps, log, shot):
     for ph in HEAVY_PHASES:
         wait_ev(f"ph:{ph}:start", 30)
         pids0 = tree(proc.pid); th0 = thread_ticks(pids0); ta = time.monotonic()
-        while time.monotonic() - ta < 5: time.sleep(0.02)
+        while time.monotonic() - ta < (1.5 if ph == "zshot" else 5): time.sleep(0.02)
         m = snapshot(proc.pid)
         if shot and ph == "crosshair":
             screenshot(wid, f"{OUT}/{name}-heavy.png"); out["screenshot"] = f"{OUT}/{name}-heavy.png"
+        if shot and ph in ("drag", "zshot"):
+            screenshot(wid, f"{OUT}/{name}-{ph}.png"); out[f"screenshot_{ph}"] = f"{OUT}/{name}-{ph}.png"
         wait_ev(f"ph:{ph}:end", 30)
         pids1 = tree(proc.pid); th1 = thread_ticks(set(pids0) | set(pids1)); tb = time.monotonic()
         tot, nollvm = cpu_split(th0, th1, tb - ta)
@@ -372,14 +381,19 @@ def measure(name, app, proc, t0, events, fps, log, shot):
             "cpu_threads": thread_breakdown(th0, th1, tc1 - tc0), "cpu_pct": cpu, "fps_avg": statistics.mean(fps_win) if fps_win else None, "geom": geom}
 
 def main():
-    for name, app in APPS.items():
+    for name, app in ({} if os.environ.get("BENCH_SHARED_BOX") else APPS).items():  # BENCH_SHARED_BOX=1：同機有別人的程式在跑（用不同 DISPLAY／埠，不會互搶 feed）時略過這個檢查
         if subprocess.run(["pgrep", "-f", "-x", ".*" + app["cmd"][0].split("/")[-1] + "$"],
                           capture_output=True).returncode == 0:
             raise SystemExit(f"{name} 已在執行，請先關掉（會互搶 feed）")
     backup = STATE + ".bench-backup"
     had_state = os.path.exists(STATE)
     if had_state: shutil.copy2(STATE, backup)
-    if FEED_RESTART and subprocess.run(["pgrep", "-f", "WryFeedHost"], capture_output=True).returncode == 0:
+    import socket
+    def port_busy(port):
+        try: socket.create_connection(("127.0.0.1", port), 0.3).close(); return True
+        except OSError: return False
+    if FEED_RESTART and (port_busy(FEED_PORT) if FEED_PORT != 47631 else
+                         subprocess.run(["pgrep", "-f", "WryFeedHost"], capture_output=True).returncode == 0):
         raise SystemExit("FEED_RESTART=1 但已有 WryFeedHost 在跑，請先關掉（本腳本自己起）")
     for f in [f"{n}{suf}-run.log" for n in NAMES for suf in ("", "-stress", "-heavy")]:
         try: os.remove(f"{OUT}/{f}")
@@ -413,9 +427,11 @@ def main():
                     r = run_once(name, shot=(i == RUNS - 1), heavy=True); r["run"] = i + 1; heavy.append(r)
                     st = r["setup"]
                     print(f"  heavy_frame={r['heavy_frame_s']:.3f}s canvas={st.get('cssW')}x{st.get('cssH')} "
-                          f"ovs={st.get('overlays')} drawings={st.get('drawings')}", flush=True)
+                          f"ovs={st.get('overlays')} drawings={st.get('drawings')} layers={st.get('layers')}", flush=True)
                     for ph, v in r["phases"].items():
-                        print(f"  {ph:9s} fps={v['perf'].get('fps')} paint={v['perf'].get('avgPaintMs')}ms "
+                        pf = v["perf"]
+                        print(f"  {ph:9s} fps={pf.get('fps')} paint={pf.get('avgPaintMs')}ms rebuilds={pf.get('drawRebuilds')} "
+                              f"rbP50/99={pf.get('allRebuildP50')}/{pf.get('allRebuildP99')} ttfP50/99={pf.get('allTtfP50')}/{pf.get('allTtfP99')} "
                               f"cpu={v['cpu_pct']:.1f}% (no-llvmpipe {v['cpu_nollvm_pct']:.1f}%) "
                               f"rss={v['mem']['rss_mb']:.1f} pss={v['mem']['pss_mb']:.1f} threads={v['threads']}", flush=True)
                     time.sleep(3)
@@ -466,6 +482,7 @@ def main():
                  "first_quote_ms": med([r["first_quote_s"] * 1000 if r["first_quote_s"] else None for r in hs]),
                  "canvas": f"{hs[-1]['setup'].get('cssW')}x{hs[-1]['setup'].get('cssH')}",
                  "overlays": hs[-1]["setup"].get("overlays"), "drawings": hs[-1]["setup"].get("drawings"),
+                 "layers": hs[-1]["setup"].get("layers"),
                  "bars": hs[-1]["setup"].get("bars")}
             for ph in HEAVY_PHASES:
                 pv = [r["phases"][ph] for r in hs]
@@ -473,6 +490,9 @@ def main():
                          "cpu_pct": med([v["cpu_pct"] for v in pv]), "cpu_nollvm_pct": med([v["cpu_nollvm_pct"] for v in pv]),
                          "rss_mb": med([v["mem"]["rss_mb"] for v in pv]), "pss_mb": med([v["mem"]["pss_mb"] for v in pv]),
                          "threads_last": pv[-1]["threads"]}
+                # 程式回報的其他數值欄位（重建次數、選取那片 ms、各類操作的重建／操作到下一幀 p50／p99…）取中位數
+                keys = sorted({k for v in pv for k, x in v["perf"].items() if isinstance(x, (int, float)) and not isinstance(x, bool)})
+                h[ph]["perf_med"] = {k: med([v["perf"].get(k) for v in pv]) for k in keys}
             h["procs_last"] = hs[-1]["phases"]["crosshair"]["mem"]["procs"]
             out["heavy"] = h
         summary[name] = out

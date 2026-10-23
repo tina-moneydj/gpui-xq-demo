@@ -1,0 +1,61 @@
+{
+ "date": "2026-10-23 12:25 +0800",
+ "runs": 1,
+ "mode": "all",
+ "apps": [
+  "egui"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "egui": {
+  "binary_mb": 13.199920654296875,
+  "baseline": {
+   "window_ms": 231.6527870025311,
+   "first_frame_ms": 231.2427140022919,
+   "first_quote_ms": 277.3429100016074,
+   "rss10_mb": 123.859375,
+   "pss10_mb": 84.1806640625,
+   "rss60_mb": 123.93359375,
+   "pss60_mb": 84.25390625,
+   "cpu_pct": 46.15792159607389,
+   "fps": 24.766666666666666,
+   "nproc": 1,
+   "threads": 19,
+   "procs60_last": [
+    {
+     "comm": "egui-xq-demo",
+     "rss_mb": 123.9,
+     "pss_mb": 84.3,
+     "threads": 19
+    }
+   ],
+   "cpu_threads_last": {
+    "egui-xq-demo/llvmpipe": 41.9,
+    "egui-xq-demo/egui-xq-demo": 4.1
+   }
+  },
+  "stress": {
+   "rss_tick_mb": 131.0390625,
+   "pss_tick_mb": 91.4619140625,
+   "rss_scroll_mb": 131.52734375,
+   "pss_scroll_mb": 91.9501953125,
+   "cpu_tick_pct": 89.29864699451947,
+   "cpu_scroll_pct": 142.19876899950387,
+   "tick_fps": 47.7,
+   "scroll_fps": 74.9,
+   "tick_avg_paint_ms": 0.115,
+   "tick_cells_per_paint": 72,
+   "tick_paints": 1399,
+   "scroll_avg_paint_ms": 0.223,
+   "scroll_cells_per_paint": 71,
+   "scroll_paints": 737,
+   "scroll_jank_count": 0,
+   "scroll_jank_avg_ms": 0.0,
+   "rows": 50033,
+   "cols": 6,
+   "cpu_tick_threads_last": {
+    "egui-xq-demo/llvmpipe": 82.2,
+    "egui-xq-demo/egui-xq-demo": 6.8
+   }
+  }
+ }
+}

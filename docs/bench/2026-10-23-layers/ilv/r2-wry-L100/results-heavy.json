@@ -1,0 +1,429 @@
+{
+ "heavy": [
+  {
+   "app": "wry",
+   "heavy": true,
+   "window_s": 0.14392746400153555,
+   "first_frame_s": 0.7425063890004822,
+   "first_quote_s": 0.7646984860002703,
+   "heavy_frame_s": 1.1867289550009446,
+   "setup": {
+    "phase": "setup",
+    "sinceStartMs": 625,
+    "overlays": 20,
+    "overlayTypes": {
+     "ma": 11,
+     "ema": 5,
+     "bb": 2,
+     "sar": 2
+    },
+    "subsEnabled": 8,
+    "subIds": [
+     "vol",
+     "kd",
+     "macd",
+     "rsi",
+     "wr",
+     "dmi",
+     "atr",
+     "obv"
+    ],
+    "subLayout": {
+     "left": 1,
+     "right": 3
+    },
+    "panesExpected": 9,
+    "drawings": 1000,
+    "period": "D",
+    "symbol": "2330",
+    "bars": 1200,
+    "cssW": 1166,
+    "cssH": 512,
+    "layers": 100,
+    "pick": 500
+   },
+   "phases": {
+    "ticks": {
+     "cpu_pct": 199.90398828449102,
+     "cpu_nollvm_pct": 104.90209290166639,
+     "threads": {
+      "WebKitWebProces/WebKitWebProces": 95.7,
+      "WebKitWebProces/llvmpipe": 95.0,
+      "WebKitWebProces/JITWorker": 4.1,
+      "wry-xq-demo/wry-xq-demo": 3.5
+     },
+     "mem": {
+      "rss_mb": 713.37890625,
+      "pss_mb": 468.9384765625,
+      "threads": 85,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 182.9,
+        "pss_mb": 80.1,
+        "threads": 35
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 11
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 470.1,
+        "pss_mb": 362.8,
+        "threads": 39
+       }
+      ]
+     },
+     "perf": {
+      "phase": "ticks",
+      "seconds": 10,
+      "frames": 346,
+      "fps": 34.6,
+      "avgPaintMs": 5.994,
+      "tickHz": 34.6,
+      "drawRebuilds": 0,
+      "rebuildMsTotal": 0,
+      "selPaints": 0,
+      "selMs": 0
+     }
+    },
+    "crosshair": {
+     "cpu_pct": 228.27353049713744,
+     "cpu_nollvm_pct": 116.28651597379364,
+     "threads": {
+      "WebKitWebProces/llvmpipe": 112.0,
+      "WebKitWebProces/WebKitWebProces": 108.0,
+      "wry-xq-demo/wry-xq-demo": 4.0,
+      "WebKitWebProces/JITWorker": 2.8
+     },
+     "mem": {
+      "rss_mb": 716.15234375,
+      "pss_mb": 471.6962890625,
+      "threads": 79,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 182.9,
+        "pss_mb": 80.1,
+        "threads": 33
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 472.8,
+        "pss_mb": 365.6,
+        "threads": 37
+       }
+      ]
+     },
+     "perf": {
+      "phase": "crosshair",
+      "seconds": 10.01,
+      "frames": 381,
+      "fps": 38.1,
+      "avgPaintMs": 5.921,
+      "tickHz": 38.1,
+      "drawRebuilds": 0,
+      "rebuildMsTotal": 0,
+      "selPaints": 0,
+      "selMs": 0
+     }
+    },
+    "pan": {
+     "cpu_pct": 269.0526138476648,
+     "cpu_nollvm_pct": 96.37556509391112,
+     "threads": {
+      "WebKitWebProces/llvmpipe": 172.7,
+      "WebKitWebProces/WebKitWebProces": 90.8,
+      "wry-xq-demo/wry-xq-demo": 2.9,
+      "WebKitWebProces/JITWorker": 1.2
+     },
+     "mem": {
+      "rss_mb": 816.15625,
+      "pss_mb": 571.5859375,
+      "threads": 78,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 183.0,
+        "pss_mb": 80.2,
+        "threads": 33
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 572.7,
+        "pss_mb": 465.4,
+        "threads": 36
+       }
+      ]
+     },
+     "perf": {
+      "phase": "pan",
+      "seconds": 10.02,
+      "frames": 305,
+      "fps": 30.5,
+      "avgPaintMs": 6.6,
+      "tickHz": 30.5,
+      "drawRebuilds": 0,
+      "rebuildMsTotal": 0,
+      "selPaints": 0,
+      "selMs": 0
+     }
+    },
+    "drag": {
+     "cpu_pct": 161.8718610636044,
+     "cpu_nollvm_pct": 85.20093667502218,
+     "threads": {
+      "WebKitWebProces/WebKitWebProces": 80.4,
+      "WebKitWebProces/llvmpipe": 76.7,
+      "wry-xq-demo/wry-xq-demo": 3.0
+     },
+     "mem": {
+      "rss_mb": 840.421875,
+      "pss_mb": 595.8515625,
+      "threads": 78,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 183.0,
+        "pss_mb": 80.2,
+        "threads": 33
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 597.0,
+        "pss_mb": 489.6,
+        "threads": 36
+       }
+      ]
+     },
+     "perf": {
+      "phase": "drag",
+      "seconds": 10.04,
+      "frames": 249,
+      "fps": 24.8,
+      "avgPaintMs": 8.141,
+      "drawRebuilds": 1,
+      "rebuildMsTotal": 15,
+      "selPaints": 444,
+      "selMs": 0.032,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500
+     }
+    },
+    "select": {
+     "cpu_pct": 160.88202792888188,
+     "cpu_nollvm_pct": 74.66678276402314,
+     "threads": {
+      "WebKitWebProces/llvmpipe": 86.2,
+      "WebKitWebProces/WebKitWebProces": 69.3,
+      "wry-xq-demo/wry-xq-demo": 2.9,
+      "WebKitWebProces/JITWorker": 1.2
+     },
+     "mem": {
+      "rss_mb": 851.59375,
+      "pss_mb": 607.0234375,
+      "threads": 78,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 183.0,
+        "pss_mb": 80.2,
+        "threads": 33
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 608.1,
+        "pss_mb": 500.8,
+        "threads": 36
+       }
+      ]
+     },
+     "perf": {
+      "phase": "select",
+      "seconds": 10.03,
+      "frames": 198,
+      "fps": 19.7,
+      "avgPaintMs": 13.369,
+      "drawRebuilds": 198,
+      "rebuildMsTotal": 830,
+      "selPaints": 99,
+      "selMs": 0.051,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500,
+      "allOps": 197,
+      "allRebuildP50": 4,
+      "allRebuildP99": 12,
+      "allTtfP50": 50,
+      "allTtfP99": 76,
+      "selectOps": 99,
+      "selectRebuildP50": 4,
+      "selectRebuildP99": 14,
+      "selectTtfP50": 50,
+      "selectTtfP99": 79,
+      "deselectOps": 98,
+      "deselectRebuildP50": 4,
+      "deselectRebuildP99": 11,
+      "deselectTtfP50": 50,
+      "deselectTtfP99": 76
+     }
+    },
+    "reorder": {
+     "cpu_pct": 180.15901810973205,
+     "cpu_nollvm_pct": 82.5354126226504,
+     "threads": {
+      "WebKitWebProces/llvmpipe": 97.6,
+      "WebKitWebProces/WebKitWebProces": 75.9,
+      "wry-xq-demo/wry-xq-demo": 2.8,
+      "WebKitWebProces/JITWorker": 1.9
+     },
+     "mem": {
+      "rss_mb": 889.63671875,
+      "pss_mb": 645.06640625,
+      "threads": 79,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 183.0,
+        "pss_mb": 80.2,
+        "threads": 33
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 646.2,
+        "pss_mb": 538.8,
+        "threads": 37
+       }
+      ]
+     },
+     "perf": {
+      "phase": "reorder",
+      "seconds": 10,
+      "frames": 204,
+      "fps": 20.4,
+      "avgPaintMs": 13.931,
+      "drawRebuilds": 204,
+      "rebuildMsTotal": 1060,
+      "selPaints": 300,
+      "selMs": 0.047,
+      "layers": 100,
+      "drawingsTotal": 1000,
+      "pick": 500,
+      "allOps": 203,
+      "allRebuildP50": 5,
+      "allRebuildP99": 12,
+      "allTtfP50": 49,
+      "allTtfP99": 73,
+      "zopOps": 103,
+      "zopRebuildP50": 5,
+      "zopRebuildP99": 12,
+      "zopTtfP50": 50,
+      "zopTtfP99": 73,
+      "layerVisOps": 50,
+      "layerVisRebuildP50": 5,
+      "layerVisRebuildP99": 18,
+      "layerVisTtfP50": 49,
+      "layerVisTtfP99": 77,
+      "layerMoveOps": 50,
+      "layerMoveRebuildP50": 5,
+      "layerMoveRebuildP99": 8,
+      "layerMoveTtfP50": 50,
+      "layerMoveTtfP99": 71
+     }
+    },
+    "zshot": {
+     "cpu_pct": 195.73450535185987,
+     "cpu_nollvm_pct": 58.654447731702106,
+     "threads": {
+      "WebKitWebProces/llvmpipe": 137.1,
+      "WebKitWebProces/WebKitWebProces": 49.8,
+      "wry-xq-demo/wry-xq-demo": 5.3
+     },
+     "mem": {
+      "rss_mb": 876.8046875,
+      "pss_mb": 632.0048828125,
+      "threads": 88,
+      "nproc": 3,
+      "procs": [
+       {
+        "comm": "wry-xq-demo",
+        "rss_mb": 183.5,
+        "pss_mb": 80.6,
+        "threads": 41
+       },
+       {
+        "comm": "WebKitNetworkPr",
+        "rss_mb": 60.4,
+        "pss_mb": 26.0,
+        "threads": 9
+       },
+       {
+        "comm": "WebKitWebProces",
+        "rss_mb": 632.9,
+        "pss_mb": 525.3,
+        "threads": 38
+       }
+      ]
+     },
+     "perf": {
+      "phase": "zshot",
+      "seconds": 3,
+      "frames": 179,
+      "fps": 59.7,
+      "avgPaintMs": 1.218,
+      "drawRebuilds": 1,
+      "rebuildMsTotal": 0,
+      "selPaints": 180,
+      "selMs": 0.05,
+      "layers": 3,
+      "drawingsTotal": 7
+     }
+    }
+   },
+   "screenshot": "/workspace/bench/layers-20261023/ilv/r2-wry-L100/wry-heavy.png",
+   "screenshot_drag": "/workspace/bench/layers-20261023/ilv/r2-wry-L100/wry-drag.png",
+   "screenshot_zshot": "/workspace/bench/layers-20261023/ilv/r2-wry-L100/wry-zshot.png",
+   "run": 1
+  }
+ ]
+}

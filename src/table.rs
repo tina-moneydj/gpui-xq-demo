@@ -24,6 +24,8 @@ pub struct Row {
     pub volume: i64,
     /// 上一筆 tick 方向（1 / -1 / 0），成交價底色提示
     pub tick: i8,
+    /// 最後一次被行情改到的時間（Unix µs；XQ_SYNC_CHECK 算畫面落後多久用，每批只取一次時間）
+    pub changed_us: u64,
 }
 
 pub enum TableEvent {
@@ -50,7 +52,7 @@ impl QuoteTable {
     pub fn new(watch: &[(&str, &str)]) -> Self {
         let rows: Vec<Row> = watch
             .iter()
-            .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0 })
+            .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0, changed_us: 0 })
             .collect();
         let index = rows.iter().enumerate().map(|(i, r)| (r.symbol.clone(), i)).collect();
         QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0 }
@@ -71,6 +73,7 @@ impl QuoteTable {
     /// 只碰有變的列；有變才 notify。回傳變動列數。
     pub fn apply(&mut self, order: &[String], quotes: &HashMap<String, Quote>, cx: &mut Context<Self>) -> usize {
         let mut changed = 0;
+        let now = xq_feed::unix_us();
         for sym in order {
             let Some(q) = quotes.get(sym) else { continue };
             let Some(&i) = self.index.get(sym.as_str()) else { continue };
@@ -82,6 +85,7 @@ impl QuoteTable {
             r.price = q.price;
             r.change = q.change;
             r.volume = q.volume;
+            r.changed_us = now;
             if !q.name.is_empty() && q.name != q.symbol && r.name.as_ref() != q.name {
                 r.name = q.name.clone().into();
             }
@@ -111,6 +115,7 @@ impl QuoteTable {
                     change,
                     volume: (h * 7) as i64,
                     tick: 0,
+                    changed_us: 0,
                 });
             }
         } else {

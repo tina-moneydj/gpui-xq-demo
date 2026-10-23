@@ -1,0 +1,329 @@
+{
+ "baseline": [
+  {
+   "app": "gpui",
+   "window_s": 0.18585892299961415,
+   "first_frame_s": 0.22086872599902563,
+   "first_quote_s": 0.3005308559986588,
+   "idle10": {
+    "rss_mb": 185.03125,
+    "pss_mb": 145.373046875,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 185.0,
+      "pss_mb": 145.4,
+      "threads": 52
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 185.34375,
+    "pss_mb": 145.71875,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 185.3,
+      "pss_mb": 145.7,
+      "threads": 52
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 164.8,
+    "gpui-xq-demo/gpui-xq-demo": 10.3,
+    "gpui-xq-demo/WSI swapchain q": 1.1
+   },
+   "cpu_pct": 176.47331172132087,
+   "fps_avg": 25.066666666666666,
+   "geom": null,
+   "run": 1
+  },
+  {
+   "app": "gpui",
+   "window_s": 0.17035541999939596,
+   "first_frame_s": 0.1892145050005638,
+   "first_quote_s": 0.26909675099886954,
+   "idle10": {
+    "rss_mb": 184.67578125,
+    "pss_mb": 145.107421875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 184.7,
+      "pss_mb": 145.1,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 184.73046875,
+    "pss_mb": 145.16796875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 184.7,
+      "pss_mb": 145.2,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 132.3,
+    "gpui-xq-demo/gpui-xq-demo": 8.7
+   },
+   "cpu_pct": 142.24563407802114,
+   "fps_avg": 20.133333333333333,
+   "geom": null,
+   "run": 2
+  },
+  {
+   "app": "gpui",
+   "window_s": 0.17999809799948707,
+   "first_frame_s": 0.20742241999687394,
+   "first_quote_s": 0.3034418739989633,
+   "idle10": {
+    "rss_mb": 184.86328125,
+    "pss_mb": 145.248046875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 184.9,
+      "pss_mb": 145.2,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 185.078125,
+    "pss_mb": 145.4755859375,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 185.1,
+      "pss_mb": 145.5,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 157.3,
+    "gpui-xq-demo/gpui-xq-demo": 11.2,
+    "gpui-xq-demo/WSI swapchain q": 1.2
+   },
+   "cpu_pct": 169.94192705463325,
+   "fps_avg": 21.7,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 3
+  }
+ ],
+ "stress": [
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30023,
+    "fps": 39.0,
+    "paints": 1162,
+    "avgPaintMs": 0.06,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 97608
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 39.0,
+    "scrollFps": 48.8,
+    "scrollJankCount": 97,
+    "scrollJankAvgMs": 32.2,
+    "fps": 48.8,
+    "paints": 489,
+    "avgPaintMs": 0.062,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 41076
+   },
+   "cpu_tick_pct": 303.16659570187113,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 284.1,
+    "gpui-xq-demo/gpui-xq-demo": 16.4,
+    "gpui-xq-demo/WSI swapchain q": 2.2
+   },
+   "cpu_scroll_pct": 389.20681485891026,
+   "mem_tick": {
+    "rss_mb": 189.40234375,
+    "pss_mb": 149.763671875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 189.4,
+      "pss_mb": 149.8,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 189.96875,
+    "pss_mb": 150.337890625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 190.0,
+      "pss_mb": 150.3,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 1
+  },
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30014,
+    "fps": 39.1,
+    "paints": 1171,
+    "avgPaintMs": 0.062,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 98364
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 39.1,
+    "scrollFps": 55.7,
+    "scrollJankCount": 55,
+    "scrollJankAvgMs": 32.9,
+    "fps": 55.7,
+    "paints": 557,
+    "avgPaintMs": 0.056,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 46788
+   },
+   "cpu_tick_pct": 317.47161943875267,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 296.5,
+    "gpui-xq-demo/gpui-xq-demo": 18.2,
+    "gpui-xq-demo/WSI swapchain q": 2.2
+   },
+   "cpu_scroll_pct": 374.9884374727093,
+   "mem_tick": {
+    "rss_mb": 188.796875,
+    "pss_mb": 149.20703125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 188.8,
+      "pss_mb": 149.2,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 189.390625,
+    "pss_mb": 149.80078125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 189.4,
+      "pss_mb": 149.8,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": null,
+   "run": 2
+  },
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30016,
+    "fps": 40.9,
+    "paints": 1223,
+    "avgPaintMs": 0.053,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 102732
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 41.0,
+    "scrollFps": 54.2,
+    "scrollJankCount": 58,
+    "scrollJankAvgMs": 32.0,
+    "fps": 54.2,
+    "paints": 543,
+    "avgPaintMs": 0.054,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 45612
+   },
+   "cpu_tick_pct": 282.98670034024565,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 265.2,
+    "gpui-xq-demo/gpui-xq-demo": 15.5,
+    "gpui-xq-demo/WSI swapchain q": 1.8
+   },
+   "cpu_scroll_pct": 370.79772142597596,
+   "mem_tick": {
+    "rss_mb": 188.8828125,
+    "pss_mb": 149.3173828125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 188.9,
+      "pss_mb": 149.3,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 189.44921875,
+    "pss_mb": 149.8837890625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 189.4,
+      "pss_mb": 149.9,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/opt-20261023/main-before/gpui-stress.png",
+   "run": 3
+  }
+ ]
+}

@@ -1,8 +1,13 @@
 //! 高頻進價壓測量測（`XQ_TICK_BENCH=1` 才啟用，預設關閉；搭配 crates/xq-feed 的 xq-tickgen）。
 //!
 //! 延遲：產生器在每包報價尾端附 `seq + sent_us`（Unix µs）。背景執行緒記 read() 時間（recv），
-//! UI 套用那一批時記 applied，root render 時用 `window.on_next_frame` 記「這一幀畫完後」的時間（present）。
-//! on_next_frame 在下一次 frame 回呼才跑，所以 present 是上界（最多多算約 1 幀）。
+//! UI 套用那一批時記 applied；present＝「這一幀畫完之後，這個視窗下一次開始畫」的時間（上界，最多多算約 1 幀）。
+//!
+//! 2026-10-23 改：present 改在**下一次 root render 開頭**記（`XQ_PROBE=render`，預設），不再每幀掛 `window.on_next_frame`。
+//! 原因：GPUI 對「沒有焦點的視窗」只要有 next-frame 回呼就限速 30 fps（`inactive_frame_interval` 33ms，
+//! 加上 60Hz 刷新格點的抖動實際常卡在 20 fps）——量測工具自己把被量的視窗拖慢。正式版沒有這些回呼，不受限速。
+//! 下一幀如果遲遲不來（視窗閒置／被蓋住），每秒取樣時把等超過 100ms 的樣本用「現在」補記（只會高估，不會漏算）。
+//! `XQ_PROBE=nextframe`：舊量法（on_next_frame），A/B 對照用。
 //! 每秒把樣本與計數印成一行 `TICKBENCH|{json}`（stderr），bench 腳本解析。
 
 use std::cell::RefCell;
@@ -20,6 +25,10 @@ pub struct TickBench {
     switches: Rc<RefCell<Vec<(String, u64, u64)>>>,
     pending: Option<(Stamp, Stamp, u64)>,
     switch_pending: Option<(String, u64)>,
+    /// render 量法：已經畫進某一幀、等下一次 render 記 present 的樣本（含掛上的時間 µs）
+    awaiting: Option<([u64; 6], u64)>,
+    switch_awaiting: Option<(String, u64, u64)>,
+    next_frame_probe: bool,
     /// 從 inbox 取出的列數（背景合併後）／表格實際有變的列數
     pub inbox_rows: u64,
     pub applied_rows: u64,
@@ -29,7 +38,8 @@ pub struct TickBench {
 
 impl TickBench {
     pub fn for_window(win: usize) -> Self {
-        TickBench { win, ..Default::default() }
+        let next_frame_probe = std::env::var("XQ_PROBE").as_deref() == Ok("nextframe");
+        TickBench { win, next_frame_probe, ..Default::default() }
     }
 
     pub fn on_apply(&mut self, first: Option<Stamp>, stamp: Option<Stamp>, inbox_rows: usize, changed: usize, apply_us: u64) {
@@ -49,8 +59,19 @@ impl TickBench {
         self.switch_pending = Some((symbol.to_string(), unix_us()));
     }
 
-    /// root render 呼叫：有待量的樣本就掛 on_next_frame
+    /// root render 開頭呼叫：先把上一幀的樣本記 present（＝這一幀開始），再把這一幀要畫的樣本掛起來
     pub fn on_render(&mut self, window: &mut gpui::Window) {
+        if !self.next_frame_probe {
+            let now = unix_us();
+            self.flush_awaiting(now);
+            if let Some((f, st, applied)) = self.pending.take() {
+                self.awaiting = Some(([f.seq, f.sent_us, st.seq, st.sent_us, st.recv_us, applied], now));
+            }
+            if let Some((sym, handled)) = self.switch_pending.take() {
+                self.switch_awaiting = Some((sym, handled, now));
+            }
+            return;
+        }
         if let Some((f, st, applied)) = self.pending.take() {
             let samples = self.samples.clone();
             window.on_next_frame(move |_, _| {
@@ -63,8 +84,24 @@ impl TickBench {
         }
     }
 
+    fn flush_awaiting(&mut self, present: u64) {
+        if let Some((s, _)) = self.awaiting.take() {
+            self.samples.borrow_mut().push([s[0], s[1], s[2], s[3], s[4], s[5], present]);
+        }
+        if let Some((sym, handled, _)) = self.switch_awaiting.take() {
+            self.switches.borrow_mut().push((sym, handled, present));
+        }
+    }
+
     /// 每秒一行；計數為累計值
     pub fn report(&mut self, rows_in: u64, frames_in: u64, fps: u32, rss_mb: f64) {
+        // 掛了 100ms 以上還沒等到下一幀：用現在補記（悲觀，不漏算卡住的視窗）
+        let now = unix_us();
+        if self.awaiting.as_ref().is_some_and(|(_, at)| now.saturating_sub(*at) > 100_000)
+            || self.switch_awaiting.as_ref().is_some_and(|(_, _, at)| now.saturating_sub(*at) > 100_000)
+        {
+            self.flush_awaiting(now);
+        }
         let lat: Vec<String> = self
             .samples
             .borrow_mut()
