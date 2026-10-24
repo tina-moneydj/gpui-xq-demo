@@ -34,7 +34,6 @@ use crate::theme::*;
 pub const TAPE_CAP: usize = 5000;
 /// 背景佇列容量：UI 一幀（16 ms）內最多收幾筆；超過代表 UI 嚴重落後，擠掉最舊的並計數
 pub const PENDING_CAP: usize = 4096;
-const ROW_H: f32 = 20.0;
 /// 捲動位置離最上面超過這麼多像素，就算「正在看舊資料」，暫停跟隨
 const FOLLOW_EPS: f32 = 1.0;
 
@@ -49,6 +48,7 @@ fn anchored_offset(offset_y: f32, added: usize, row_h: f32) -> f32 {
         offset_y - added as f32 * row_h
     }
 }
+fn row_h() -> f32 { xq_tokens::t().layout.tape_row }
 const COLS: [(&str, f32); 4] = [("時間", 96.0), ("成交", 72.0), ("單量", 64.0), ("", 28.0)];
 
 // ───────────────── 【模式 A】背景執行緒 → UI ─────────────────
@@ -261,7 +261,7 @@ impl TickTape {
         {
             let state = self.scroll.0.borrow();
             let off = state.base_handle.offset();
-            let new_y = anchored_offset(f32::from(off.y), added, ROW_H);
+            let new_y = anchored_offset(f32::from(off.y), added, row_h());
             if new_y != f32::from(off.y) {
                 state.base_handle.set_offset(gpui::point(off.x, px(new_y)));
             }
@@ -379,13 +379,13 @@ impl TickTape {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .h(px(ROW_H))
+                    .h(px(row_h()))
                     .w_full()
-                    .font_family(MONO_FONT)
-                    .when(big, |d| d.bg(gpui::rgba(0xf0c67418)))
+                    .font_family(mono_font())
+                    .when(big, |d| d.bg(crate::theme::rgba_tok(tk().market.big_trade_bg)))
                     .child(cell(COLS[0].1, false).text_color(dim()).child(r.time))
                     .child(cell(COLS[1].1, true).text_color(color).child(r.price))
-                    .child(cell(COLS[2].1, true).text_color(if big { gpui::rgb(0xf0c674) } else { text() }).child(r.qty))
+                    .child(cell(COLS[2].1, true).text_color(if big { gpui::rgb(tk().market.volume) } else { text() }).child(r.qty))
                     .child(cell(COLS[3].1, true).text_color(color).child(r.side))
                     .into_any_element(),
             );
@@ -431,7 +431,7 @@ impl Render for TickTape {
             .bg(panel())
             .border_1()
             .border_color(if focused { accent() } else { border() })
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
@@ -439,7 +439,7 @@ impl Render for TickTape {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .h(px(26.))
+                    .h(px(tk().layout.table_header))
                     .px_2()
                     .bg(header())
                     .border_b_1()
@@ -456,7 +456,7 @@ impl Render for TickTape {
                         div()
                             .id("tape-big")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if s.big_only { accent() } else { border() })
@@ -471,7 +471,7 @@ impl Render for TickTape {
                 div()
                     .flex()
                     .flex_row()
-                    .h(px(20.))
+                    .h(px(tk().layout.tape_col_header))
                     .items_center()
                     .text_color(dim())
                     .border_b_1()
@@ -485,11 +485,11 @@ impl Render for TickTape {
             )
             .child(
                 div()
-                    .h(px(18.))
+                    .h(px(tk().layout.tape_footer))
                     .px_2()
                     .flex()
                     .items_center()
-                    .text_size(px(10.))
+                    .text_size(px(tk().font.xs))
                     .text_color(dim())
                     .child(if self.following_paused() {
                         "已暫停跟隨最新（正在看舊成交）· Home 回最新"
@@ -505,6 +505,8 @@ impl Render for TickTape {
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// 測試用固定列高（預設 token layout.tape_row 也是 20）
+    const ROW_H: f32 = 20.0;
 
     #[test]
     fn scroll_anchor_follows_at_top_and_holds_when_scrolled() {

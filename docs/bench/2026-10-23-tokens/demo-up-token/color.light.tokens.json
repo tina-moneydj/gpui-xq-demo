@@ -1,0 +1,954 @@
+{
+  "$description": "XQ 顏色（淺色主題）。與另一個主題檔 token 名稱一一對應（Figma 一個 mode 一個檔）。",
+  "color": {
+    "$type": "color",
+    "ui": {
+      "bg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.960784,
+            0.964706,
+            0.972549
+          ],
+          "alpha": 1,
+          "hex": "#f5f6f8"
+        },
+        "$description": "視窗底色"
+      },
+      "panel": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1,
+          "hex": "#ffffff"
+        },
+        "$description": "面板底色"
+      },
+      "header": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.933333,
+            0.945098,
+            0.960784
+          ],
+          "alpha": 1,
+          "hex": "#eef1f5"
+        },
+        "$description": "標題列／表頭底色"
+      },
+      "border": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.835294,
+            0.854902,
+            0.882353
+          ],
+          "alpha": 1,
+          "hex": "#d5dae1"
+        },
+        "$description": "框線"
+      },
+      "text": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.121569,
+            0.141176,
+            0.188235
+          ],
+          "alpha": 1,
+          "hex": "#1f2430"
+        },
+        "$description": "主要文字"
+      },
+      "textDim": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.419608,
+            0.447059,
+            0.501961
+          ],
+          "alpha": 1,
+          "hex": "#6b7280"
+        },
+        "$description": "次要文字"
+      },
+      "accent": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.145098,
+            0.388235,
+            0.921569
+          ],
+          "alpha": 1,
+          "hex": "#2563eb"
+        },
+        "$description": "強調色（焦點框、選取）"
+      },
+      "selected": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.858824,
+            0.909804,
+            0.984314
+          ],
+          "alpha": 1,
+          "hex": "#dbe8fb"
+        },
+        "$description": "選取列底色"
+      }
+    },
+    "market": {
+      "up": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.878431,
+            0.156863,
+            0.180392
+          ],
+          "alpha": 1,
+          "hex": "#e0282e"
+        },
+        "$description": "漲（台股慣例紅）——報價表、標題列、成交明細"
+      },
+      "down": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.058824,
+            0.615686,
+            0.282353
+          ],
+          "alpha": 1,
+          "hex": "#0f9d48"
+        },
+        "$description": "跌（台股慣例綠）"
+      },
+      "flat": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.294118,
+            0.333333,
+            0.388235
+          ],
+          "alpha": 1,
+          "hex": "#4b5563"
+        },
+        "$description": "平盤"
+      },
+      "upFlash": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.878431,
+            0.156863,
+            0.180392
+          ],
+          "alpha": 0.13333333333333333,
+          "hex": "#e0282e"
+        },
+        "$description": "報價跳漲時的儲存格閃爍底色"
+      },
+      "downFlash": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.058824,
+            0.615686,
+            0.282353
+          ],
+          "alpha": 0.13333333333333333,
+          "hex": "#0f9d48"
+        },
+        "$description": "報價跳跌時的儲存格閃爍底色"
+      },
+      "volume": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.631373,
+            0.384314,
+            0.027451
+          ],
+          "alpha": 1,
+          "hex": "#a16207"
+        },
+        "$description": "成交量文字／大單文字"
+      },
+      "bigTradeBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.960784,
+            0.619608,
+            0.043137
+          ],
+          "alpha": 0.09411764705882353,
+          "hex": "#f59e0b"
+        },
+        "$description": "成交明細大單底色"
+      }
+    },
+    "chart": {
+      "up": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.898039,
+            0.282353,
+            0.301961
+          ],
+          "alpha": 1,
+          "hex": "#e5484d"
+        },
+        "$description": "K 棒漲"
+      },
+      "down": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.121569,
+            0.615686,
+            0.360784
+          ],
+          "alpha": 1,
+          "hex": "#1f9d5c"
+        },
+        "$description": "K 棒跌"
+      },
+      "grid": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.913725,
+            0.92549,
+            0.941176
+          ],
+          "alpha": 1,
+          "hex": "#e9ecf0"
+        },
+        "$description": "格線"
+      },
+      "axis": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.419608,
+            0.447059,
+            0.501961
+          ],
+          "alpha": 1,
+          "hex": "#6b7280"
+        },
+        "$description": "座標軸文字"
+      },
+      "text": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.215686,
+            0.254902,
+            0.317647
+          ],
+          "alpha": 1,
+          "hex": "#374151"
+        },
+        "$description": "圖例文字"
+      },
+      "separator": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.835294,
+            0.854902,
+            0.882353
+          ],
+          "alpha": 1,
+          "hex": "#d5dae1"
+        },
+        "$description": "副圖分隔線"
+      },
+      "crosshair": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.419608,
+            0.447059,
+            0.501961
+          ],
+          "alpha": 1,
+          "hex": "#6b7280"
+        },
+        "$description": "十字線"
+      },
+      "crosshairLabel": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.215686,
+            0.254902,
+            0.317647
+          ],
+          "alpha": 1,
+          "hex": "#374151"
+        },
+        "$description": "十字線座標標籤底色"
+      },
+      "midline": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.788235,
+            0.807843,
+            0.839216
+          ],
+          "alpha": 1,
+          "hex": "#c9ced6"
+        },
+        "$description": "副圖中線（虛線）"
+      },
+      "prevClose": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.611765,
+            0.639216,
+            0.686275
+          ],
+          "alpha": 1,
+          "hex": "#9ca3af"
+        },
+        "$description": "昨收虛線"
+      },
+      "areaFill": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.145098,
+            0.388235,
+            0.921569
+          ],
+          "alpha": 0.08,
+          "hex": "#2563eb"
+        },
+        "$description": "分時走勢面積填色"
+      },
+      "tagText": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1,
+          "hex": "#ffffff"
+        },
+        "$description": "價格標籤文字"
+      },
+      "tagBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.419608,
+            0.447059,
+            0.501961
+          ],
+          "alpha": 1,
+          "hex": "#6b7280"
+        },
+        "$description": "價格標籤底色"
+      },
+      "tooltipBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.95,
+          "hex": "#ffffff"
+        },
+        "$description": "游標資訊框底色"
+      },
+      "labelBgHline": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.705882,
+            0.32549,
+            0.035294
+          ],
+          "alpha": 1,
+          "hex": "#b45309"
+        },
+        "$description": "水平線價格標籤底色"
+      },
+      "flat": {
+        "$value": "{color.ui.accent}",
+        "$description": "分時走勢平盤時的線色（= 強調色）"
+      },
+      "tooltipBorder": {
+        "$value": "{color.ui.accent}",
+        "$description": "游標資訊框外框（= 強調色）"
+      },
+      "overlay": {
+        "$description": "主圖疊加指標 1–20 的線色",
+        "01": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.831373,
+              0.631373,
+              0.023529
+            ],
+            "alpha": 1.0,
+            "hex": "#d4a106"
+          }
+        },
+        "02": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.658824,
+              0.333333,
+              0.968627
+            ],
+            "alpha": 1.0,
+            "hex": "#a855f7"
+          }
+        },
+        "03": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.031373,
+              0.568627,
+              0.698039
+            ],
+            "alpha": 1.0,
+            "hex": "#0891b2"
+          }
+        },
+        "04": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.917647,
+              0.345098,
+              0.047059
+            ],
+            "alpha": 1.0,
+            "hex": "#ea580c"
+          }
+        },
+        "05": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.007843,
+              0.517647,
+              0.780392
+            ],
+            "alpha": 1.0,
+            "hex": "#0284c7"
+          }
+        },
+        "06": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.862745,
+              0.14902,
+              0.14902
+            ],
+            "alpha": 1.0,
+            "hex": "#dc2626"
+          }
+        },
+        "07": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.086275,
+              0.639216,
+              0.290196
+            ],
+            "alpha": 1.0,
+            "hex": "#16a34a"
+          }
+        },
+        "08": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.858824,
+              0.152941,
+              0.466667
+            ],
+            "alpha": 1.0,
+            "hex": "#db2777"
+          }
+        },
+        "09": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.85098,
+              0.466667,
+              0.023529
+            ],
+            "alpha": 1.0,
+            "hex": "#d97706"
+          }
+        },
+        "10": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.011765,
+              0.411765,
+              0.631373
+            ],
+            "alpha": 1.0,
+            "hex": "#0369a1"
+          }
+        },
+        "11": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.396078,
+              0.639216,
+              0.05098
+            ],
+            "alpha": 1.0,
+            "hex": "#65a30d"
+          }
+        },
+        "12": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.576471,
+              0.2,
+              0.917647
+            ],
+            "alpha": 1.0,
+            "hex": "#9333ea"
+          }
+        },
+        "13": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.05098,
+              0.580392,
+              0.533333
+            ],
+            "alpha": 1.0,
+            "hex": "#0d9488"
+          }
+        },
+        "14": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.760784,
+              0.254902,
+              0.047059
+            ],
+            "alpha": 1.0,
+            "hex": "#c2410c"
+          }
+        },
+        "15": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.145098,
+              0.388235,
+              0.921569
+            ],
+            "alpha": 1.0,
+            "hex": "#2563eb"
+          }
+        },
+        "16": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.792157,
+              0.541176,
+              0.015686
+            ],
+            "alpha": 1.0,
+            "hex": "#ca8a04"
+          }
+        },
+        "17": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.882353,
+              0.113725,
+              0.282353
+            ],
+            "alpha": 1.0,
+            "hex": "#e11d48"
+          }
+        },
+        "18": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.392157,
+              0.454902,
+              0.545098
+            ],
+            "alpha": 1.0,
+            "hex": "#64748b"
+          }
+        },
+        "19": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.517647,
+              0.8,
+              0.086275
+            ],
+            "alpha": 1.0,
+            "hex": "#84cc16"
+          }
+        },
+        "20": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.486275,
+              0.227451,
+              0.929412
+            ],
+            "alpha": 1.0,
+            "hex": "#7c3aed"
+          }
+        }
+      },
+      "sub": {
+        "$description": "副圖指標線色",
+        "vol": {
+          "1": {
+            "$value": "{color.chart.overlay.01}"
+          },
+          "2": {
+            "$value": "{color.chart.overlay.02}"
+          }
+        },
+        "kd": {
+          "1": {
+            "$value": {
+              "colorSpace": "srgb",
+              "components": [
+                0.85098,
+                0.466667,
+                0.023529
+              ],
+              "alpha": 1.0,
+              "hex": "#d97706"
+            }
+          },
+          "2": {
+            "$value": "{color.chart.overlay.10}"
+          }
+        },
+        "macd": {
+          "1": {
+            "$value": "{color.chart.overlay.01}"
+          },
+          "2": {
+            "$value": "{color.chart.overlay.10}"
+          }
+        },
+        "rsi": {
+          "1": {
+            "$value": "{color.chart.overlay.02}"
+          }
+        },
+        "wr": {
+          "1": {
+            "$value": "{color.chart.overlay.08}"
+          }
+        },
+        "dmi": {
+          "1": {
+            "$value": "{color.chart.up}"
+          },
+          "2": {
+            "$value": "{color.chart.down}"
+          },
+          "3": {
+            "$value": "{color.chart.overlay.01}"
+          }
+        },
+        "atr": {
+          "1": {
+            "$value": "{color.chart.overlay.09}"
+          }
+        },
+        "obv": {
+          "1": {
+            "$value": "{color.chart.overlay.10}"
+          }
+        }
+      }
+    },
+    "toolbar": {
+      "tipBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1,
+          "hex": "#ffffff"
+        },
+        "$description": "工具列提示框底色"
+      },
+      "buttonOnBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.858824,
+            0.909804,
+            0.984314
+          ],
+          "alpha": 1,
+          "hex": "#dbe8fb"
+        },
+        "$description": "工具按下底色"
+      },
+      "buttonHover": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.933333,
+            0.945098,
+            0.960784
+          ],
+          "alpha": 1,
+          "hex": "#eef1f5"
+        },
+        "$description": "工具滑過底色"
+      },
+      "iconOn": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.121569,
+            0.141176,
+            0.188235
+          ],
+          "alpha": 1,
+          "hex": "#1f2430"
+        },
+        "$description": "工具圖示（選中）"
+      },
+      "iconOff": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.294118,
+            0.333333,
+            0.388235
+          ],
+          "alpha": 1,
+          "hex": "#4b5563"
+        },
+        "$description": "工具圖示"
+      },
+      "iconDisabled": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.611765,
+            0.639216,
+            0.686275
+          ],
+          "alpha": 0.3,
+          "hex": "#9ca3af"
+        },
+        "$description": "工具圖示（不可用）"
+      },
+      "separator": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.835294,
+            0.854902,
+            0.882353
+          ],
+          "alpha": 1,
+          "hex": "#d5dae1"
+        },
+        "$description": "工具列分隔線"
+      }
+    },
+    "drawing": {
+      "stroke": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.85098,
+            0.466667,
+            0.023529
+          ],
+          "alpha": 1,
+          "hex": "#d97706"
+        },
+        "$description": "畫線中／預設畫線色"
+      },
+      "selected": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.066667,
+            0.094118,
+            0.152941
+          ],
+          "alpha": 1,
+          "hex": "#111827"
+        },
+        "$description": "選取的畫線與控制點"
+      },
+      "handleBorder": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1,
+          "hex": "#ffffff"
+        },
+        "$description": "控制點外框"
+      },
+      "textBg": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.85,
+          "hex": "#ffffff"
+        },
+        "$description": "文字畫線底色"
+      },
+      "fib": {
+        "$description": "費波納契各層線色",
+        "1": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.419608,
+              0.447059,
+              0.501961
+            ],
+            "alpha": 1.0,
+            "hex": "#6b7280"
+          }
+        },
+        "2": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.862745,
+              0.14902,
+              0.14902
+            ],
+            "alpha": 1.0,
+            "hex": "#dc2626"
+          }
+        },
+        "3": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.85098,
+              0.466667,
+              0.023529
+            ],
+            "alpha": 1.0,
+            "hex": "#d97706"
+          }
+        },
+        "4": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.086275,
+              0.639216,
+              0.290196
+            ],
+            "alpha": 1.0,
+            "hex": "#16a34a"
+          }
+        },
+        "5": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.05098,
+              0.580392,
+              0.533333
+            ],
+            "alpha": 1.0,
+            "hex": "#0d9488"
+          }
+        },
+        "6": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.007843,
+              0.517647,
+              0.780392
+            ],
+            "alpha": 1.0,
+            "hex": "#0284c7"
+          }
+        },
+        "7": {
+          "$value": {
+            "colorSpace": "srgb",
+            "components": [
+              0.419608,
+              0.447059,
+              0.501961
+            ],
+            "alpha": 1.0,
+            "hex": "#6b7280"
+          }
+        }
+      }
+    }
+  }
+}

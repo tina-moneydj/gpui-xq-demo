@@ -12,7 +12,7 @@ use xq_feed::Quote;
 
 use crate::theme::*;
 
-pub const ROW_H: f32 = 22.0;
+pub fn row_h() -> f32 { xq_tokens::t().layout.table_row }
 const COLS: [(&str, f32); 6] = [("代號", 58.0), ("名稱", 92.0), ("成交", 76.0), ("漲跌", 70.0), ("幅度", 64.0), ("總量", 92.0)];
 pub const STRESS_ROWS: usize = 50_000;
 
@@ -208,8 +208,8 @@ impl QuoteTable {
                 ("--".into(), "--".into(), "--".into(), "--".into())
             };
             let tick_bg = match r.tick {
-                1 => Some(gpui::rgba(0xff4d4f22)),
-                -1 => Some(gpui::rgba(0x22c55e22)),
+                1 => Some(crate::theme::rgba_tok(tk().market.up_flash)),
+                -1 => Some(crate::theme::rgba_tok(tk().market.down_flash)),
                 _ => None,
             };
             let mut price_cell = cell(COLS[2].1, true).text_color(color).child(price);
@@ -222,7 +222,7 @@ impl QuoteTable {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .h(px(ROW_H))
+                    .h(px(row_h()))
                     .w_full()
                     .when(ix == self.selected, |d| d.bg(selected()))
                     .when(ix != self.selected, |d| d.hover(|s| s.bg(header())))
@@ -242,12 +242,12 @@ impl QuoteTable {
 }
 
 fn rgb_vol() -> gpui::Rgba {
-    gpui::rgb(0xf0c674)
+    gpui::rgb(tk().market.volume)
 }
 
 fn cell(w: f32, right: bool) -> gpui::Div {
     let d = div().w(px(w)).px_1().overflow_hidden().whitespace_nowrap();
-    if right { d.flex().justify_end().font_family(MONO_FONT) } else { d }
+    if right { d.flex().justify_end().font_family(mono_font()) } else { d }
 }
 
 impl Render for QuoteTable {
@@ -259,7 +259,7 @@ impl Render for QuoteTable {
             .flex_col()
             .size_full()
             .bg(panel())
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
@@ -267,7 +267,7 @@ impl Render for QuoteTable {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .h(px(26.))
+                    .h(px(tk().layout.table_header))
                     .px_2()
                     .bg(header())
                     .border_b_1()
@@ -277,7 +277,7 @@ impl Render for QuoteTable {
                         div()
                             .id("stress")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if stress { accent() } else { border() })
@@ -291,7 +291,7 @@ impl Render for QuoteTable {
                 div()
                     .flex()
                     .flex_row()
-                    .h(px(22.))
+                    .h(px(tk().layout.table_col_header))
                     .items_center()
                     .text_color(dim())
                     .border_b_1()

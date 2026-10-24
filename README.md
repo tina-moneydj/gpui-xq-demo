@@ -11,6 +11,68 @@
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
 
+## 設計 token：一套設計規範，egui／GPUI 兩版共用（2026-10-23，`design-tokens` 分支）
+
+### 結論先看
+
+- ✅ **可行，而且畫面完全沒變**：兩版的顏色、字級、圓角、線寬、版面尺寸都改成讀**同一份** token 檔
+  （[`crates/xq-tokens/tokens/`](https://github.com/tina-moneydj/gpui-xq-demo/tree/design-tokens/crates/xq-tokens/tokens)，W3C DTCG 2025.10 格式，Figma 原生就能匯入／匯出）。
+  用預設 token 截圖和 main 逐像素比對：**除了狀態列每秒變動的 RSS 數字，其他 0 個像素不同**（兩版都是）。
+- ✅ **改一個 token，兩個 App 一起變**：只把 `color.chart.up`（K 棒漲色）從 `#e5484d` 改成 `#a855f7`，兩版都沒改程式，K 棒和成交量柱的漲色一起變紫（約 1.8 萬個像素）。
+- ✅ **深色／淺色主題**：按 **F8** 即時切換，或 `XQ_THEME=light` 啟動；切換後的畫面和直接用淺色啟動一樣（只差每秒變的計數）。
+- ✅ **熱更新**：`XQ_TOKENS_DIR=資料夾 XQ_TOKENS_WATCH=1` 執行時，程式每 0.3 秒檢查一次檔案，設計師存檔後畫面就換色（實測存檔後 2.5 秒截圖已是新顏色），不用重編。
+- ✅ **效能沒變差**：主視窗中位數 GPUI 52.0→50.2 FPS、egui 61.3→60.9 FPS，每幀 CPU、走勢圖繪製時間、記憶體的差距都比同一版每輪之間的起伏小（記憶體多約 0.4–0.7 MB，是兩份主題的 token 表）。
+- ✅ **改錯會被擋**：token 少一個或格式錯，`cargo build` 直接失敗並寫出是哪個 token（例：`[light] token「color.market.up」缺少`）。
+- ⚠️ **盤點時發現兩版本來就不一致**：按鈕圓角 GPUI 4px、egui 2px；K 棒漲色（`#e5484d`）和報價表漲色（`#ff4d4f`）也是兩個不同的紅。先各給一個 token 保持畫面不變，之後由設計師決定要不要統一。
+
+### 設計師怎麼改（不用懂程式）
+
+1. 打開 `crates/xq-tokens/tokens/`：`color.dark.tokens.json`（深色）、`color.light.tokens.json`（淺色）、`base.tokens.json`（字級、間距、圓角、尺寸）。
+2. **用 Figma**：第一次把這三個檔拖進 Figma 的 Variables 視窗匯入（名稱會變成 `color/market/up` 這種斜線分層）。之後在 Figma 改，
+   在 collection 上按右鍵 → **Export modes**，每個 mode 一個 JSON，改成上面的檔名蓋回去、送 PR。
+   **不用 Figma**：直接改 JSON 裡的 `"hex": "#ff4d4f"`（和旁邊的 `components`）也可以。
+3. 想先看效果：`XQ_TOKENS_DIR=你的資料夾 XQ_TOKENS_WATCH=1 ./target/release/gpui-xq-demo`（egui 版同樣），邊改邊看。
+4. 合進去後兩個 App 重編就會帶新值（token 內嵌在執行檔裡，不用另外附檔案）。
+
+### 兩個 App 怎麼拿到
+
+- GPUI 版直接依賴 workspace 裡的 `crates/xq-tokens`；egui 版用 Cargo git 依賴同一個 crate（鎖定 rev，和 `xq-feed` 的做法一樣）。
+- 程式裡原本寫死的 `0xff4d4f`、`px(11.)`、`ROW_H = 22.0` 等，改成 `tk().market.up`、`tk().font.sm`、`tk().layout.table_row`。
+  讀一個 token 只是一次原子讀取，沒有鎖、沒有查表。
+- 換主題或熱更新時版本號 +1；App 看到就把烤了顏色的快取（走勢圖畫線、報價表列）丟掉重畫。
+- 詳細格式、Figma 限制、完整盤點表：[`crates/xq-tokens/README.md`](https://github.com/tina-moneydj/gpui-xq-demo/blob/design-tokens/crates/xq-tokens/README.md)。
+
+### 截圖（[docs/bench/2026-10-23-tokens/](docs/bench/2026-10-23-tokens/)）
+
+| | GPUI | egui |
+|---|---|---|
+| 預設 token（和 main 一樣） | ![](docs/bench/2026-10-23-tokens/gpui-tokens-default.png) | ![](docs/bench/2026-10-23-tokens/egui-tokens-default.png) |
+| 只改 `color.chart.up` → 紫色 | ![](docs/bench/2026-10-23-tokens/gpui-up-token.png) | ![](docs/bench/2026-10-23-tokens/egui-up-token.png) |
+| 淺色主題（F8） | ![](docs/bench/2026-10-23-tokens/gpui-f8.png) | ![](docs/bench/2026-10-23-tokens/egui-f8.png) |
+
+逐像素比對數字在 `shots-diff.json`；行情用 `xq-tickgen --rate 0 --seed 1`（只送一次快照，畫面固定才能逐像素比）。
+
+### 效能（主視窗、每秒 2000 筆跳價、量 30 秒，main 與 token 版交錯跑 5 輪取中位數）
+
+| 指標（中位數） | GPUI main | GPUI token | egui main | egui token |
+|---|---|---|---|---|
+| FPS | 52.0 | 50.2 | 61.3 | 60.9 |
+| 記憶體 RSS (MB) | 190.5 | 191.2 | 124.8 | 125.2 |
+| CPU（100%＝1 核） | 350.2% | 350.2% | 133.8% | 137.9% |
+| 每幀 CPU (ms) | 60.89 | 61.70 | 21.83 | 22.63 |
+| 走勢圖繪製 (µs/次) | 66 | 64 | 58 | 60 |
+
+怎麼看：**差距都在雜訊內**。這台測試機沒有 GPU（軟體繪圖），而且同時跑著其他測試，GPUI 同一版 5 輪的 FPS 就在 31–61 之間跳（token 版 32–61），
+所以 FPS 要看「每幀 CPU」比較穩：GPUI 差 1.3%、egui 差 3.7%，而 egui 同一版每輪自己就在 20.6–24.7 ms 之間。
+egui 被螢幕更新率卡在約 60 FPS。原始資料：`docs/bench/2026-10-23-tokens/perf.json`；量測腳本 `tokbench.py`（獨立 Xvfb :73、行情埠 47793）。
+
+### 還沒做的
+
+- 間距 token 已定義，但 GPUI 的 `px_2()`／`gap_1()` 這類簡寫和 egui 的 `item_spacing` 還沒全部換；畫布上的小幾何（標籤高 16、控制點 9×9）和透明度係數也還寫在程式裡。
+- egui 的字型是讀字型**檔**，字型名稱 token 目前只有 GPUI 用。
+- 淺色主題的配色是我先排的初稿，要請設計師定稿。
+- 手機版、網頁版還沒接（同一個 crate 可以直接用，不依賴任何 UI 框架）。
+
 ## 功能
 
 - 版面：上＝走勢圖、左下＝報價表、右下＝資訊／效能格；**上下、左右分隔線都可拖曳**。

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "name": "XQ",
+  "version": "2025.10",
+  "description": "XQ 設計 token：共用 base ＋ 依 theme 選深色或淺色顏色檔。",
+  "sets": {
+    "base": {
+      "sources": [
+        {
+          "$ref": "base.tokens.json"
+        }
+      ]
+    }
+  },
+  "modifiers": {
+    "theme": {
+      "description": "顏色主題",
+      "contexts": {
+        "dark": [
+          {
+            "$ref": "color.dark.tokens.json"
+          }
+        ],
+        "light": [
+          {
+            "$ref": "color.light.tokens.json"
+          }
+        ]
+      },
+      "default": "dark"
+    }
+  },
+  "resolutionOrder": [
+    {
+      "$ref": "#/sets/base"
+    },
+    {
+      "$ref": "#/modifiers/theme"
+    }
+  ]
+}

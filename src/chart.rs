@@ -21,35 +21,33 @@ use crate::layers::ZOp;
 use crate::zstress::{ZMode, ZState};
 use crate::gfx::{self, hex, hexa, p, Tris, P};
 use crate::indicators::{OvSpec, SubKind, MAX_OVERLAYS, MAX_SUBS};
-use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, AXIS_W, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, TIME_H};
+use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, axis_w, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, time_h};
 use crate::series::Period;
 use crate::store::{Entry, Store};
 use crate::theme::*;
 
-// wry 版 chart.js 的配色
-pub const C_UP: u32 = 0xe5484d;
-pub const C_DOWN: u32 = 0x30a46c;
-const C_GRID: u32 = 0x242424;
-const C_AXIS: u32 = 0x8a8a8a;
-const C_TEXT: u32 = 0xcfcfcf;
-const C_SEP: u32 = 0x333333;
-const C_CROSS: u32 = 0x8b95a5;
-const C_CROSS_LABEL: u32 = 0x3b4252;
-pub const OV_COLORS: [u32; 20] = [
-    0xf5c542, 0xc678dd, 0x56b6c2, 0xff7f50, 0x7fdbff, 0xe5484d, 0x30a46c, 0xf06292, 0xffb74d, 0x4fc3f7, 0xaed581, 0xce93d8,
-    0x80cbc4, 0xffab91, 0x90caf9, 0xfff176, 0xef9a9a, 0xb0bec5, 0xdce775, 0xb39ddb,
-];
+// 走勢圖配色：來自設計 token（color.chart.*）
+pub fn c_up() -> u32 { tk().chart.up }
+pub fn c_down() -> u32 { tk().chart.down }
+fn c_grid() -> u32 { tk().chart.grid }
+fn c_axis() -> u32 { tk().chart.axis }
+fn c_text() -> u32 { tk().chart.text }
+fn c_sep() -> u32 { tk().chart.separator }
+fn c_cross() -> u32 { tk().chart.crosshair }
+fn c_cross_label() -> u32 { tk().chart.crosshair_label }
+pub fn ov_color(i: usize) -> u32 { let o = &tk().chart.overlay; o[i % o.len()] }
 
 fn sub_colors(k: SubKind) -> &'static [u32] {
+    let c = &tk().chart;
     match k {
-        SubKind::Vol => &[0xf5c542, 0xc678dd],
-        SubKind::Kd => &[0xf5a623, 0x4fc3f7],
-        SubKind::Macd => &[0xf5c542, 0x4fc3f7],
-        SubKind::Rsi => &[0xc678dd],
-        SubKind::Wr => &[0xf06292],
-        SubKind::Dmi => &[0xe5484d, 0x30a46c, 0xf5c542],
-        SubKind::Atr => &[0xffb74d],
-        SubKind::Obv => &[0x4fc3f7],
+        SubKind::Vol => &c.sub_vol,
+        SubKind::Kd => &c.sub_kd,
+        SubKind::Macd => &c.sub_macd,
+        SubKind::Rsi => &c.sub_rsi,
+        SubKind::Wr => &c.sub_wr,
+        SubKind::Dmi => &c.sub_dmi,
+        SubKind::Atr => &c.sub_atr,
+        SubKind::Obv => &c.sub_obv,
     }
 }
 
@@ -162,7 +160,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
     let (bx, by, bw) = (f32::from(b.origin.x), f32::from(b.origin.y), f32::from(b.size.width));
     if bars.is_empty() {
         let msg = if m.s.period == Period::Intraday { "等待引擎分時資料…（需連上 WryFeedHost）" } else { "沒有資料" };
-        gfx::text(window, cx, msg, bx + 16.0, by + 16.0, 12.0, hex(C_AXIS));
+        gfx::text(window, cx, msg, bx + 16.0, by + 16.0, tk().font.md, hex(c_axis()));
         return;
     }
     let intraday = m.s.period == Period::Intraday;
@@ -170,7 +168,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
     let x = |i: usize| g.x(i as f64);
     let mut labels: Vec<(String, f32, f32)> = Vec::with_capacity(64);
     let mut pane_paths: Vec<Vec<(Tris, Hsla)>> = Vec::with_capacity(g.panes.len());
-    let (up_c, dn_c) = (hex(C_UP), hex(C_DOWN));
+    let (up_c, dn_c) = (hex(c_up()), hex(c_down()));
 
     let last_c = bars[bars.len() - 1].c;
     let tag = maybe_layer(window, b, |window| {
@@ -178,12 +176,12 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
         let mut paths: Vec<(Tris, Hsla)> = Vec::new();
         let (top, h) = (pane.y0, pane.ph);
         if pane.top > by {
-            gfx::rect(window, g.plot_l, pane.top, g.plot_w, 1.0, hex(C_SEP));
+            gfx::rect(window, g.plot_l, pane.top, g.plot_w, 1.0, hex(c_sep()));
         }
         for &i in &g.ticks {
             let xx = x(i).round();
             if xx >= g.plot_l && xx <= g.plot_r {
-                gfx::rect(window, xx, top, 1.0, h, hex(C_GRID));
+                gfx::rect(window, xx, top, 1.0, h, hex(c_grid()));
             }
         }
         let sub = match pane.kind {
@@ -194,7 +192,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
         if let Some((_, guides)) = sub.and_then(|s| s.fixed()) {
             for &t in guides {
                 let y = pane.y(t).round();
-                gfx::hdash(window, g.plot_l, g.plot_r, y, hex(C_GRID), 3.0, 3.0);
+                gfx::hdash(window, g.plot_l, g.plot_r, y, hex(c_grid()), 3.0, 3.0);
                 labels.push((format!("{t}"), axis_tx, y));
             }
         } else {
@@ -204,7 +202,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
             while t <= pane.hi && guard < 50 {
                 let y = pane.y(t).round();
                 if y >= top + 4.0 && y <= top + h - 2.0 {
-                    gfx::rect(window, g.plot_l, y, g.plot_w, 1.0, hex(C_GRID));
+                    gfx::rect(window, g.plot_l, y, g.plot_w, 1.0, hex(c_grid()));
                     let s = if t.abs() >= 10000.0 { fmt_v(t) } else if st < 1.0 { format!("{t:.2}") } else if st < 10.0 { format!("{t:.1}") } else { format!("{t:.0}") };
                     labels.push((s, axis_tx, y));
                 }
@@ -212,7 +210,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
                 guard += 1;
             }
             if sub.is_some_and(|s| s.cfg.kind == SubKind::Dmi) && 20.0 > pane.lo && 20.0 < pane.hi {
-                gfx::hdash(window, g.plot_l, g.plot_r, pane.y(20.0).round(), hex(0x3a3a3a), 3.0, 3.0);
+                gfx::hdash(window, g.plot_l, g.plot_r, pane.y(20.0).round(), hex(tk().chart.midline), 3.0, 3.0);
             }
         }
         let yv = |v: f64| pane.y(v);
@@ -223,7 +221,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
                     gfx::polyline(&mut t, 1.5, (i0..=i1).map(|i| Some(p(x(i), yv(bars[i].c)))));
                     paths.push((t, if m.change >= 0.0 { up_c } else { dn_c }));
                     if m.s.prev > 0.0 {
-                        gfx::hdash(window, g.plot_l, g.plot_r, yv(m.s.prev), hex(0x777777), 4.0, 4.0);
+                        gfx::hdash(window, g.plot_l, g.plot_r, yv(m.s.prev), hex(tk().chart.prev_close), 4.0, 4.0);
                     }
                 } else {
                     let bwid = (g.bar_w * 0.7).round().max(1.0) as f32;
@@ -240,7 +238,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
                     }
                 }
                 for (idx, o) in m.ovs.iter().enumerate() {
-                    let col = hex(OV_COLORS[idx % 20]);
+                    let col = hex(ov_color(idx));
                     match o.spec {
                         OvSpec::Sar { .. } => {
                             let r = (g.bar_w * 0.2).clamp(1.2, 2.5) as f32;
@@ -261,7 +259,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
                                     fill.tri(a, c, d);
                                 }
                             }
-                            paths.push((fill, hexa(0x5c9ded, 0.08)));
+                            paths.push((fill, hexa(tk().chart.area_fill.rgb, tk().chart.area_fill.a)));
                             let mut t = Tris::default();
                             line_tris(&mut t, 1.2, i0, i1, x, yv, &o.out.up);
                             line_tris(&mut t, 1.2, i0, i1, x, yv, &o.out.lo);
@@ -293,7 +291,7 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
                         let k = &bars[i];
                         let up = if intraday { i == 0 || k.c >= bars[i - 1].c } else { k.c >= k.o };
                         let y = yv(k.v);
-                        gfx::rect(window, x(i) - bw / 2.0, y, bw, base - y, hexa(if up { C_UP } else { C_DOWN }, 0xaa as f32 / 255.0));
+                        gfx::rect(window, x(i) - bw / 2.0, y, bw, base - y, hexa(if up { c_up() } else { c_down() }, 0xaa as f32 / 255.0));
                     }
                 }
                 if !s.out.hist.is_empty() {
@@ -317,15 +315,15 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
         });
         pane_paths.push(paths);
     }
-    gfx::rect(window, bx, g.bottom, bw, 1.0, hex(C_SEP));
-    gfx::rect(window, g.plot_r, by, 1.0, g.bottom - by, hex(C_SEP));
+    gfx::rect(window, bx, g.bottom, bw, 1.0, hex(c_sep()));
+    gfx::rect(window, g.plot_r, by, 1.0, g.bottom - by, hex(c_sep()));
     // 最新價標籤（底色 quad；字在最後）
     let last = bars[bars.len() - 1];
     let pr = g.panes[0];
     let ly = pr.y(last.c);
     let tag = (ly >= pr.y0 && ly <= pr.y0 + pr.ph).then(|| {
-        let c = if m.change > 0.0 { C_UP } else if m.change < 0.0 { C_DOWN } else { 0x3b82f6 };
-        gfx::rect(window, g.plot_r + 1.0, ly - 8.0, AXIS_W - 2.0, 16.0, hex(c));
+        let c = if m.change > 0.0 { c_up() } else if m.change < 0.0 { c_down() } else { tk().chart.flat };
+        gfx::rect(window, g.plot_r + 1.0, ly - 8.0, axis_w() - 2.0, 16.0, hex(c));
         ly
     });
     tag
@@ -339,19 +337,19 @@ fn paint_plot(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
             }
         });
     }
-    let axis = hex(C_AXIS);
+    let axis = hex(c_axis());
     maybe_layer(window, b, |window| {
     for (s, xx, y) in labels {
-        gfx::text(window, cx, s, xx, y, 11.0, axis);
+        gfx::text(window, cx, s, xx, y, tk().font.sm, axis);
     }
     for &i in &g.ticks {
         let s = fmt_time(bars[i].t, m.s.period, false);
         let half = drawings::text_width(&s, 11.0) / 2.0 + 2.0;
         let cxp = x(i).clamp(g.plot_l + half, g.plot_r - half);
-        gfx::text_center(window, cx, s, cxp, g.bottom + TIME_H / 2.0 + 1.0, 11.0, axis);
+        gfx::text_center(window, cx, s, cxp, g.bottom + time_h() / 2.0 + 1.0, tk().font.sm, axis);
     }
     if let Some(ly) = tag {
-        gfx::text(window, cx, fmt_p(last_c), g.plot_r + 5.0, ly, 11.0, hex(0xffffff));
+        gfx::text(window, cx, fmt_p(last_c), g.plot_r + 5.0, ly, tk().font.sm, hex(tk().chart.tag_text));
     }
     });
 }
@@ -456,8 +454,8 @@ fn paint_live(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
         if let Some(d) = m.selected.and_then(|k| m.drawings.get(k)).filter(|d| d.kind == Tool::Hline) {
             let y = xf.y(d.pts[0].p);
             if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
-                gfx::rect(window, g.plot_r + 1.0, y - 8.0, AXIS_W - 2.0, 16.0, hex(0x666666));
-                gfx::text(window, cx, fmt_p(d.pts[0].p), g.plot_r + 5.0, y, 11.0, hex(0xffffff));
+                gfx::rect(window, g.plot_r + 1.0, y - 8.0, axis_w() - 2.0, 16.0, hex(tk().chart.tag_bg));
+                gfx::text(window, cx, fmt_p(d.pts[0].p), g.plot_r + 5.0, y, tk().font.sm, hex(tk().chart.tag_text));
             }
         }
     }
@@ -465,34 +463,34 @@ fn paint_live(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
         let s = format!("{}▏", te.text);
         let w = drawings::text_width(&s, 13.0).max(120.0) + 12.0;
         let (x0, y0) = (te.at.x, te.at.y - 11.0);
-        gfx::boxed(window, x0, y0, w, 22.0, hexa(0x1e1e1e, 0.95), hex(0x3b82f6), 1.0);
-        gfx::text(window, cx, s, x0 + 6.0, y0 + 12.0, 13.0, hex(drawings::DRAW_COLOR));
-        gfx::text(window, cx, "輸入文字，Enter 確定，Esc 取消", x0, y0 + 32.0, 11.0, hex(C_AXIS));
+        gfx::boxed(window, x0, y0, w, 22.0, hexa(tk().chart.tooltip_bg.rgb, tk().chart.tooltip_bg.a), hex(tk().chart.tooltip_border), 1.0);
+        gfx::text(window, cx, s, x0 + 6.0, y0 + 12.0, tk().font.lg, hex(drawings::draw_color()));
+        gfx::text(window, cx, "輸入文字，Enter 確定，Esc 取消", x0, y0 + 32.0, tk().font.sm, hex(c_axis()));
     }
     let hov = g.hover_idx(m.mouse);
     let info = hov.unwrap_or(g.i1.min(bars.len() - 1));
     if let (Some(i), Some(q)) = (hov, m.mouse) {
         let xx = g.x(i as f64).round();
         let y = q.y.round();
-        gfx::vdash(window, xx, f32::from(b.origin.y), g.bottom, hex(C_CROSS), 3.0, 3.0);
-        gfx::hdash(window, g.plot_l, g.plot_r, y, hex(C_CROSS), 3.0, 3.0);
+        gfx::vdash(window, xx, f32::from(b.origin.y), g.bottom, hex(c_cross()), 3.0, 3.0);
+        gfx::hdash(window, g.plot_l, g.plot_r, y, hex(c_cross()), 3.0, 3.0);
         let pane = g.pane_at(q).map(|k| g.panes[k]).unwrap_or(g.panes[0]);
         let v = pane.val_at(q.y);
         let is_vol = matches!(pane.kind, PaneKind::Sub(k) if matches!(m.subs[k].cfg.kind, SubKind::Vol | SubKind::Obv));
-        gfx::rect(window, g.plot_r + 1.0, y - 8.0, AXIS_W - 2.0, 16.0, hex(C_CROSS_LABEL));
-        gfx::text(window, cx, if is_vol { fmt_v(v) } else { fmt_auto(v) }, g.plot_r + 5.0, y, 11.0, hex(0xffffff));
+        gfx::rect(window, g.plot_r + 1.0, y - 8.0, axis_w() - 2.0, 16.0, hex(c_cross_label()));
+        gfx::text(window, cx, if is_vol { fmt_v(v) } else { fmt_auto(v) }, g.plot_r + 5.0, y, tk().font.sm, hex(tk().chart.tag_text));
         let s = fmt_time(bars[i].t, m.s.period, true);
         let w = drawings::text_width(&s, 11.0) + 10.0;
         let bxl = (xx - w / 2.0).clamp(g.plot_l, g.plot_r - w);
-        gfx::rect(window, bxl, g.bottom + 1.0, w, TIME_H - 2.0, hex(C_CROSS_LABEL));
-        gfx::text_center(window, cx, s, bxl + w / 2.0, g.bottom + TIME_H / 2.0 + 1.0, 11.0, hex(0xffffff));
+        gfx::rect(window, bxl, g.bottom + 1.0, w, time_h() - 2.0, hex(c_cross_label()));
+        gfx::text_center(window, cx, s, bxl + w / 2.0, g.bottom + time_h() / 2.0 + 1.0, tk().font.sm, hex(tk().chart.tag_text));
     }
     // 主圖圖例
     let k = bars[info];
     let prev = if m.s.period == Period::Intraday { m.s.prev } else if info > 0 { bars[info - 1].c } else { k.o };
     let ch = k.c - prev;
-    let col = hex(if ch >= 0.0 { C_UP } else { C_DOWN });
-    let (t_c, a_c) = (hex(C_TEXT), hex(C_AXIS));
+    let col = hex(if ch >= 0.0 { c_up() } else { c_down() });
+    let (t_c, a_c) = (hex(c_text()), hex(c_axis()));
     let src = if m.s.live { "engine" } else if m.anchored { "合成K·現價" } else { "合成" };
     let sg = if ch >= 0.0 { "+" } else { "" };
     let head = vec![
@@ -512,7 +510,7 @@ fn paint_live(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
     // 疊加圖例：依寬度換行（最多 6 行，與 wry 預留的圖例高度一致）
     let mut items: Vec<(String, Hsla)> = Vec::with_capacity(32);
     for (idx, o) in m.ovs.iter().enumerate() {
-        let c = hex(OV_COLORS[idx % 20]);
+        let c = hex(ov_color(idx));
         match o.spec {
             OvSpec::Ma { period } => items.push((format!("MA{period} {}", fmt_p(o.out.line[info])), c)),
             OvSpec::Ema { period } => items.push((format!("EMA{period} {}", fmt_p(o.out.line[info])), c)),
@@ -561,7 +559,7 @@ fn paint_live(m: &mut Model, b: Bounds<Pixels>, window: &mut Window, cx: &mut Ap
             it.push((if nm.is_empty() { v } else { format!("{nm} {v}") }, hex(cols[li % cols.len()])));
         }
         if let Some(&hv) = s.out.hist.get(info) {
-            it.push((format!("OSC {}", fmt_auto(hv)), hex(if hv >= 0.0 { C_UP } else { C_DOWN })));
+            it.push((format!("OSC {}", fmt_auto(hv)), hex(if hv >= 0.0 { c_up() } else { c_down() })));
         }
         let l = gfx::shape_items(window, &it, 11.0);
         clip(window, g.plot_l, pane.top, g.plot_w, pane.h, |window| gfx::paint_line(window, cx, &l, lx, pane.top + 7.0, 11.0));
@@ -688,25 +686,25 @@ fn paint_icon(icon: Icon, b: Bounds<Pixels>, color: Hsla, window: &mut Window, c
 struct Tip(SharedString);
 impl Render for Tip {
     fn render(&mut self, _w: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div().px_2().py_1().bg(gpui::rgb(0x222831)).border_1().border_color(border()).rounded_sm().text_size(px(11.)).text_color(text()).child(self.0.clone())
+        div().px_2().py_1().bg(gpui::rgb(tk().toolbar.tip_bg)).border_1().border_color(border()).rounded(px(tk().radius.sm)).text_size(px(tk().font.sm)).text_color(text()).child(self.0.clone())
     }
 }
 
 impl Rail {
     fn btn(&self, id: &'static str, title: &'static str, icon: Icon, on: bool, enabled: bool, ev: fn() -> RailEvent, cx: &mut Context<Self>) -> impl IntoElement {
-        let color: Hsla = if !enabled { hexa(0xcfcfcf, 0.3) } else if on { hex(0xffffff) } else { hex(0xb8b8b8) };
+        let color: Hsla = if !enabled { hexa(tk().toolbar.icon_disabled.rgb, tk().toolbar.icon_disabled.a) } else if on { hex(tk().toolbar.icon_on) } else { hex(tk().toolbar.icon_off) };
         div()
             .id(id)
-            .w(px(28.))
-            .h(px(28.))
+            .w(px(tk().layout.tool_button))
+            .h(px(tk().layout.tool_button))
             .flex()
             .items_center()
             .justify_center()
-            .rounded_sm()
+            .rounded(px(tk().radius.sm))
             .border_1()
             .border_color(if on { accent() } else { gpui::rgba(0x00000000) })
-            .when(on, |d| d.bg(gpui::rgb(0x1f3a66)))
-            .when(enabled, |d| d.cursor_pointer().hover(|s| s.bg(gpui::rgb(0x2a2a2a))))
+            .when(on, |d| d.bg(gpui::rgb(tk().toolbar.button_on_bg)))
+            .when(enabled, |d| d.cursor_pointer().hover(|s| s.bg(gpui::rgb(tk().toolbar.button_hover))))
             .tooltip(move |_, cx| cx.new(|_| Tip(title.into())).into())
             .when(enabled, |d| d.on_click(cx.listener(move |_, _, _, cx| cx.emit(ev()))))
             .child(canvas(|_, _, _| (), move |b, _, window, cx| paint_icon(icon, b, color, window, cx)).w(px(18.)).h(px(18.)))
@@ -715,7 +713,7 @@ impl Rail {
 
 impl Render for Rail {
     fn render(&mut self, _w: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let sep = || div().w(px(22.)).h(px(1.)).bg(gpui::rgb(0x333333)).my(px(3.));
+        let sep = || div().w(px(22.)).h(px(1.)).bg(gpui::rgb(tk().toolbar.separator)).my(px(3.));
         let tool = self.tool;
         let mut col = div()
             .flex()
@@ -723,7 +721,7 @@ impl Render for Rail {
             .items_center()
             .gap(px(2.))
             .py(px(4.))
-            .w(px(34.))
+            .w(px(tk().layout.tool_rail))
             .h_full()
             .bg(panel())
             .border_r_1()
@@ -824,6 +822,8 @@ pub struct ChartView {
     stress: Option<(StressCfg, Stage)>,
     zs: ZState,
     stress_started: bool,
+    /// 上次看到的設計 token 版本（換主題／熱更新後清畫線快取）
+    tok_gen: u64,
     total_steps: u64,
     /// 上一次 render 標題列畫出的成交價（XQ_SYNC_CHECK 比對用）
     pub shown_price: f64,
@@ -887,6 +887,7 @@ impl ChartView {
             zs: ZState::new(crate::zstress::env_layers()),
             stress,
             stress_started: false,
+            tok_gen: xq_tokens::generation(),
             total_steps: 0,
             shown_price: 0.0,
             _subs: subs,
@@ -1342,7 +1343,7 @@ impl ChartView {
             div()
                 .id(id)
                 .px(px(5.))
-                .rounded_sm()
+                .rounded(px(tk().radius.sm))
                 .border_1()
                 .border_color(border())
                 .cursor_pointer()
@@ -1352,7 +1353,7 @@ impl ChartView {
         let full = cfg.overlays.len() >= MAX_OVERLAYS;
         let mut ov_rows = div().flex().flex_col().gap(px(3.));
         for (k, o) in cfg.overlays.iter().enumerate() {
-            let col = gpui::rgb(OV_COLORS[k % 20]);
+            let col = gpui::rgb(ov_color(k));
             ov_rows = ov_rows.child(
                 div()
                     .flex()
@@ -1436,7 +1437,7 @@ impl ChartView {
         div()
             .id("ind-menu")
             .absolute()
-            .top(px(28.))
+            .top(px(tk().layout.chart_header))
             .right(px(8.))
             .w(px(420.))
             .max_h(px(520.))
@@ -1448,8 +1449,8 @@ impl ChartView {
             .bg(panel())
             .border_1()
             .border_color(border())
-            .rounded_md()
-            .text_size(px(11.))
+            .rounded(px(tk().radius.md))
+            .text_size(px(tk().font.sm))
             .occlude()
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .child(div().text_color(dim()).child(format!("主圖疊加（{}/{MAX_OVERLAYS}）", cfg.overlays.len())))
@@ -1488,7 +1489,7 @@ impl ChartView {
             div()
                 .id(id)
                 .px(px(5.))
-                .rounded_sm()
+                .rounded(px(tk().radius.sm))
                 .border_1()
                 .border_color(if on { accent() } else { border() })
                 .text_color(if enabled { text() } else { dim() })
@@ -1528,7 +1529,7 @@ impl ChartView {
                     .items_center()
                     .gap(px(4.))
                     .px(px(4.))
-                    .rounded_sm()
+                    .rounded(px(tk().radius.sm))
                     .when(is_active, |d| d.bg(selected()))
                     .child(small(format!("lv-{id}").into(), if l.visible { "顯示".into() } else { "隱藏".into() }, !l.visible, true).on_click(
                         cx.listener(move |this, _, _, cx| {
@@ -1571,7 +1572,7 @@ impl ChartView {
         div()
             .id("layers-panel")
             .absolute()
-            .top(px(28.))
+            .top(px(tk().layout.chart_header))
             .right(px(8.))
             .w(px(340.))
             .max_h(px(520.))
@@ -1583,8 +1584,8 @@ impl ChartView {
             .bg(panel())
             .border_1()
             .border_color(border())
-            .rounded_md()
-            .text_size(px(11.))
+            .rounded(px(tk().radius.md))
+            .text_size(px(tk().font.sm))
             .occlude()
             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
             .child(div().text_color(dim()).child(if has_sel { "選取的畫線（在自己的圖層內調整）" } else { "選取一條畫線後可調整上下順序" }))
@@ -1620,6 +1621,13 @@ fn step_ov(o: &mut OvSpec, d: f64) {
 
 impl Render for ChartView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let g = xq_tokens::generation();
+        if g != self.tok_gen {
+            // 換主題／token 熱更新：畫線快取裡的顏色是烤進去的，丟掉重建；三層都重畫
+            self.tok_gen = g;
+            self.m.borrow_mut().pc = None;
+            self.refresh(ALL, cx);
+        }
         if self.stress.is_some() && !self.stress_started {
             self.stress_started = true;
             cx.on_next_frame(window, |this, window, cx| this.stress_frame(window, cx));
@@ -1636,7 +1644,7 @@ impl Render for ChartView {
             div()
                 .id(p.code())
                 .px_2()
-                .rounded_sm()
+                .rounded(px(tk().radius.sm))
                 .cursor_pointer()
                 .border_1()
                 .border_color(if on { accent() } else { border() })
@@ -1664,7 +1672,7 @@ impl Render for ChartView {
             .flex_col()
             .size_full()
             .bg(bg())
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
@@ -1672,27 +1680,27 @@ impl Render for ChartView {
                     .flex_row()
                     .items_center()
                     .gap_3()
-                    .h(px(28.))
+                    .h(px(tk().layout.chart_header))
                     .px_2()
                     .bg(header())
                     .border_b_1()
                     .border_color(border())
-                    .child(div().text_size(px(13.)).child(title))
-                    .child(div().font_family(MONO_FONT).text_color(color).child(if has { format!("{price:.2}") } else { "--".into() }))
-                    .child(div().font_family(MONO_FONT).text_color(color).child(if has {
+                    .child(div().text_size(px(tk().font.lg)).child(title))
+                    .child(div().font_family(mono_font()).text_color(color).child(if has { format!("{price:.2}") } else { "--".into() }))
+                    .child(div().font_family(mono_font()).text_color(color).child(if has {
                         format!("{} ({:+.2}%)", fmt_change(change), pct(price, change))
                     } else {
                         String::new()
                     }))
                     .child(div().text_color(dim()).child(if has { format!("量 {}", fmt_int(volume)) } else { String::new() }))
-                    .child(div().text_color(dim()).text_size(px(11.)).child(hint))
+                    .child(div().text_color(dim()).text_size(px(tk().font.sm)).child(hint))
                     .child(div().flex_1())
                     .children(Period::ALL.iter().map(|&p| period_btn(p, cx)))
                     .child(
                         div()
                             .id("ind-btn")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if menu_open { accent() } else { border() })
@@ -1707,7 +1715,7 @@ impl Render for ChartView {
                         div()
                             .id("layers-btn")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if self.layers_open { accent() } else { border() })
@@ -1722,7 +1730,7 @@ impl Render for ChartView {
                         div()
                             .id("reset-zoom")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(border())
@@ -1741,7 +1749,7 @@ impl Render for ChartView {
                     .flex_1()
                     .min_h_0()
                     .w_full()
-                    .child(self.rail.clone().cached(StyleRefinement::default().h_full().w(px(34.)).flex_none()))
+                    .child(self.rail.clone().cached(StyleRefinement::default().h_full().w(px(tk().layout.tool_rail)).flex_none()))
                     .child(
                         div()
                             .id("chart-stage")
