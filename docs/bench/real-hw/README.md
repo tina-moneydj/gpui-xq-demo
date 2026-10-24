@@ -1,7 +1,7 @@
 # 一般客戶電腦實測：GPUI vs egui（Mac／Windows，2026-10-23 由 Tina 執行）
 
-> 這是**第一次在一般客戶等級的電腦上測**（不是我們那台沒有顯示卡的 Linux box）。兩台都用**內建／入門級顯示**，不是高階顯卡機：
-> Mac 是 MacBook Air M4（Apple 內建 GPU）；Windows 是 Dell Inspiron 3020 桌機（i7-13700），測試包偵測到 Intel UHD 770 內顯和 NVIDIA GTX 1650 入門顯卡，**螢幕模式掛在 GTX 1650 上，實際由哪張卡繪圖待 Tina 確認**。
+> 這是**第一次在一般客戶等級的電腦上測**（不是我們那台沒有顯示卡的 Linux box）。Mac 用**內建 GPU**，Windows 用**入門級獨立顯卡**，都不是高階顯卡機：
+> Mac 是 MacBook Air M4（Apple 內建 GPU）；Windows 是 Dell Inspiron 3020 桌機（i7-13700），由 **NVIDIA GTX 1650 入門獨立顯卡**繪圖（Tina 已確認；這台另有 Intel UHD 770 內顯，沒有使用）。
 > 每項 3 輪取中位數。勝負規則：**差距 5% 以內算平手**；FPS 兩邊都到螢幕更新率上限（≥ 95%）算平手；每幀繪圖時間差不到 0.5 ms 算平手（看不出來）。
 
 ## 結論先看

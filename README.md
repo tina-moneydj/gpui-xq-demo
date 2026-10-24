@@ -20,7 +20,7 @@
 
 ## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
 
-> Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；偵測到 Intel UHD 770 內顯和 GTX 1650 入門顯卡，實際由哪張繪圖待確認；2 個 1920×1200 螢幕、59 Hz）。
+> Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；由 **NVIDIA GTX 1650 入門獨立顯卡**繪圖，另有 Intel UHD 770 內顯未使用；2 個 1920×1200 螢幕、59 Hz）。
 > 每項 3 輪取中位數；差距 5% 以內算平手；FPS 兩邊都到螢幕上限算平手。完整數字與診斷：[docs/bench/real-hw/](docs/bench/real-hw/README.md)。
 
 ### 結論先看
