@@ -2464,6 +2464,8 @@ dependencies = [
  "gpui-pre-platform",
  "gpui-pre-web",
  "js-sys",
+ "log",
+ "objc",
  "parking_lot",
  "serde",
  "serde_json",
