@@ -825,6 +825,9 @@ pub struct ChartView {
     stress_started: bool,
     /// 上次看到的設計 token 版本（換主題／熱更新後清畫線快取）
     tok_gen: u64,
+    /// 手機雙指縮放累積量（ln）
+    #[cfg_attr(not(target_os = "android"), allow(dead_code))]
+    pinch_acc: f32,
     total_steps: u64,
     /// 上一次 render 標題列畫出的成交價（XQ_SYNC_CHECK 比對用）
     pub shown_price: f64,
@@ -889,6 +892,7 @@ impl ChartView {
             stress,
             stress_started: false,
             tok_gen: xq_tokens::generation(),
+            pinch_acc: 0.0,
             total_steps: 0,
             shown_price: 0.0,
             _subs: subs,
@@ -1001,6 +1005,12 @@ impl ChartView {
     }
 
     // ───── 資料 ─────
+
+    /// 指標純計算微基準（手機版 XQ_IND_BENCH 用）
+    #[allow(dead_code)]
+    pub fn ind_microbench(&mut self, reps: usize) -> (usize, Vec<f64>) {
+        self.m.borrow_mut().ind_microbench(reps)
+    }
 
     pub fn load(&mut self, symbol: &str, name: &str, period: Period, quote: Option<(f64, f64, i64)>, cx: &mut Context<Self>) {
         self.m.borrow_mut().load(symbol, name, period, quote);
@@ -1762,10 +1772,14 @@ impl Render for ChartView {
                             .cursor(if tool.is_some() { gpui::CursorStyle::Crosshair } else { gpui::CursorStyle::Arrow })
                             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_down))
                             .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, _, cx| {
-                                let dy = f32::from(ev.delta.pixel_delta(px(20.)).y);
-                                let f = this.m.borrow_mut().wheel(dy);
+                                // 手機：單指拖曳被 GPUI 轉成帶 touch_phase 的捲動（含放開後的慣性）→ 水平平移；縮放改用雙指（on_pinch）
+                                #[cfg(target_os = "android")]
+                                let f = this.m.borrow_mut().pan_by(f32::from(ev.delta.pixel_delta(px(20.)).x));
+                                #[cfg(not(target_os = "android"))]
+                                let f = this.m.borrow_mut().wheel(f32::from(ev.delta.pixel_delta(px(20.)).y));
                                 this.refresh(f, cx);
                             }))
+                            .map(|d| touch_pinch(d, cx))
                             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, _, cx| this.on_key(ev, cx)))
                             .child(div().absolute().inset_0().child(self.plot.clone().cached(full())))
                             .child(div().absolute().inset_0().child(self.draw.clone().cached(full())))
@@ -1789,6 +1803,34 @@ impl Render for ChartView {
                                                 let _ = me2.update(cx, |v, cx| v.on_up(ev, cx));
                                             }
                                         });
+                                        // 手機：長按＝十字線（手指移動只移十字線，放開消失）
+                                        #[cfg(target_os = "android")]
+                                        {
+                                            let me3 = me.clone();
+                                            window.on_mouse_event(move |ev: &gpui::LongPressEvent, phase, window, cx| {
+                                                if phase != DispatchPhase::Bubble {
+                                                    return;
+                                                }
+                                                let _ = me3.update(cx, |v, cx| {
+                                                    let started = ev.phase == gpui::TouchPhase::Started;
+                                                    let inside = v.m.borrow().bounds.is_some_and(|b| b.contains(&ev.start_position));
+                                                    if started && !inside {
+                                                        return;
+                                                    }
+                                                    if started {
+                                                        if let Some(e) = me3.upgrade() {
+                                                            window.capture_long_press(&e);
+                                                        }
+                                                        window.prevent_default();
+                                                    }
+                                                    let f = match ev.phase {
+                                                        gpui::TouchPhase::Ended | gpui::TouchPhase::Cancelled => v.m.borrow_mut().mouse_move(p(-1.0, -1.0), false),
+                                                        _ => v.m.borrow_mut().mouse_move(p(f32::from(ev.position.x), f32::from(ev.position.y)), true),
+                                                    };
+                                                    v.refresh(f, cx);
+                                                });
+                                            });
+                                        }
                                     },
                                 )
                                 .absolute()
@@ -1799,4 +1841,31 @@ impl Render for ChartView {
             .when(menu_open, |d| d.child(self.render_menu(cx)))
             .when(self.layers_open, |d| d.child(self.render_layers(cx)))
     }
+}
+
+/// 手機：雙指縮放（gpui-pre 0.3.9 的 PinchEvent）；桌面版 gpui 0.3.7 沒有這個事件，原樣回傳
+#[cfg(target_os = "android")]
+fn touch_pinch(d: gpui::Stateful<gpui::Div>, cx: &mut Context<ChartView>) -> gpui::Stateful<gpui::Div> {
+    d.on_pinch(
+cx.listener(|this, ev: &gpui::PinchEvent, _, cx| {
+                                // 雙指縮放：累積 ln(1+delta)，每 15% 走一階 Model::wheel（與滾輪同一套縮放）
+                                this.pinch_acc += (1.0 + ev.delta).max(0.01).ln();
+                                let step = 1.15f32.ln();
+                                let mut f = 0;
+                                while this.pinch_acc.abs() >= step {
+                                    let dir = this.pinch_acc.signum();
+                                    this.pinch_acc -= dir * step;
+                                    f |= this.m.borrow_mut().wheel(dir);
+                                }
+                                if matches!(ev.phase, gpui::TouchPhase::Ended | gpui::TouchPhase::Cancelled) {
+                                    this.pinch_acc = 0.0;
+                                }
+                                this.refresh(f, cx);
+                            })
+    )
+}
+
+#[cfg(not(target_os = "android"))]
+fn touch_pinch(d: gpui::Stateful<gpui::Div>, _cx: &mut Context<ChartView>) -> gpui::Stateful<gpui::Div> {
+    d
 }

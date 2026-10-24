@@ -11,7 +11,11 @@ pub fn rgba_tok(c: xq_tokens::Rgba) -> Rgba {
 }
 
 pub fn ui_font() -> &'static str { tk().font.ui }
+#[cfg(not(target_os = "android"))]
 pub fn mono_font() -> &'static str { tk().font.mono }
+/// Android 系統字型沒有 Mono CJK：等寬字也用介面字型（Noto Sans CJK TC，egui 手機版同樣做法）
+#[cfg(target_os = "android")]
+pub fn mono_font() -> &'static str { tk().font.ui }
 
 pub fn bg() -> Rgba { rgb(tk().ui.bg) }
 pub fn panel() -> Rgba { rgb(tk().ui.panel) }

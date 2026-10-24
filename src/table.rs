@@ -223,6 +223,30 @@ impl QuoteTable {
         cx.notify();
     }
 
+    /// 搜尋框（手機版）：代號開頭或名稱包含，最多 max 筆，回傳（代號, 名稱）
+    #[allow(dead_code)]
+    pub fn search(&self, q: &str, max: usize) -> Vec<(SharedString, SharedString)> {
+        let q = q.trim();
+        if q.is_empty() {
+            return Vec::new();
+        }
+        let ql = q.to_lowercase();
+        self.rows
+            .iter()
+            .filter(|r| r.symbol.to_lowercase().starts_with(&ql) || r.name.contains(q))
+            .take(max)
+            .map(|r| (r.symbol.clone(), r.name.clone()))
+            .collect()
+    }
+
+    /// 直接選某個代號（搜尋結果點選用）；會發 Select 事件
+    #[allow(dead_code)]
+    pub fn select_symbol(&mut self, symbol: &str, cx: &mut Context<Self>) {
+        if let Some(&ix) = self.index.get(symbol) {
+            self.select(ix, None, cx);
+        }
+    }
+
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
         let t0 = crate::plat::Instant::now();
         // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」

@@ -345,6 +345,7 @@ impl Model {
 
     /// 換代號／週期／指標設定時一次 O(n)
     pub fn rebuild_indicators(&mut self) {
+        let _t = IndTimer::full();
         let bars = &self.s.bars;
         self.ovs = self.cfg.overlays.iter().take(MAX_OVERLAYS).map(|&sp| Overlay::new(sp, bars)).collect();
         self.subs = self
@@ -366,6 +367,7 @@ impl Model {
     /// 最後一根變了：每個指標只重算最後一根
     fn patch_last(&mut self) {
         let Some(i) = self.s.bars.len().checked_sub(1) else { return };
+        let _t = IndTimer::patch();
         let bars = &self.s.bars;
         for o in &mut self.ovs {
             o.step(bars, i);
@@ -915,6 +917,23 @@ impl Model {
         f
     }
 
+    /// 手機版：觸控平移（GPUI 把單指拖曳轉成帶 touch_phase 的捲動事件），dx 為像素，往右拖＝看更早的 K 棒
+    #[allow(dead_code)]
+    pub fn pan_by(&mut self, dx: f32) -> u8 {
+        if dx == 0.0 {
+            return 0;
+        }
+        let n = self.s.bars.len();
+        let Some(g) = self.geo_now() else { return 0 };
+        let plot_w = g.plot_w as f64;
+        if let Some(v) = &mut self.view {
+            v.right -= dx as f64 / v.bar_w;
+            Self::clamp_view(v, n, plot_w);
+        }
+        self.touch();
+        PLOT | DRAW | LIVE
+    }
+
     pub fn wheel(&mut self, dy: f32) -> u8 {
         if dy == 0.0 {
             return 0;
@@ -1195,4 +1214,58 @@ pub fn synth(symbol: &str, period: Period, price: f64, change: f64, volume: i64)
 #[allow(dead_code)]
 pub fn bounds_of(x: f32, y: f32, w: f32, h: f32) -> Bounds<Pixels> {
     Bounds::new(gpui::point(px(x), px(y)), gpui::size(px(w), px(h)))
+}
+
+// ───────────── 指標計算時間（整段重算 O(n)／每筆 tick 只補最後一根） ─────────────
+use std::sync::atomic::{AtomicU64, Ordering as AOrd};
+pub static IND_FULL_N: AtomicU64 = AtomicU64::new(0);
+pub static IND_FULL_US: AtomicU64 = AtomicU64::new(0);
+pub static IND_PATCH_N: AtomicU64 = AtomicU64::new(0);
+pub static IND_PATCH_NS: AtomicU64 = AtomicU64::new(0);
+
+struct IndTimer(crate::plat::Instant, bool);
+impl IndTimer {
+    fn full() -> Self { Self(crate::plat::Instant::now(), true) }
+    fn patch() -> Self { Self(crate::plat::Instant::now(), false) }
+}
+impl Drop for IndTimer {
+    fn drop(&mut self) {
+        let d = self.0.elapsed();
+        if self.1 {
+            IND_FULL_N.fetch_add(1, AOrd::Relaxed);
+            IND_FULL_US.fetch_add(d.as_micros() as u64, AOrd::Relaxed);
+        } else {
+            IND_PATCH_N.fetch_add(1, AOrd::Relaxed);
+            IND_PATCH_NS.fetch_add(d.as_nanos() as u64, AOrd::Relaxed);
+        }
+    }
+}
+
+#[allow(dead_code)]
+/// 目前累計（次數, 總時間）：(full_n, full_us, patch_n, patch_ns)
+pub fn ind_counters() -> (u64, u64, u64, u64) {
+    (
+        IND_FULL_N.load(AOrd::Relaxed),
+        IND_FULL_US.load(AOrd::Relaxed),
+        IND_PATCH_N.load(AOrd::Relaxed),
+        IND_PATCH_NS.load(AOrd::Relaxed),
+    )
+}
+
+#[allow(dead_code)]
+impl Model {
+    /// 指標純計算微基準：用壓測指標組（IndCfg::stress）整段重算 `reps` 次，回傳每次毫秒（不含繪圖）
+    pub fn ind_microbench(&mut self, reps: usize) -> (usize, Vec<f64>) {
+        let saved = self.cfg.clone();
+        self.cfg = IndCfg::stress();
+        let mut v = Vec::with_capacity(reps);
+        for _ in 0..reps {
+            let t = crate::plat::Instant::now();
+            self.rebuild_indicators();
+            v.push(t.elapsed().as_secs_f64() * 1000.0);
+        }
+        self.cfg = saved;
+        self.rebuild_indicators();
+        (self.s.bars.len(), v)
+    }
 }
