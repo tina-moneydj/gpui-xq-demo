@@ -1,0 +1,90 @@
+==== tick-egui-s1k 2026-10-23T20:32:04
+   0.018 [egui] renderer=Glow
+   0.134 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.134 [xq-feed] 已連上 127.0.0.1:47631
+   0.190 BENCH first-frame
+   0.190 BENCH first-quote
+==== tick-egui-s10k 2026-10-23T20:32:47
+   0.018 [egui] renderer=Glow
+   0.158 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.158 [xq-feed] 已連上 127.0.0.1:47631
+   0.218 BENCH first-frame
+   0.218 BENCH first-quote
+==== tick-egui-s50k 2026-10-23T20:33:29
+   0.015 [egui] renderer=Glow
+   0.133 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.133 [xq-feed] 已連上 127.0.0.1:47631
+   0.191 BENCH first-frame
+   0.191 BENCH first-quote
+==== tick-egui-s100k 2026-10-23T20:34:12
+   0.015 [egui] renderer=Glow
+   0.144 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.145 [xq-feed] 已連上 127.0.0.1:47631
+   0.200 BENCH first-frame
+   0.200 BENCH first-quote
+==== tick-egui-burst 2026-10-23T20:34:55
+   0.015 [egui] renderer=Glow
+   0.143 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.143 [xq-feed] 已連上 127.0.0.1:47631
+   0.203 BENCH first-frame
+   0.203 BENCH first-quote
+==== tick-egui-s1k 2026-10-23T20:55:43
+   0.014 [egui] renderer=Glow
+   0.136 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.136 [xq-feed] 已連上 127.0.0.1:47631
+   0.194 BENCH first-frame
+   0.194 BENCH first-quote
+==== tick-egui-s10k 2026-10-23T20:56:26
+   0.017 [egui] renderer=Glow
+   0.151 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.151 [xq-feed] 已連上 127.0.0.1:47631
+   0.212 BENCH first-frame
+   0.212 BENCH first-quote
+==== tick-egui-s50k 2026-10-23T20:57:08
+   0.015 [egui] renderer=Glow
+   0.153 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.153 [xq-feed] 已連上 127.0.0.1:47631
+   0.206 BENCH first-frame
+   0.206 BENCH first-quote
+==== tick-egui-s100k 2026-10-23T20:57:51
+   0.016 [egui] renderer=Glow
+   0.139 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.139 [xq-feed] 已連上 127.0.0.1:47631
+   0.198 BENCH first-frame
+   0.198 BENCH first-quote
+==== tick-egui-burst 2026-10-23T20:58:34
+   0.016 [egui] renderer=Glow
+   0.155 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.155 [xq-feed] 已連上 127.0.0.1:47631
+   0.207 BENCH first-frame
+   0.207 BENCH first-quote
+==== tick-egui-s1k 2026-10-23T21:19:22
+   0.018 [egui] renderer=Glow
+   0.148 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.148 [xq-feed] 已連上 127.0.0.1:47631
+   0.210 BENCH first-frame
+   0.210 BENCH first-quote
+==== tick-egui-s10k 2026-10-23T21:20:05
+   0.016 [egui] renderer=Glow
+   0.144 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.144 [xq-feed] 已連上 127.0.0.1:47631
+   0.202 BENCH first-frame
+   0.202 BENCH first-quote
+==== tick-egui-s50k 2026-10-23T21:20:47
+   0.017 [egui] renderer=Glow
+   0.140 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.140 [xq-feed] 已連上 127.0.0.1:47631
+   0.184 BENCH first-frame
+   0.184 BENCH first-quote
+==== tick-egui-s100k 2026-10-23T21:21:30
+   0.014 [egui] renderer=Glow
+   0.164 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.164 [xq-feed] 已連上 127.0.0.1:47631
+   0.217 BENCH first-frame
+   0.217 BENCH first-quote
+==== tick-egui-burst 2026-10-23T21:22:13
+   0.015 [egui] renderer=Glow
+   0.134 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.134 [xq-feed] 已連上 127.0.0.1:47631
+   0.187 BENCH first-frame
+   0.187 BENCH first-quote

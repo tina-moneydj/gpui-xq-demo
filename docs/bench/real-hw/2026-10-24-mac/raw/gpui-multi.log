@@ -1,0 +1,42 @@
+==== multi-gpui-1w 2026-10-23T20:19:51
+   0.157 [xq-feed] 已連上 127.0.0.1:47631
+   0.171 BENCH first-frame
+   0.171 BENCH first-quote
+==== multi-gpui-4w 2026-10-23T20:20:34
+   0.138 [xq-feed] 已連上 127.0.0.1:47631
+   0.207 BENCH first-frame
+   0.207 BENCH first-quote
+   0.216 BENCH first-frame
+   0.218 BENCH first-frame
+   0.220 BENCH first-frame
+   3.250 BENCH first-quote
+   3.284 BENCH first-quote
+   3.285 BENCH first-quote
+==== multi-gpui-1w 2026-10-23T20:43:30
+   0.151 [xq-feed] 已連上 127.0.0.1:47631
+   0.162 BENCH first-frame
+   0.162 BENCH first-quote
+==== multi-gpui-4w 2026-10-23T20:44:13
+   0.154 [xq-feed] 已連上 127.0.0.1:47631
+   0.224 BENCH first-frame
+   0.224 BENCH first-quote
+   0.232 BENCH first-frame
+   0.234 BENCH first-frame
+   0.236 BENCH first-frame
+   3.268 BENCH first-quote
+   3.301 BENCH first-quote
+   3.302 BENCH first-quote
+==== multi-gpui-1w 2026-10-23T21:07:09
+   0.146 [xq-feed] 已連上 127.0.0.1:47631
+   0.158 BENCH first-frame
+   0.158 BENCH first-quote
+==== multi-gpui-4w 2026-10-23T21:07:52
+   0.135 [xq-feed] 已連上 127.0.0.1:47631
+   0.195 BENCH first-frame
+   0.195 BENCH first-quote
+   0.202 BENCH first-frame
+   0.204 BENCH first-frame
+   0.207 BENCH first-frame
+   3.243 BENCH first-quote
+   3.276 BENCH first-quote
+   3.277 BENCH first-quote
