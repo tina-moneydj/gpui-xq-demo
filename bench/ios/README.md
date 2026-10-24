@@ -2,7 +2,7 @@
 
 ## 先講結論
 
-- **兩個 app 都有 iOS 版了**（`mobile-ios` 分支）：GPUI 版叫「XQ GPUI」，egui 版叫「XQ egui」。功能跟 Android 版一樣：報價表（可捲動、點一列進走勢圖）、走勢圖（單指拖、雙指縮放、長按十字線）、搜尋框、上方 FPS／記憶體、下方封包計數。顏色、字級用同一份設計 token。
+- **兩個 app 都有 iOS 版了**（已合進 `main`；開發分支 `mobile-ios` 保留）：GPUI 版叫「XQ GPUI」，egui 版叫「XQ egui」。功能跟 Android 版一樣：報價表（可捲動、點一列進走勢圖）、走勢圖（單指拖、雙指縮放、長按十字線）、搜尋框、上方 FPS／記憶體、下方封包計數。顏色、字級用同一份設計 token。
 - **手機上沒有電腦的行情服務，所以 app 自己內建一個「合成行情」**（假資料，會一直跳價）。畫面上看到的價格**不是真的行情**。
 - **中文字**：GPUI 版用 iPhone 內建的「蘋方」（PingFang TC，系統直接畫）。egui 版畫不了 iOS 26 的蘋方（蘋方換成了蘋果自家的新字型格式），改用系統內建的「冬青黑體」，缺的繁體字由 app 內附的 Noto Sans TC 補上。數字都用 Menlo。所有字型檔都是直接對應（mmap），不會整個複製進記憶體。
 - **要放到你自己的 iPhone 上，最簡單的方式是「免費 Apple ID」**（下面的「路線一」）：一條 USB 線＋Xcode，按一個 ▶。缺點是**每 7 天要重新按一次 ▶**（免費帳號的限制）。
@@ -44,11 +44,11 @@
 
    GPUI 版：
    ```
-   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/mobile-ios/bench/ios/get.sh | bash -s gpui
+   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/main/bench/ios/get.sh | bash -s gpui
    ```
    egui 版（想兩個都裝，就等第一個跑完再貼這行）：
    ```
-   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/mobile-ios/bench/ios/get.sh | bash -s egui
+   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/main/bench/ios/get.sh | bash -s egui
    ```
 3. 畫面會一段一段出現藍色的「▶ 1/5 …」「▶ 2/5 …」到「▶ 5/5 打開 Xcode 專案」。
    - **第一次大約 10～20 分鐘**（主要是下載和編譯 Rust）。期間會一直有字在跑，這是正常的。
@@ -200,7 +200,7 @@ TestFlight 的好處：手機不用接線，用「TestFlight」app 安裝；每�
 | Variable | `XQ_BUNDLE_ID_GPUI`（egui repo 是 `XQ_BUNDLE_ID_EGUI`） | 第 1 點的 Bundle ID |
 | Variable | `XQ_TESTFLIGHT` | `1`（設了才會上傳） |
 
-設好之後，`mobile-ios` 分支每次更新，CI（`.github/workflows/ios.yml` 的 `testflight` 工作）會：用雲端管理的發行憑證自動簽章 → 封存 → 上傳到 TestFlight。上傳後 App Store Connect 要處理 10～30 分鐘，再到 TestFlight 分頁把自己加進「內部測試」。
+設好之後，`main` 分支每次更新，CI（`.github/workflows/ios.yml` 的 `testflight` 工作）會：用雲端管理的發行憑證自動簽章 → 封存 → 上傳到 TestFlight。上傳後 App Store Connect 要處理 10～30 分鐘，再到 TestFlight 分頁把自己加進「內部測試」。
 
 **你的 iPhone 上**：App Store 安裝「TestFlight」→ 打開收到的邀請信或連結 → 按「安裝」。
 
@@ -210,7 +210,7 @@ TestFlight 的好處：手機不用接線，用「TestFlight」app 安裝；每�
 
 ## 雲端建置結果
 
-（每次 `mobile-ios` 更新都會自動跑，見 Actions 頁面的「ios」工作。）每次都會：編模擬器版和實機版（不簽章）→ 在模擬器開 app 40 秒截報價表、再開走勢圖截圖 → 檢查有沒有 panic、有沒有在畫 → 更新 ios-latest。
+（每次 `main` 或 `mobile-ios` 更新都會自動跑；ios-latest 只由 `main` 更新，見 Actions 頁面的「ios」工作。）每次都會：編模擬器版和實機版（不簽章）→ 在模擬器開 app 40 秒截報價表、再開走勢圖截圖 → 檢查有沒有 panic、有沒有在畫 → 更新 ios-latest。
 
 雲端模擬器上 log 看到的數字（**模擬器，不代表手機**）：兩個 app 每秒約 31～33 幀（行情每秒約 32 包）；記憶體 RSS 報價表約 119～127 MB、走勢圖約 121～161 MB。
 

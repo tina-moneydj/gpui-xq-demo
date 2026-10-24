@@ -1,12 +1,12 @@
 #!/bin/bash
 # 一行裝好：在「終端機」貼上
-#   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/mobile-ios/bench/ios/get.sh | bash -s gpui
+#   curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/main/bench/ios/get.sh | bash -s gpui
 # （要 egui 版就把最後的 gpui 換成 egui）
 # 做的事：把程式碼下載（或更新）到「家目錄/XQ-iOS」，再執行該 app 的 setup-mac.command（裝 Rust、編譯、打開 Xcode）。
 set -uo pipefail
 WHICH="${1:-gpui}"
 case "$WHICH" in gpui) REPO=gpui-xq-demo; APP=XQGPUI ;; egui) REPO=egui-xq-demo; APP=XQEGUI ;; *) echo "用法：… | bash -s gpui 或 egui"; exit 1 ;; esac
-BRANCH="${XQ_BRANCH:-mobile-ios}"
+BRANCH="${XQ_BRANCH:-main}"   # 要試開發分支：XQ_BRANCH=mobile-ios
 ROOT="$HOME/XQ-iOS"
 DIR="$ROOT/$REPO"
 if ! xcode-select -p >/dev/null 2>&1; then

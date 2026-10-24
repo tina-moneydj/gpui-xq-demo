@@ -5,7 +5,7 @@
 
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
 > - **選型最新結論**先看「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
-> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android 手機版**（`mobile/`，見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
+> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
 > - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
 > - **GPUI 三項優化**（沒變的視窗不重畫、捲動卡頓、報價延遲）已在 main，數字見「[GPUI 優化](#gpui-優化2026-10-23)」。
 > - 成交明細（`XQ_TAPE=1`）往下捲看舊成交時，新成交不會再把畫面推走（`Home` 回到最新）。
@@ -341,6 +341,23 @@ cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:
 - 壓測（在 gpui-xq-demo repo 的 `scripts/web/`，用 puppeteer-core 開系統 Chrome）：`OUT=輸出資料夾 ./run-all.sh 3` → `summarize.py 輸出資料夾` → `tables.py 輸出資料夾/summary.json docs/bench/2026-10-21-parity`。
   單場：`node bench-web.js <egui|gpui> <main|stress|heavy|ticks:s1k|…|ticks:burst> <輪次> <輸出資料夾>`。另有 `chrome-baseline.js`（空白 Chrome 記憶體）、`layers-smoke.js`（圖層冒煙測試）、`ime-web.sh`（注音）、`webgpu-try.js`（WebGPU 試跑）。
 - 原始數據：`docs/bench/web/`（`results.jsonl` 每場一行、`summary.json` 中位數、`progress.log`、每場瀏覽器 console log、`contention.log` 每 10 秒的系統負載）。
+
+## 手機版（iOS）（2026-10-25 新增，egui 和 GPUI 一起做）
+
+**結論**：兩個 app 都有 iOS 版，已合進 `main`。GitHub 雲端 Mac（Xcode 26.6、iOS 26.2 模擬器）每次都會編模擬器版和 iPhone 版，並在模擬器裡把 app 打開截圖；兩版都能正常開、中文正常、行情會跳。**還沒在真的 iPhone 上試過，也還沒用 Xcode 27 編過**（雲端還沒有）。
+
+- **怎麼裝到自己的 iPhone（非開發者也可以）**：照 [bench/ios/README.md](bench/ios/README.md)。裝好 Xcode 後，在「終端機」貼一行：
+  ```
+  curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/main/bench/ios/get.sh | bash -s gpui
+  ```
+  它會下載程式碼、裝 Rust、先編一次、打開 Xcode 專案；接著在 Xcode 選自己的 Apple ID（免費 Personal Team）、接上 iPhone、按 ▶。免費帳號每 7 天要重按一次 ▶；公司付費帳號可以改走 TestFlight（說明附錄 B，需要的金鑰之後再設）。
+- **只想先看看**：[ios-latest](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/ios-latest) 有模擬器用的 app（`XQGPUI-simulator.zip`，只能裝到 Mac 上的 iPhone 模擬器）和雲端模擬器截圖。由 `main` 自動更新。
+- **跟 Android 版一樣**：報價表、點一列進走勢圖、單指拖／雙指縮放／長按十字線、搜尋框、FPS／記憶體、封包計數；共用 `../src` 的程式碼與設計 token。
+- **行情**：手機上沒有電腦的行情服務，app 內建合成行情（假資料）。要連 Mac 上的行情服務設 `XQ_FEED_ADDR`（見說明）。
+- **中文字**：中文用 iPhone 內建的蘋方（PingFang TC，CoreText 直接畫，不複製字型檔）。
+- **畫面更新不看焦點**：控制中心、通知蓋住時照畫，只有進背景才停（Android 版「失焦就凍住」的問題不會發生；待真機確認）。
+- **接法**：Longbridge gpui-mobile 的「嵌入模式」，由我們的 Swift UIScene 外殼建立畫面（vendored，iOS 26 字型修補見 `mobile/vendor/gpui-mobile/PATCHES.md` §5）。Xcode 專案由 XcodeGen 產生並放進 repo（`mobile/ios/XQGPUI.xcodeproj`），一鍵腳本 `mobile/ios/setup-mac.command`。
+- **還缺**：真機測試、Xcode 27 建置、「自訂指標腳本」（兩個 repo 都還沒有這功能）。CI：`.github/workflows/ios.yml`。
 
 ## 手機版（Android）（2026-10-23 新增，egui 和 GPUI 一起做）
 
