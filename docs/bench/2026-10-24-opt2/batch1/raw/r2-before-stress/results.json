@@ -1,0 +1,69 @@
+{
+ "baseline": [],
+ "stress": [
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30022,
+    "fps": 35.7,
+    "paints": 837,
+    "avgPaintMs": 0.072,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 70308
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 35.7,
+    "scrollFps": 55.5,
+    "scrollJankCount": 50,
+    "scrollJankAvgMs": 32.1,
+    "fps": 55.5,
+    "paints": 546,
+    "avgPaintMs": 0.064,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 45864
+   },
+   "cpu_tick_pct": 223.81606773614604,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 207.0,
+    "gpui-xq-demo/gpui-xq-demo": 14.6,
+    "gpui-xq-demo/WSI swapchain q": 1.7
+   },
+   "cpu_scroll_pct": 308.70818065003493,
+   "mem_tick": {
+    "rss_mb": 191.95703125,
+    "pss_mb": 164.03515625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 192.0,
+      "pss_mb": 164.0,
+      "threads": 53
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 192.50390625,
+    "pss_mb": 164.5673828125,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 192.5,
+      "pss_mb": 164.6,
+      "threads": 53
+     }
+    ]
+   },
+   "screenshot": "/workspace/realhw/ilv/raw/r2-before-stress/gpui-stress.png",
+   "run": 1
+  }
+ ]
+}

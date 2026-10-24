@@ -1,0 +1,37 @@
+{
+ "date": "2026-10-24 21:47 +0800",
+ "runs": 1,
+ "mode": "stress",
+ "apps": [
+  "gpui"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "gpui": {
+  "binary_mb": 27.01776123046875,
+  "stress": {
+   "rss_tick_mb": 190.953125,
+   "pss_tick_mb": 163.0927734375,
+   "rss_scroll_mb": 191.51171875,
+   "pss_scroll_mb": 163.662109375,
+   "cpu_tick_pct": 234.5615715255697,
+   "cpu_scroll_pct": 318.0934749803333,
+   "tick_fps": 40.1,
+   "scroll_fps": 59.2,
+   "tick_avg_paint_ms": 0.031,
+   "tick_cells_per_paint": 84,
+   "tick_paints": 905,
+   "scroll_avg_paint_ms": 0.025,
+   "scroll_cells_per_paint": 84,
+   "scroll_paints": 585,
+   "scroll_jank_count": 27,
+   "scroll_jank_avg_ms": 32.1,
+   "rows": 50033,
+   "cols": 6,
+   "cpu_tick_threads_last": {
+    "gpui-xq-demo/llvmpipe": 218.1,
+    "gpui-xq-demo/gpui-xq-demo": 13.8,
+    "gpui-xq-demo/WSI swapchain q": 2.0
+   }
+  }
+ }
+}

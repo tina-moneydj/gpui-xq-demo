@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 use gpui::{
-    deferred, div, prelude::*, px, uniform_list, Context, Entity, EventEmitter, MouseButton, ScrollStrategy,
-    SharedString, UniformListScrollHandle, Window,
+    canvas, deferred, div, font, point, prelude::*, px, uniform_list, App, Bounds, Context, ContentMask, Entity, EventEmitter,
+    Hsla, MouseButton, Pixels, ScrollStrategy, ShapedLine, SharedString, TextAlign, TextRun, UniformListScrollHandle, Window,
 };
 use xq_feed::Quote;
 
@@ -247,7 +247,73 @@ impl QuoteTable {
         }
     }
 
+    /// A2（2026-10-24）：每列只建一個 div（點選／hover／選取底色）＋一個 canvas 自己畫 6 格文字。
+    /// 舊做法每格一個 div＋文字元素（每列 13 個排版節點，可見 30 列就是約 400 個），實機 Windows 5 萬列捲動卡頓 70 次、
+    /// CPU 是 egui 的 1.8 倍；現在每列 2 個節點，文字用 shape 快取（代號、名稱幾乎不變；價格變了才重排字）。
+    /// XQ_TABLE_DIVS=1 切回舊做法對照。
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
+        if table_divs() {
+            return self.render_rows_divs(range, cx);
+        }
+        let t0 = crate::plat::Instant::now();
+        if range.len() > 1 {
+            self.paints += 1;
+        }
+        self.cells += (range.len() * COLS.len()) as u64;
+        let mut out = Vec::with_capacity(range.len());
+        let up_flash = crate::theme::rgba_tok(tk().market.up_flash);
+        let down_flash = crate::theme::rgba_tok(tk().market.down_flash);
+        for ix in range {
+            let r = &self.rows[ix];
+            let color: Hsla = dir_color(r.change).into();
+            let has = r.price > 0.0;
+            let dash: SharedString = "--".into();
+            let (price, chg, pc, vol): (SharedString, SharedString, SharedString, SharedString) = if has {
+                (
+                    format!("{:.2}", r.price).into(),
+                    fmt_change(r.change).into(),
+                    format!("{:+.2}%", pct(r.price, r.change)).into(),
+                    fmt_int(r.volume).into(),
+                )
+            } else {
+                (dash.clone(), dash.clone(), dash.clone(), dash)
+            };
+            let tick_bg: Option<Hsla> = match r.tick {
+                1 => Some(up_flash.into()),
+                -1 => Some(down_flash.into()),
+                _ => None,
+            };
+            let cells: [(SharedString, Hsla); 6] = [
+                (r.symbol.clone(), text().into()),
+                (r.name.clone(), text().into()),
+                (price, color),
+                (chg, color),
+                (pc, color),
+                (vol, rgb_vol().into()),
+            ];
+            let row = canvas(
+                move |_, _, _| (),
+                move |b, _, window, cx| paint_row(b, &cells, tick_bg, window, cx),
+            )
+            .size_full();
+            out.push(
+                div()
+                    .id(ix)
+                    .h(px(row_h()))
+                    .w_full()
+                    .when(ix == self.selected, |d| d.bg(selected()))
+                    .when(ix != self.selected, |d| d.hover(|s| s.bg(header())))
+                    .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, window, cx| this.select(ix, Some(window.window_handle().window_id()), cx)))
+                    .child(row)
+                    .into_any_element(),
+            );
+        }
+        self.paint_us += t0.elapsed().as_micros() as u64;
+        out
+    }
+
+    /// 舊做法（每格一個 div）：XQ_TABLE_DIVS=1 對照用
+    fn render_rows_divs(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
         let t0 = crate::plat::Instant::now();
         // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」
         if range.len() > 1 {
@@ -300,6 +366,87 @@ impl QuoteTable {
         }
         self.paint_us += t0.elapsed().as_micros() as u64;
         out
+    }
+}
+
+fn table_divs() -> bool {
+    static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *V.get_or_init(|| crate::plat::var_os("XQ_TABLE_DIVS").is_some_and(|v| v != "0"))
+}
+
+/// 格內左右留白（同舊版 px_1）
+const CELL_PAD: f32 = 4.0;
+
+// shape 快取：key＝(文字, 是否等寬字, 顏色)。兩代輪替：這一代找不到就去上一代拿，上一代滿了整代丟掉，
+// 所以只留最近用過的（可見列的代號／名稱／沒變的價），不會無限長大。
+type ShapeKey = (SharedString, bool, [u32; 4]);
+thread_local! {
+    static SHAPES: std::cell::RefCell<(HashMap<ShapeKey, ShapedLine>, HashMap<ShapeKey, ShapedLine>)> =
+        std::cell::RefCell::new((HashMap::new(), HashMap::new()));
+}
+/// 文字排版快取：預設關（0）。實測 GPUI 自己的逐幀 LineLayout 快取已夠用，這層快取 2048×2 筆反而多吃 ~41 MB RSS、FPS 沒有可量測的好處；`XQ_SHAPE_GEN=N` 可打開（每代 N 筆、兩代輪替）
+fn shape_gen() -> usize {
+    static N: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *N.get_or_init(|| crate::plat::var("XQ_SHAPE_GEN").ok().and_then(|v| v.parse().ok()).unwrap_or(0))
+}
+
+fn shaped(window: &mut Window, s: &SharedString, mono: bool, color: Hsla, size: f32) -> ShapedLine {
+    if shape_gen() == 0 {
+        let f = if mono { font(mono_font()) } else { window.text_style().font() };
+        let run = TextRun { len: s.len(), font: f, color, background_color: None, underline: None, strikethrough: None };
+        return window.text_system().shape_line(s.clone(), px(size), &[run], None);
+    }
+    let key: ShapeKey = (s.clone(), mono, [color.h.to_bits(), color.s.to_bits(), color.l.to_bits(), color.a.to_bits() ^ size.to_bits()]);
+    if let Some(l) = SHAPES.with(|c| {
+        let mut c = c.borrow_mut();
+        if let Some(l) = c.0.get(&key) {
+            return Some(l.clone());
+        }
+        let l = c.1.remove(&key)?;
+        c.0.insert(key.clone(), l.clone());
+        Some(l)
+    }) {
+        return l;
+    }
+    let f = if mono { font(mono_font()) } else { window.text_style().font() };
+    let run = TextRun { len: s.len(), font: f, color, background_color: None, underline: None, strikethrough: None };
+    let l = window.text_system().shape_line(s.clone(), px(size), &[run], None);
+    SHAPES.with(|c| {
+        let mut c = c.borrow_mut();
+        if c.0.len() >= shape_gen() {
+            let cur = std::mem::take(&mut c.0);
+            c.1 = cur;
+        }
+        c.0.insert(key, l.clone());
+    });
+    l
+}
+
+fn paint_row(b: Bounds<Pixels>, cells: &[(SharedString, Hsla); 6], tick_bg: Option<Hsla>, window: &mut Window, cx: &mut App) {
+    let size = tk().font.md;
+    let lh = b.size.height;
+    let mut x = b.origin.x;
+    for (k, (s, color)) in cells.iter().enumerate() {
+        let w = px(COLS[k].1);
+        let right = k >= 2;
+        if k == 2 {
+            if let Some(bg) = tick_bg {
+                window.paint_quad(gpui::fill(Bounds::new(point(x, b.origin.y), gpui::size(w, lh)), bg));
+            }
+        }
+        let line = shaped(window, s, right, *color, size);
+        let lw = line.width();
+        let tx = if right { x + w - px(CELL_PAD) - lw } else { x + px(CELL_PAD) };
+        let cell_b = Bounds::new(point(x + px(CELL_PAD), b.origin.y), gpui::size(w - px(2.0 * CELL_PAD), lh));
+        // 只有放不下時才裁切（名稱欄偶爾會超出）
+        if lw > cell_b.size.width {
+            window.with_content_mask(Some(ContentMask { bounds: cell_b }), |window| {
+                let _ = line.paint(point(tx, b.origin.y), lh, TextAlign::Left, None, window, cx);
+            });
+        } else {
+            let _ = line.paint(point(tx, b.origin.y), lh, TextAlign::Left, None, window, cx);
+        }
+        x += w;
     }
 }
 
