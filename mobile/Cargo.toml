@@ -16,7 +16,8 @@ xq-tape = { path = "../crates/xq-tape" }
 xq-tokens = { path = "../crates/xq-tokens" }
 # 桌面版用 gpui-pre 0.3.7；gpui-mobile（長橋版）綁 0.3.9，手機版跟著升
 gpui = { package = "gpui-pre", version = "=0.3.9", default-features = false }
-gpui-mobile = { package = "gpui-pre-mobile", git = "https://github.com/longbridge/gpui-mobile", rev = "c24a130", default-features = false }
+# 本地 vendored（longbridge/gpui-mobile c24a130 ＋ 本 repo 的修補，見 vendor/gpui-mobile/PATCHES.md）
+gpui-mobile = { package = "gpui-pre-mobile", path = "vendor/gpui-mobile", default-features = false }
 futures = "0.3.34"
 parking_lot = "0.12"
 serde = { version = "1", features = ["derive"] }

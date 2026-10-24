@@ -1,0 +1,122 @@
+     OverrideConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} as.4 ?fontWeightAdjustment}
+     mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.64 fontWeightAdjustment=0}
+  *APP* UID 10210 ProcessRecord{2a00b22 17420:tw.sysjust.xq.gpui/u0a210}
+    user #0 uid=10210 gids={3003, 50210, 20210, 9997}
+    mRequiredAbi=x86_64 instructionSet=x86_64
+    dir=/data/app/~~7AQsOnzTpTOq95QgjD-bkw==/tw.sysjust.xq.gpui-bPiyELAspebFZgsm5WvI7w==/base.apk publicDir=/data/app/~~7AQsOnzTpTOq95QgjD-bkw==/tw.sysjust.xq.gpui-bPiyELAspebFZgsm5WvI7w==/base.apk data=/data/user/0/tw.sysjust.xq.gpui
+    packageList={tw.sysjust.xq.gpui}
+    compat={360dpi always-compat}
+    thread=android.app.IApplicationThread$Stub$Proxy@e2baf57
+    pid=17420
+    lastActivityTime=-25s703ms    startUpTime=-2m8s447ms    startElapsedTime=-2m8s443ms
+    startSeq=295
+    mountMode=DEFAULT
+    lastRssTime=-25s268ms rssProcState=2 rssStatType=0 nextRssTime=-15s703ms
+    lastRss=141MB lastCachedRss=0.00
+    trimMemoryLevel=0
+    procStateMemTracker: best=1 (1=1 1.0x)
+    lastRequestedGc=-2m3s484ms lastLowMemory=-2m3s484ms reportLowMemory=false
+    currentHostingComponentTypes=0x0 historicalHostingComponentTypes=0x0
+    reportedInteraction=true time=-25s703ms
+    adjSeq=8856 lruSeq=5063
+    oom adj: max=1001 curRaw=0 setRaw=0 cur=0 set=0
+    mCurSchedGroup=3 setSchedGroup=3 systemNoUi=false
+    curProcState=2 mRepProcState=2 setProcState=2 lastStateTime=-2m3s632ms
+    curCapability=LCMNFUA setCapability=LCMNFUA
+
+    hasShownUi=true pendingUiClean=true
+    cached=false empty=false
+    foregroundActivities=true (rep=true)
+    lastTopTime=-2m1s509ms
+    scheduleServiceTimeoutPending=false
+    Connected Providers:
+      - 48da41e/com.android.providers.settings/.SettingsProvider->17420:tw.sysjust.xq.gpui/u0a210 s1/1 u0/0 +2m0s179ms
+--
+    UID u0a210: UidRecord{2b0f55e u0a210 TOP  change:active|uncached|procstate procs:0 seq(16986,16959)} caps=LCMNFUA
+      curProcState=2 curCapability=LCMNFUA
+      proc=ProcessRecord{2a00b22 17420:tw.sysjust.xq.gpui/u0a210}
+
+  UID validation:
+    UID 1000: UidRecord{b18b999 1000 PER  procs:0 seq(0,0)} caps=LCMNFUA
+      curProcState=0 curCapability=LCMNFUA
+    UID 1001: UidRecord{f67eb70 1001 PER  procs:0 seq(0,0)} caps=LCMNFUA
+      curProcState=0 curCapability=LCMNFUA
+    UID 1068: UidRecord{780bd0c 1068 PER  procs:0 seq(0,0)} caps=LCMNFUA
+      curProcState=0 curCapability=LCMNFUA
+    UID 1073: UidRecord{eb25655 1073 PER  procs:0 seq(0,0)} caps=LCMNFUA
+      curProcState=0 curCapability=LCMNFUA
+    UID u0a91: UidRecord{19b8ee9 u0a91 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a94: UidRecord{2fad86a u0a94 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a101: UidRecord{a029df8 u0a101 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a104: UidRecord{50f02d1 u0a104 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a131: UidRecord{5fd076e u0a131 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a132: UidRecord{bfa1a4 u0a132 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a136: UidRecord{213de0f u0a136 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a137: UidRecord{eb84e9c u0a137 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a140: UidRecord{51530a5 u0a140 CEM  idle procs:0 seq(0,0)} caps=-------
+      curProcState=19 curCapability=-------
+    UID u0a143: UidRecord{b7a0ac2 u0a143 BFGS procs:0 seq(0,0)} caps=---NFU-
+      curProcState=5 curCapability=---NFU-
+--
+    PID #14527: ProcessRecord{104ca24 14527:com.google.android.settings.intelligence/u0a140}
+    PID #17297: ProcessRecord{1c61016 17297:com.google.android.apps.nexuslauncher/u0a179}
+    PID #17420: ProcessRecord{2a00b22 17420:tw.sysjust.xq.gpui/u0a210}
+    PID #17525: ProcessRecord{826468a 17525:com.android.systemui/u0a181}
+
+  Active process infos:
+    Pinfo PID #1118:
+      name=com.google.android.ext.services
+      deny: android.permission.INTERNET
+
+  Time since processes crashed:
+    Process com.android.systemui uid 10181: last crashed +1m17s362ms ago
+
+  First time processes crashed and counts:
+    Process com.android.systemui uid 10181: first crashed +9m12s786ms ago; crashes since then: 7
+
+  mHomeProcess: ProcessRecord{1c61016 17297:com.google.android.apps.nexuslauncher/u0a179}
+  mPreviousProcessVisibleTime: 0
+  mGlobalConfiguration: {1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.52 fontWeightAdjustment=0}
+  Display override configurations:
+    0: {1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.52 fontWeightAdjustment=0}
+  mConfigWillChange: false
+  mWakefulness=Awake
+  mSleepTokens={}
+  mSleeping=false
+  mShuttingDown=false mTestPssMode=false
+  mVrController=[VrState=0x0,VrRenderThreadTid=0]
+  mGoingToSleepWakeLock=WakeLock{a015d27 held=false, refCount=0}
+  mLaunchingActivityWakeLock=WakeLock{20bbd4 held=false, refCount=1}
+  mUidObservers:
+    1000 android android.app.ActivityManager$MyUidObserver: GONE STATE (cut=2)
+      Last 1001: 0
+      Last 1068: 0
+  FocusedDisplayId: 0
+  FocusedApplications:
+    displayId=0, name='ActivityRecord{7921a0e u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity t310}', dispatchingTimeout=5000ms
+  FocusedWindows:
+    displayId=0, name='d961fd tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity'
+  FocusRequests:
+    displayId=0, name='d961fd tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity' result='OK'
+--
+  FocusedDisplayId: 0
+  FocusedApplications:
+    displayId=0, name='ActivityRecord{f10c359 u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity t269}', dispatchingTimeout=5000ms
+  FocusedWindows:
+    displayId=0, name='61dc969 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity'
+  FocusRequests:
+    displayId=0, name='61dc969 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity' result='OK'
+4:memory:/
+3:cpuset:/top-app
+2:cpu:/top-app
+1:blkio:/
+0::/uid_10210/pid_17420
+State:	S (sleeping)
