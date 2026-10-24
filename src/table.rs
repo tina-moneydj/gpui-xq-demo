@@ -384,9 +384,18 @@ thread_local! {
     static SHAPES: std::cell::RefCell<(HashMap<ShapeKey, ShapedLine>, HashMap<ShapeKey, ShapedLine>)> =
         std::cell::RefCell::new((HashMap::new(), HashMap::new()));
 }
-const SHAPE_GEN: usize = 2048;
+/// 文字排版快取：預設關（0）。實測 GPUI 自己的逐幀 LineLayout 快取已夠用，這層快取 2048×2 筆反而多吃 ~41 MB RSS、FPS 沒有可量測的好處；`XQ_SHAPE_GEN=N` 可打開（每代 N 筆、兩代輪替）
+fn shape_gen() -> usize {
+    static N: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *N.get_or_init(|| crate::plat::var("XQ_SHAPE_GEN").ok().and_then(|v| v.parse().ok()).unwrap_or(0))
+}
 
 fn shaped(window: &mut Window, s: &SharedString, mono: bool, color: Hsla, size: f32) -> ShapedLine {
+    if shape_gen() == 0 {
+        let f = if mono { font(mono_font()) } else { window.text_style().font() };
+        let run = TextRun { len: s.len(), font: f, color, background_color: None, underline: None, strikethrough: None };
+        return window.text_system().shape_line(s.clone(), px(size), &[run], None);
+    }
     let key: ShapeKey = (s.clone(), mono, [color.h.to_bits(), color.s.to_bits(), color.l.to_bits(), color.a.to_bits() ^ size.to_bits()]);
     if let Some(l) = SHAPES.with(|c| {
         let mut c = c.borrow_mut();
@@ -404,7 +413,7 @@ fn shaped(window: &mut Window, s: &SharedString, mono: bool, color: Hsla, size: 
     let l = window.text_system().shape_line(s.clone(), px(size), &[run], None);
     SHAPES.with(|c| {
         let mut c = c.borrow_mut();
-        if c.0.len() >= SHAPE_GEN {
+        if c.0.len() >= shape_gen() {
             let cur = std::mem::take(&mut c.0);
             c.1 = cur;
         }
