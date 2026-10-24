@@ -122,6 +122,11 @@ CPU 端每 frame 的工作（套用＋組 scene）不到 1 ms。
 
 > 程式在 `mobile-android` 分支的 `mobile/` 資料夾。原始數據在 [`docs/bench/mobile/2026-10-23/`](docs/bench/mobile/2026-10-23/)（`summary.md` 是中位數表，`results.jsonl` 是每一輪原始值）。
 
+> **2026-10-24 更新（GPUI）**：
+> - 第 3 輪「畫面停住」原因找到並修好：gpui-mobile 只在 app 有輸入焦點時才畫，焦點被系統對話框／SystemUI 重啟搶走又沒還回來，就一直不畫。改成「看得到就畫」後，同樣的觸發方式修補前 6 輪凍住 2 次、修補後 4 輪 0 次。
+> - 系統字型改 mmap：PSS 報價表 **91.6 → 57.6 MB**、走勢圖 **93.6 → 61.4 MB**（同一 APK A/B，各 3 輪中位數），和 egui 同一級。下表的 GPUI 記憶體是修補前的數字。
+> - 詳見 [`docs/bench/mobile/2026-10-24/`](docs/bench/mobile/2026-10-24/README.md)。
+
 ### 結論先看
 
 1. **兩個都能在 Android 上跑，功能一樣**：5 萬列報價表（手指甩動捲動）、點一列進走勢圖、雙指縮放、單指平移、長按出十字線、1000 條畫線／100 層的重圖表、中文字型、搜尋框。GPUI 用的是長橋（Longbridge）社群版 `gpui-mobile`，**不是 Zed 官方**；圖表邏輯照搬，沒有改寫。
@@ -180,17 +185,17 @@ GPUI 長按出十字線（左：長按中；右：放開後）：
 
 | | egui | GPUI |
 |---|---|---|
-| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130）＋ `gpui-pre` 0.3.9 |
+| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130，2026-10-24 起放在 `mobile/vendor/` 加修補）＋ `gpui-pre` 0.3.9 |
 | 畫圖 | glow（OpenGL ES）；可選 wgpu（Vulkan） | wgpu（Vulkan）；GLES 在模擬器上開不起來（見下） |
 | 觸控 | egui 內建：甩動慣性、雙指 `zoom_delta`；長按 400ms 自己判斷 | 0.3.9 內建手勢：拖曳→捲動事件（含甩動慣性）、`on_pinch`、`LongPressEvent` |
-| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | gpui-mobile 啟動時把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB），這是 PSS 高的原因之一 |
+| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | 原版 gpui-mobile 把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB）；2026-10-24 起本 repo 的 vendored 版改 mmap，PSS 少約 34 MB |
 | 輸入法 | NativeActivity 沒有組字（中文輸入法候選字）介面 | `GpuiInputActivity` 有 InputConnection，理論上可組字 |
 
 ### 沒做到／要注意
 
 - **沒有真手機測試**，全部是模擬器。box 上的 KVM 一開就讓主機核心報錯（`kvm_spurious_fault`，vCPU 直接當掉），只能用純軟體模擬（`-accel off`）。
 - **GPUI 不能改用 OpenGL ES**：設 `XQ_GPU=gl` 時，wgpu 要求的 `max_compute_workgroups_per_dimension=65535` 超過模擬器 GLES 的上限，視窗開不起來（log：`docs/bench/mobile/2026-10-23/gpui-gles-fail.log`）。所以 GPUI 只有 Vulkan。模擬器的 Vulkan 和 GLES 其實都是外面主機的 SwiftShader 代畫。
-- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。原因沒查到（可能是 gpui-mobile 的問題，也可能是模擬器螢幕狀態），要重現才知道。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。
+- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。2026-10-24 查到原因是 gpui-mobile「沒焦點就不畫」，已修（見上面的更新）。
 - **egui（wgpu）第 3 輪**每秒 1 千／1 萬筆兩項沒收到延遲樣本，排除不算（n=2）。
 - 有幾次讀記憶體（dumpsys）逾時，所以部分 PSS 是 n=1。
 - 測試期間（2026-10-23 12:45～20:08，Asia/Taipei）box 重開機兩次：
