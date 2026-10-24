@@ -21,12 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Xcode 版本（挑這台上最新的）
+        timeout-minutes: 5
         run: |
           ls -d /Applications/Xcode*.app || true
           X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
           [ -n "$X" ] && sudo xcode-select -s "$X/Contents/Developer"
           xcodebuild -version
-          xcrun simctl list runtimes | tail -5
       - name: Rust targets
         run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim && rustc -V
       - uses: actions/cache@v4
@@ -61,6 +61,7 @@ jobs:
             -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build-dev CODE_SIGNING_ALLOWED=NO build | tail -20
       - name: 模擬器冒煙測試（開 app、等 40 秒、截圖）
+        timeout-minutes: 15
         working-directory: mobile/ios
         run: |
           set -x
