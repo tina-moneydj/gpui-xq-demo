@@ -11,8 +11,8 @@ wry 已經淘汰，不在這次的比較裡。
 **你只要做五件事（不用裝 Xcode、不用裝 Rust、不用編譯）：**
 
 1. **下載**完整版：[egui-xq-demo → mac-bench-latest → `xq-bench-mac.zip`](https://github.com/tina-moneydj/egui-xq-demo/releases/tag/mac-bench-latest)
-   - egui-xq-demo 是**私人 repo**，要先在瀏覽器登入 GitHub（tina-moneydj）才看得到這個下載頁。
-   - 沒登入的人只能下載公開的 GPUI 版：[gpui-xq-demo → mac-bench-latest → `xq-bench-mac-gpui.zip`](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/mac-bench-latest)，這個版本只會測 GPUI。
+   - 兩個 repo 都是公開的，不用登入 GitHub 就能下載。
+   - 只想測 GPUI 可以改下載 GPUI 版：[gpui-xq-demo → mac-bench-latest → `xq-bench-mac-gpui.zip`](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/mac-bench-latest)，這個版本只會測 GPUI。
 2. **解壓縮**：在「下載項目」裡雙擊 zip，會出現 `xq-bench-mac` 資料夾。（Safari 可能已經自動解壓好了。）
 3. **解除「從網路下載」的封鎖**：打開「終端機」（應用程式 → 工具程式），貼上這行，按 Enter：
    ```
@@ -165,11 +165,9 @@ git clone -b mac-bench https://github.com/tina-moneydj/gpui-xq-demo.git
 git clone -b mac-bench https://github.com/tina-moneydj/egui-xq-demo.git
 ```
 
-- `egui-xq-demo` 是**私人 repo**。第二行會要你輸入 GitHub 帳號：
-  - Username 填 `tina-moneydj`
-  - Password **不是**登入密碼，要填 GitHub 的 Personal Access Token
-- 如果不想用 token，可以改用瀏覽器下載：
-  1. 登入 GitHub，打開 tina-moneydj/egui-xq-demo。
+- 兩個 repo 都是公開的，`git clone` 不用登入。
+- 沒有 git 的話，可以改用瀏覽器下載：
+  1. 打開 tina-moneydj/egui-xq-demo（gpui-xq-demo 同樣做法）。
   2. 左上角分支切到 `mac-bench`。
   3. 按綠色的 **Code**，選 **Download ZIP**。
   4. 解壓縮，資料夾改名成 `egui-xq-demo`，放進 `~/xq-mac/`。
@@ -234,7 +232,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
 - **還沒做：** 高頻情境的「點報價列切換」反應時間。要自動點擊得開「輔助使用」權限，這版先略過。
 - **CI：** `.github/workflows/macos.yml`（gpui-xq-demo、egui-xq-demo 各一份，推 `mac-bench` 分支就會跑）：
   - gpui-xq-demo：在 macos-26（Xcode 26）上編 GPUI＋`xq-tickgen`＋`xq-demofeed` 的 arm64＋x86_64 通用執行檔，預先編譯 Metal shader，ad-hoc 簽章，打包成 `xq-bench-mac-gpui.zip`，發佈公開預發行版 `mac-bench-latest`；並實際跑一輪 GPUI 主視窗＋重圖表當冒煙測試（artifact `smoke-mac-gpui`）。
-  - egui-xq-demo：編 egui（預設只編 arm64，省私人 repo 的 macOS 分鐘數；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui，發佈私人預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
+  - egui-xq-demo：編 egui（預設只編 arm64，省建置時間；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui，發佈公開預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
   - 兩個 repo 同時推時，egui 那邊可能拿到上一版 GPUI 包；要確定是最新的，等 gpui 的 run 跑完再推 egui（或手動重跑 egui 的 workflow）。
   - 下載的包會先清隔離標記（`xattr -dr com.apple.quarantine`）；`run-bench.command` 偵測到 `bin/` 已有執行檔就不會編譯。
 - **自行編譯：** `./build-mac.sh` 只編本機的架構；`./build-mac.sh --universal` 用 lipo 合成通用執行檔。

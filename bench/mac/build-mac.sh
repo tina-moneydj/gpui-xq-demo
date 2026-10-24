@@ -4,7 +4,7 @@
 # 需要：Xcode Command Line Tools（xcode-select --install）、Rust（rustup）。
 #   GPUI 的 Metal shader：有完整 Xcode＋Metal 工具鏈就預先編譯（跟正式產品一樣）；
 #   沒有就自動改用 runtime-shaders（程式啟動時才編 shader，啟動會慢一點），build-info.json 會記錄用了哪一種。
-# egui-xq-demo 是私人 repo：依序找 $EGUI_SRC、和 gpui-xq-demo 同一層的 egui-xq-demo 資料夾；都沒有就用 gh 或 git clone（要登入）。
+# egui-xq-demo（公開 repo）：依序找 $EGUI_SRC、和 gpui-xq-demo 同一層的 egui-xq-demo 資料夾；都沒有就用 gh 或 git clone 下載。
 #
 # 用法：./build-mac.sh            編譯本機架構（Apple Silicon＝arm64、Intel＝x86_64）
 #       ./build-mac.sh --universal 另外編成 arm64＋x86_64 通用執行檔（lipo；比較慢，只有要拿去別台 Mac 跑才需要）
@@ -38,12 +38,12 @@ if [ -z "$EGUI_SRC" ]; then
 fi
 if [ -z "$EGUI_SRC" ]; then
   EGUI_SRC="$GPUI_SRC/../egui-xq-demo"
-  say "找不到 egui-xq-demo，下載到 $EGUI_SRC（私人 repo，需要 GitHub 登入）"
+  say "找不到 egui-xq-demo，下載到 $EGUI_SRC"
   if command -v gh >/dev/null 2>&1; then
-    gh repo clone tina-moneydj/egui-xq-demo "$EGUI_SRC" -- -b "$BRANCH" || die "gh 下載失敗：先執行 gh auth login"
+    gh repo clone tina-moneydj/egui-xq-demo "$EGUI_SRC" -- -b "$BRANCH" || die "gh 下載失敗：請檢查網路"
   else
     git clone -b "$BRANCH" https://github.com/tina-moneydj/egui-xq-demo.git "$EGUI_SRC" || die "git clone 失敗。
-  可以改用瀏覽器：登入 GitHub → tina-moneydj/egui-xq-demo → 切到 $BRANCH 分支 → Code → Download ZIP，
+  可以改用瀏覽器：打開 https://github.com/tina-moneydj/egui-xq-demo → 切到 $BRANCH 分支 → Code → Download ZIP，
   解壓縮後把資料夾改名成 egui-xq-demo，放在 $(cd "$GPUI_SRC/.." && pwd)/ 底下，再重跑。"
   fi
 fi

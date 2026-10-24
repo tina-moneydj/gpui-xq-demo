@@ -704,7 +704,7 @@ CPU 端每 frame 的工作（套用＋組 scene）不到 1 ms。
 
 ## 效能比較（wry vs GPUI vs egui）
 
-本 repo 是 Rust + GPUI 原生繪圖版；對照組是 [tao + wry（WebView）版](https://github.com/tina-moneydj/wry-xq-demo) 和 [egui 立即模式版](https://github.com/tina-moneydj/egui-xq-demo)（目前是私人 repo）。三版接同一個行情來源、顯示同樣內容。
+本 repo 是 Rust + GPUI 原生繪圖版；對照組是 [tao + wry（WebView）版](https://github.com/tina-moneydj/wry-xq-demo) 和 [egui 立即模式版](https://github.com/tina-moneydj/egui-xq-demo)（公開 repo）。三版接同一個行情來源、顯示同樣內容。
 
 > **測試機**：Linux（Debian 13）、8 核、**沒有顯示卡**——畫面全靠 CPU 模擬繪圖（wry＝WebKit＋llvmpipe、GPUI＝Vulkan lavapipe、egui＝OpenGL llvmpipe）。
 > 三版都是 release build、視窗 1200×720，**2026-10-21 22:42–23:55（台北時間）同一時段輪流跑、每項 3 次取中位數**；多視窗 4K 情境 10-22 00:16–00:29。
