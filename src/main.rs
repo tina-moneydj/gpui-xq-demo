@@ -811,6 +811,39 @@ impl Terminal {
     }
 }
 
+/// 2026-10-25：記憶體拆解用——配置器（malloc）實際在用的量與向系統要來的量（MB），印在 CHARTPERF 行。
+/// RSS 減掉這個＝程式碼／字型檔對映＋GPU 驅動（Metal／wgpu 的緩衝區與貼圖）＋其他。
+/// macOS：malloc_zone_statistics（全部 zone）；Linux（glibc）：mallinfo2；其他平台不印。
+pub fn heap_kv() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        #[repr(C)]
+        #[derive(Default)]
+        struct MallocStats { blocks_in_use: u32, size_in_use: usize, max_size_in_use: usize, size_allocated: usize }
+        extern "C" {
+            fn malloc_zone_statistics(zone: *mut std::ffi::c_void, stats: *mut MallocStats);
+        }
+        let mut st = MallocStats::default();
+        unsafe { malloc_zone_statistics(std::ptr::null_mut(), &mut st) };
+        let mb = |v: usize| v as f64 / 1048576.0;
+        return format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1},\"heapPeakMb\":{:.1}", mb(st.size_in_use), mb(st.size_allocated), mb(st.max_size_in_use));
+    }
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    {
+        #[repr(C)]
+        #[derive(Default)]
+        struct Mallinfo2 { arena: usize, ordblks: usize, smblks: usize, hblks: usize, hblkhd: usize, usmblks: usize, fsmblks: usize, uordblks: usize, fordblks: usize, keepcost: usize }
+        extern "C" {
+            fn mallinfo2() -> Mallinfo2;
+        }
+        let m = unsafe { mallinfo2() };
+        let mb = |v: usize| v as f64 / 1048576.0;
+        return format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1}", mb(m.uordblks + m.hblkhd), mb(m.arena + m.hblkhd));
+    }
+    #[allow(unreachable_code)]
+    String::new()
+}
+
 #[cfg(target_arch = "wasm32")]
 pub fn rss_mb() -> f64 {
     plat::wasm_heap_mb()

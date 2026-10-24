@@ -1155,7 +1155,7 @@ impl ChartView {
                 let npaths = m.pc.as_ref().map_or(0, |c| c.below.path_count() + c.above.path_count());
                 let first_paint_ms = st.paint_us.iter().sum::<u64>() as f64 / 1000.0;
                 eprintln!(
-                    "CHARTPERF|{{\"phase\":\"setup\",\"cssW\":{:.0},\"cssH\":{:.0},\"overlays\":{},\"subs\":{},\"drawings\":{},\"layers\":{},\"visibleDrawings\":{},\"drawVertices\":{},\"drawPaths\":{},\"bars\":{},\"sinceStartMs\":{:.0},\"rebuildMs\":{:.2},\"paintMsTotal\":{:.2},\"rssMb\":{:.1}}}",
+                    "CHARTPERF|{{\"phase\":\"setup\",\"cssW\":{:.0},\"cssH\":{:.0},\"overlays\":{},\"subs\":{},\"drawings\":{},\"layers\":{},\"visibleDrawings\":{},\"drawVertices\":{},\"drawPaths\":{},\"bars\":{},\"sinceStartMs\":{:.0},\"rebuildMs\":{:.2},\"paintMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
                     f32::from(b.size.width),
                     f32::from(b.size.height),
                     m.ovs.len(),
@@ -1169,7 +1169,8 @@ impl ChartView {
                     cfg.t0.elapsed().as_secs_f64() * 1000.0,
                     st.rebuild_us as f64 / 1000.0,
                     first_paint_ms,
-                    crate::rss_mb()
+                    crate::rss_mb(),
+                    crate::heap_kv()
                 );
                 drop(m);
                 eprintln!("CHARTPHASE|warm|start");
@@ -1199,7 +1200,7 @@ impl ChartView {
                     let tot_us: u64 = lu.iter().sum();
                     let per = |k: usize| if lp[k] > 0 { lu[k] as f64 / lp[k] as f64 / 1000.0 } else { 0.0 };
                     eprintln!(
-                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"abovePaints\":{},\"aboveMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
+                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"abovePaints\":{},\"aboveMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}{}}}",
                         mode.name(),
                         secs,
                         frames,
@@ -1219,6 +1220,7 @@ impl ChartView {
                         s1.st.rebuilds - s0.st.rebuilds,
                         (s1.st.rebuild_us - s0.st.rebuild_us) as f64 / 1000.0,
                         crate::rss_mb(),
+                        crate::heap_kv(),
                         if let Mode::Z(_) = mode { self.zs.report(&self.m.borrow()) } else { String::new() }
                     );
                     eprintln!("CHARTPHASE|{}|end", mode.name());
