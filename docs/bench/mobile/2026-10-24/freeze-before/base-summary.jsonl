@@ -1,0 +1,5 @@
+{"iter": 1, "tag": "base", "result": "done", "secs": 92, "lastPhase": "zshot", "frames": 68}
+{"iter": 2, "tag": "base", "result": "done", "secs": 127, "lastPhase": "zshot", "frames": 78}
+{"iter": 3, "tag": "base", "result": "done", "secs": 110, "lastPhase": "zshot", "frames": 33}
+{"iter": 4, "tag": "base", "result": "done", "secs": 92, "lastPhase": "zshot", "frames": 74}
+{"iter": 5, "tag": "base", "result": "done", "secs": 87, "lastPhase": "zshot", "frames": 65}
