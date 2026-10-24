@@ -1,0 +1,392 @@
+{
+ "main": [
+  {
+   "metric": "第一幀 ms",
+   "higher_is_better": false,
+   "before": 298.1,
+   "after": 349.3,
+   "before_runs": [
+    230.4,
+    300.9,
+    298.1
+   ],
+   "after_runs": [
+    349.3,
+    218.2,
+    364.0
+   ]
+  },
+  {
+   "metric": "第一筆報價 ms",
+   "higher_is_better": false,
+   "before": 414.1,
+   "after": 438.8,
+   "before_runs": [
+    302.9,
+    414.1,
+    469.6
+   ],
+   "after_runs": [
+    438.8,
+    283.5,
+    455.0
+   ]
+  },
+  {
+   "metric": "RSS 60 秒 MB",
+   "higher_is_better": false,
+   "before": 187.7,
+   "after": 186.3,
+   "before_runs": [
+    187.9,
+    187.6,
+    187.7
+   ],
+   "after_runs": [
+    186.3,
+    186.3,
+    186.1
+   ]
+  },
+  {
+   "metric": "PSS 60 秒 MB",
+   "higher_is_better": false,
+   "before": 159.8,
+   "after": 158.5,
+   "before_runs": [
+    160.0,
+    159.7,
+    159.8
+   ],
+   "after_runs": [
+    158.5,
+    158.6,
+    158.1
+   ]
+  },
+  {
+   "metric": "CPU 全部 %",
+   "higher_is_better": false,
+   "before": 126.3,
+   "after": 122.9,
+   "before_runs": [
+    127.6,
+    116.1,
+    126.3
+   ],
+   "after_runs": [
+    120.3,
+    132.8,
+    122.9
+   ]
+  },
+  {
+   "metric": "CPU 主執行緒 %（不含 llvmpipe 光柵化）",
+   "higher_is_better": false,
+   "before": 9.9,
+   "after": 8.8,
+   "before_runs": [
+    9.9,
+    9.6,
+    10.4
+   ],
+   "after_runs": [
+    8.7,
+    9.7,
+    8.8
+   ]
+  },
+  {
+   "metric": "FPS",
+   "higher_is_better": true,
+   "before": 21.9,
+   "after": 21.2,
+   "before_runs": [
+    21.9,
+    20.3,
+    21.9
+   ],
+   "after_runs": [
+    21.2,
+    22.6,
+    21.0
+   ]
+  }
+ ],
+ "stress": [
+  {
+   "metric": "FPS 跳價段",
+   "higher_is_better": true,
+   "before": 29.3,
+   "after": 30.5,
+   "before_runs": [
+    28.0,
+    32.7,
+    29.3
+   ],
+   "after_runs": [
+    30.5,
+    35.8,
+    28.6
+   ]
+  },
+  {
+   "metric": "FPS 捲動段",
+   "higher_is_better": true,
+   "before": 35.3,
+   "after": 51.5,
+   "before_runs": [
+    35.3,
+    39.7,
+    26.6
+   ],
+   "after_runs": [
+    37.7,
+    55.5,
+    51.5
+   ]
+  },
+  {
+   "metric": "捲動卡頓次數（>32 ms）",
+   "higher_is_better": false,
+   "before": 131,
+   "after": 69,
+   "before_runs": [
+    131,
+    109,
+    151
+   ],
+   "after_runs": [
+    126,
+    40,
+    69
+   ]
+  },
+  {
+   "metric": "CPU 跳價段 全部 %",
+   "higher_is_better": false,
+   "before": 166.0,
+   "after": 168.2,
+   "before_runs": [
+    163.5,
+    186.6,
+    166.0
+   ],
+   "after_runs": [
+    168.2,
+    199.2,
+    163.1
+   ]
+  },
+  {
+   "metric": "CPU 跳價段 主執行緒 %",
+   "higher_is_better": false,
+   "before": 12.4,
+   "after": 11.6,
+   "before_runs": [
+    12.4,
+    12.5,
+    12.0
+   ],
+   "after_runs": [
+    10.9,
+    11.9,
+    11.6
+   ]
+  },
+  {
+   "metric": "CPU 捲動段 全部 %",
+   "higher_is_better": false,
+   "before": 191.9,
+   "after": 289.4,
+   "before_runs": [
+    191.9,
+    226.5,
+    177.2
+   ],
+   "after_runs": [
+    202.0,
+    312.9,
+    289.4
+   ]
+  },
+  {
+   "metric": "RSS 跳價末 MB",
+   "higher_is_better": false,
+   "before": 192.1,
+   "after": 190.3,
+   "before_runs": [
+    192.3,
+    191.8,
+    192.1
+   ],
+   "after_runs": [
+    190.6,
+    190.0,
+    190.3
+   ]
+  }
+ ],
+ "multi": [
+  {
+   "metric": "延遲 p50 ms（全部視窗）",
+   "higher_is_better": false,
+   "before": 228.3,
+   "after": 258.0,
+   "before_runs": [
+    225.1,
+    413.0,
+    228.3
+   ],
+   "after_runs": [
+    204.1,
+    258.0,
+    272.5
+   ]
+  },
+  {
+   "metric": "延遲 p99 ms（全部視窗）",
+   "higher_is_better": false,
+   "before": 327.7,
+   "after": 463.6,
+   "before_runs": [
+    327.7,
+    570.3,
+    307.7
+   ],
+   "after_runs": [
+    462.7,
+    463.6,
+    475.2
+   ]
+  },
+  {
+   "metric": "最慢視窗 p99 ms",
+   "higher_is_better": false,
+   "before": 330.0,
+   "after": 475.4,
+   "before_runs": [
+    330.0,
+    570.3,
+    317.2
+   ],
+   "after_runs": [
+    482.6,
+    472.5,
+    475.4
+   ]
+  },
+  {
+   "metric": "主視窗 p50 ms",
+   "higher_is_better": false,
+   "before": 202.0,
+   "after": 255.6,
+   "before_runs": [
+    201.0,
+    386.1,
+    202.0
+   ],
+   "after_runs": [
+    204.6,
+    255.6,
+    272.5
+   ]
+  },
+  {
+   "metric": "其他 3 視窗 p50 平均 ms",
+   "higher_is_better": false,
+   "before": 239.5,
+   "after": 260.2,
+   "before_runs": [
+    237.7,
+    429.2,
+    239.5
+   ],
+   "after_runs": [
+    204.2,
+    260.2,
+    271.5
+   ]
+  },
+  {
+   "metric": "其他視窗比主視窗慢 ms（p50 差）",
+   "higher_is_better": false,
+   "before": 37.5,
+   "after": -0.4,
+   "before_runs": [
+    36.7,
+    43.1,
+    37.5
+   ],
+   "after_runs": [
+    -0.4,
+    4.6,
+    -1.0
+   ]
+  },
+  {
+   "metric": "最慢視窗 FPS",
+   "higher_is_better": true,
+   "before": 10.5,
+   "after": 8,
+   "before_runs": [
+    11,
+    6.0,
+    10.5
+   ],
+   "after_runs": [
+    9,
+    8,
+    8
+   ]
+  },
+  {
+   "metric": "CPU 全部 %",
+   "higher_is_better": false,
+   "before": 522.6,
+   "after": 368.8,
+   "before_runs": [
+    522.6,
+    295.1,
+    526.4
+   ],
+   "after_runs": [
+    440.9,
+    368.8,
+    356.7
+   ]
+  },
+  {
+   "metric": "CPU 不含 llvmpipe %",
+   "higher_is_better": false,
+   "before": 22.2,
+   "after": 15.2,
+   "before_runs": [
+    22.2,
+    13.7,
+    22.9
+   ],
+   "after_runs": [
+    17.6,
+    15.1,
+    15.2
+   ]
+  },
+  {
+   "metric": "RSS 結束 MB",
+   "higher_is_better": false,
+   "before": 482.8,
+   "after": 479.4,
+   "before_runs": [
+    482.6,
+    483.2,
+    482.8
+   ],
+   "after_runs": [
+    479.4,
+    479.9,
+    479.1
+   ]
+  }
+ ]
+}

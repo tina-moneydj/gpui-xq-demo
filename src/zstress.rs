@@ -242,3 +242,67 @@ impl ZState {
         s
     }
 }
+
+// ───────────── A3 v2 正確性測試（XQ_ZTEST=N）─────────────
+// 同一個程式、同一份（不跳價的）K 棒，輪流用 Grouped／Seq／Paths 畫同一組隨機畫線，外部腳本每個情境截一張圖比對。
+
+struct Rng(u64);
+impl Rng {
+    fn next(&mut self) -> u64 {
+        self.0 ^= self.0 << 13;
+        self.0 ^= self.0 >> 7;
+        self.0 ^= self.0 << 17;
+        self.0
+    }
+    fn f(&mut self) -> f64 {
+        (self.next() >> 11) as f64 / (1u64 << 53) as f64
+    }
+    fn n(&mut self, k: usize) -> usize {
+        (self.next() % k.max(1) as u64) as usize
+    }
+}
+
+/// 隨機場景：seed 0＝壓測用 1000 條／100 層；其他＝30–150 條隨機工具、隨機位置（集中在畫面中間，重疊多）、1–8 層、隨機順序；
+/// seed % 3 == 2 時再隨機選取一條（測三明治上下段＋選取那片）。回傳 (畫線數, 圖層數, 選取)
+pub fn ztest_scene(m: &mut Model, seed: u64) -> (usize, usize, Option<usize>) {
+    let mut c = crate::model::IndCfg::default();
+    c.overlays.clear();
+    c.subs.iter_mut().for_each(|s| s.on = false);
+    c.volma.0 = false;
+    m.set_cfg(c);
+    if let Some(b) = m.bounds {
+        m.geo(b);
+    }
+    if seed == 0 {
+        m.load_perf_drawings(1000, 100);
+        return (m.drawings.len(), m.layers.len(), None);
+    }
+    let Some(xf) = m.geo_now().map(|g| g.xf()) else { return (0, 0, None) };
+    let (i0, i1) = (xf.i_at(xf.plot_l), xf.i_at(xf.plot_r));
+    let mut r = Rng(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
+    let nl = 1 + r.n(8);
+    let n = 30 + r.n(121);
+    let tools = [Tool::Trend, Tool::Ray, Tool::Hline, Tool::Vline, Tool::Channel, Tool::Fib, Tool::Rect, Tool::Text];
+    let texts = ["文字框", "ABOVE 上層", "支撐 Support", "T", "壓力區 resistance zone", "注意"];
+    let mut list = Vec::with_capacity(n);
+    for _ in 0..n {
+        let kind = tools[r.n(tools.len())];
+        let mut at = |r: &mut Rng| {
+            let (fx, fy) = (0.1 + 0.8 * r.f(), 0.1 + 0.8 * r.f());
+            Pt { i: i0 + fx * (i1 - i0), p: xf.lo + fy * (xf.hi - xf.lo) }
+        };
+        let pts = match kind {
+            Tool::Hline | Tool::Vline | Tool::Text => vec![at(&mut r)],
+            Tool::Channel => vec![at(&mut r), at(&mut r), at(&mut r)],
+            _ => vec![at(&mut r), at(&mut r)],
+        };
+        let text = if kind == Tool::Text { texts[r.n(texts.len())].to_string() } else { String::new() };
+        list.push(Drawing { kind, pts, text, layer: r.n(nl) as u32 });
+    }
+    let layers: Vec<Layer> = (0..nl as u32).map(Layer::new).collect();
+    m.set_drawings(list, layers);
+    let sel = (seed % 3 == 2).then(|| r.n(n));
+    m.select(sel);
+    m.mouse = None;
+    (n, nl, sel)
+}
