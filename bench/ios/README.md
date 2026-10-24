@@ -4,10 +4,10 @@
 
 - **兩個 app 都有 iOS 版了**（`mobile-ios` 分支）：GPUI 版叫「XQ GPUI」，egui 版叫「XQ egui」。功能跟 Android 版一樣：報價表（可捲動、點一列進走勢圖）、走勢圖（單指拖、雙指縮放、長按十字線）、搜尋框、上方 FPS／記憶體、下方封包計數。顏色、字級用同一份設計 token。
 - **手機上沒有電腦的行情服務，所以 app 自己內建一個「合成行情」**（假資料，會一直跳價）。畫面上看到的價格**不是真的行情**。
-- **中文字用 iPhone 內建的「蘋方」（PingFang TC）**，數字用 Menlo。字型檔是直接對應（mmap）系統檔案，不會整個複製進記憶體。
+- **中文字**：GPUI 版用 iPhone 內建的「蘋方」（PingFang TC，系統直接畫）。egui 版畫不了 iOS 26 的蘋方（蘋方換成了蘋果自家的新字型格式），改用系統內建的「冬青黑體」，缺的繁體字由 app 內附的 Noto Sans TC 補上。數字都用 Menlo。所有字型檔都是直接對應（mmap），不會整個複製進記憶體。
 - **要放到你自己的 iPhone 上，最簡單的方式是「免費 Apple ID」**（下面的「路線一」）：一條 USB 線＋Xcode，按一個 ▶。缺點是**每 7 天要重新按一次 ▶**（免費帳號的限制）。
 - 公司如果有**付費的 Apple Developer 帳號**，可以改走 **TestFlight**（「路線二」，附錄 B）：之後手機上用 TestFlight app 安裝／更新，不用接線、90 天才過期。這需要公司帳號的管理員給幾個金鑰，現在還沒設。
-- 我這邊**只在 GitHub 的雲端 Mac 上編譯、在 iPhone 模擬器裡開起來截圖**過；**還沒有在真的 iPhone 上試過**。第一次在你的手機上跑，如果有問題，請截圖給我。
+- 我這邊**只在 GitHub 的雲端 Mac 上編譯、在 iPhone 模擬器裡開起來截圖**過（Xcode 26.6、iOS 26.2 模擬器：兩個 app 都能開、中文正常、行情會跳）；**還沒有在真的 iPhone 上試過**，也還沒用 Xcode 27 編過（雲端還沒有 Xcode 27）。第一次在你的手機上跑，如果有問題，請截圖給我。
 
 > 目前狀態（雲端建置、截圖、已知問題）見最後的「[已知問題](#已知問題)」與「[雲端建置結果](#雲端建置結果)」。
 
@@ -147,6 +147,9 @@
 | 真機 | 還沒在真的 iPhone 上跑過 | 同左 |
 | 行情 | 預設是 app 內建的**合成行情**（假資料）。要連 Mac 上的行情服務：Xcode → Product → Scheme → Edit Scheme… → Run → Arguments → Environment Variables 加 `XQ_FEED_ADDR` = `Mac的IP:47631`（iPhone 會問「區域網路」權限，按允許） | 同左 |
 | 橫向 | 可以轉，但版面是照直向設計的 | 同左 |
+| 走勢圖上方工具列 | 正常 | 直向 iPhone 寬度不夠，「分時／週K／月K／指標」按鈕會壓到股價文字（共用的走勢圖程式碼照桌面寬度排版，Android 版同樣） |
+| 中文字型 | 蘋方（系統） | 冬青黑體（系統，日文字形）＋Noto Sans TC（app 內附 5.4 MB，OFL 授權）補字；字形跟蘋方略有不同 |
+| Xcode 27 | 有照 iOS 27 規定用 UIScene，但雲端只有 Xcode 26.6，**還沒用 Xcode 27 編過** | 同左 |
 
 其他技術備註（給開發的人）：
 
@@ -155,6 +158,8 @@
 - Bundle ID／Team 放在 `mobile/ios/Local.xcconfig`（每台 Mac 自己的，不進 git）；`XQ.xcconfig` 是預設值。
 - Xcode 專案由 XcodeGen 產生（`mobile/ios/project.yml`），產生好的 `.xcodeproj` 也放進 repo，所以不用裝 XcodeGen。
 - 在 Linux 上可以先 `cargo check --lib --target aarch64-apple-ios-sim` 快速檢查（不用 Mac）。
+- GPUI：vendored gpui-mobile 在 iOS 26 上每個字型都「Failed to read traits」被跳過、接著找不到字型 panic；已修（`mobile/vendor/gpui-mobile/PATCHES.md` §5）。
+- egui：wgpu 裝置要用顯示卡實際上限（模擬器 GPU 的 `max_inter_stage_shader_variables` 只有 15）；蘋方 `PingFangUI.ttc` 只有 `hvgl` 外框（沒有 glyf／CFF），egui 畫不出來，「華文黑體」也被系統導到同一個檔。
 - `mobile/src/lib.rs` 的 `bridge.taker().take()`：main 上 A1 合併後 `FeedBridge::take` 被拿掉，手機版（含 Android）在 main 上編不過，這個分支順便修了（GPUI）。
 
 ---
@@ -205,7 +210,9 @@ TestFlight 的好處：手機不用接線，用「TestFlight」app 安裝；每�
 
 ## 雲端建置結果
 
-（每次 `mobile-ios` 更新都會自動跑，見 Actions 頁面的「ios」工作。）
+（每次 `mobile-ios` 更新都會自動跑，見 Actions 頁面的「ios」工作。）每次都會：編模擬器版和實機版（不簽章）→ 在模擬器開 app 40 秒截報價表、再開走勢圖截圖 → 檢查有沒有 panic、有沒有在畫 → 更新 ios-latest。
+
+雲端模擬器上 log 看到的數字（**模擬器，不代表手機**）：兩個 app 每秒約 31～33 幀（行情每秒約 32 包）；記憶體 RSS 報價表約 119～127 MB、走勢圖約 121～161 MB。
 
 - GPUI：https://github.com/tina-moneydj/gpui-xq-demo/actions/workflows/ios.yml
 - egui：https://github.com/tina-moneydj/egui-xq-demo/actions/workflows/ios.yml
