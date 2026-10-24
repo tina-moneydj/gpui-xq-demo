@@ -437,7 +437,16 @@ pub struct PaintCache {
     labels: Vec<(ShapedLine, f32, f32, f32)>,
     /// 水平線的價格標籤（右側價格軸上，不位移）
     h_tags: Vec<(f32, ShapedLine)>,
+    /// A3 v2：分好的組（Grouped／Seq 模式；其他模式是空的）
+    groups: Vec<Group<(ShapedLine, f32, f32, f32)>>,
+    pub stats: GroupStats,
     pub built_us: u64,
+}
+
+/// 字的外框（gfx::paint_line：y 是行中線，行高 size+3）
+fn label_bb(x: f32, y: f32, size: f32, w: f32) -> [f32; 4] {
+    let lh = size + 3.0;
+    [x - 1.0, y - lh / 2.0 - 1.0, x + w + 2.0, y + lh / 2.0 + 1.0]
 }
 
 fn fmt_p(v: f64) -> String {
@@ -452,14 +461,347 @@ pub struct Run {
 }
 
 /// A3（2026-10-24，實驗、預設關）：水平線、費波納契各價位線、矩形邊框／填色、文字框這些軸向的東西改用 paint_quad，
-/// 只有斜線與多邊形才走 path。XQ_DRAW_QUADS=1 開啟。
+/// 只有斜線與多邊形才走 path。v1 用 XQ_DRAW_QUADS=v1 開啟；XQ_DRAW_QUADS=1 現在是 A3 v2（分組，見 [`pack`]）。
 ///
 /// 為什麼預設關：path 數從 313 降到 61，但 GPUI 依「重疊」給每個圖元排序，quad 夾在 path 中間會把原本「整段一批」的
 /// path 切成很多批，每一批都要清一次整窗 MSAA 中介貼圖再合成。這台（軟體 Vulkan）交錯實測重圖表 FPS 反而掉一半
 /// （跳價段 path 版 13.5–20.7、quad 版 6.9–10.4）。走勢圖本身的格線、K 棒、量、柱早就是 quad，不受影響。
 fn quads_on() -> bool {
-    static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *V.get_or_init(|| crate::plat::var_os("XQ_DRAW_QUADS").is_some_and(|v| v != "0"))
+    draw_mode() != DrawMode::Paths
+}
+
+/// 畫線層怎麼畫（XQ_DRAW_QUADS）：
+/// - `0`／不設＝Paths：全部走 path（舊做法）
+/// - `1`＝Grouped（A3 v2）：軸向圖形用 quad，依 z 順序把圖元分進 paint_layer 群組（見 [`pack`]）
+/// - `v1`＝A3 v1：quad＋path 直接交錯（批次會被切碎，只留著對照）
+/// - `seq`＝Seq：每個圖元自己一個 layer、嚴格依序畫（正確性參考，最慢）
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DrawMode {
+    Paths,
+    QuadsV1,
+    Grouped,
+    Seq,
+}
+
+static MODE: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(255);
+
+impl DrawMode {
+    pub fn name(self) -> &'static str {
+        match self {
+            DrawMode::Paths => "paths",
+            DrawMode::QuadsV1 => "v1",
+            DrawMode::Grouped => "grouped",
+            DrawMode::Seq => "seq",
+        }
+    }
+    fn from_u8(v: u8) -> DrawMode {
+        match v {
+            1 => DrawMode::QuadsV1,
+            2 => DrawMode::Grouped,
+            3 => DrawMode::Seq,
+            _ => DrawMode::Paths,
+        }
+    }
+}
+
+/// 預設（沒設 XQ_DRAW_QUADS 時）。2026-10-24 這台（軟體 Vulkan）實測 A3 v2 重圖表 FPS 20.8→10.3、截圖也不是逐點相同
+/// （只差在半透明 path 重疊處的反鋸齒邊緣），所以維持 Paths；等 GTX 1650／M4 實機 A/B 再決定。
+const DEFAULT_MODE: DrawMode = DrawMode::Paths;
+
+pub fn draw_mode() -> DrawMode {
+    use std::sync::atomic::Ordering::Relaxed;
+    let v = MODE.load(Relaxed);
+    if v != 255 {
+        return DrawMode::from_u8(v);
+    }
+    let m = match crate::plat::var("XQ_DRAW_QUADS").ok().as_deref().map(str::trim) {
+        Some("0") => DrawMode::Paths,
+        Some("v1") => DrawMode::QuadsV1,
+        Some("seq") => DrawMode::Seq,
+        Some(x) if !x.is_empty() => DrawMode::Grouped,
+        _ => DEFAULT_MODE,
+    };
+    set_draw_mode(m);
+    m
+}
+
+/// 執行中切換（正確性測試用；呼叫端要讓畫線快取重建）
+pub fn set_draw_mode(m: DrawMode) {
+    MODE.store(match m { DrawMode::Paths => 0, DrawMode::QuadsV1 => 1, DrawMode::Grouped => 2, DrawMode::Seq => 3 }, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn grouped_on() -> bool {
+    matches!(draw_mode(), DrawMode::Grouped | DrawMode::Seq)
+}
+
+// ───────────── A3 v2：z 順序分組 ─────────────
+//
+// GPUI 的 paint_layer 裡所有圖元拿同一個 draw order；同一個 order 內，批次依種類排：quad → path → 字（sprite），
+// 同種類依加入順序。所以把依 z 順序排好的圖元分組：每個圖元放進「不會改變畫面上下關係」的最早一組。
+// 跟它重疊、比它早的圖元 j：j 的種類 ≤ 它的種類 → 可以同組（同組內 j 先畫）；j 的種類 > 它（例如 quad 要蓋在 path 上）→ 至少下一組。
+// 重疊用外框＋線寬＋反鋸齒餘量（保守），用格子空間索引；只在畫線快取重建時算（畫線改變、縮放；平移不算）。
+
+/// 圖元種類（同一組內的畫出順序）
+const K_QUAD: usize = 0;
+const K_PATH: usize = 1;
+const K_TEXT: usize = 2;
+/// 反鋸齒餘量（px）
+const AA_PAD: f32 = 1.5;
+
+pub enum EK {
+    Quad([f32; 4]),
+    Path(Tris),
+    Text(usize),
+}
+
+pub struct Elem {
+    k: EK,
+    c: Hsla,
+}
+
+/// 一組（一個 paint_layer）：quad → path → 字
+pub struct Group<L> {
+    quads: Vec<([f32; 4], Hsla)>,
+    runs: Vec<(Path<Pixels>, Hsla)>,
+    labels: Vec<L>,
+}
+
+impl<L> Default for Group<L> {
+    fn default() -> Self {
+        Group { quads: Vec::new(), runs: Vec::new(), labels: Vec::new() }
+    }
+}
+
+/// 分組統計
+#[derive(Clone, Copy, Default, Debug)]
+pub struct GroupStats {
+    pub elems: usize,
+    pub groups: usize,
+    pub paths: usize,
+    /// path 批次數（依 GPUI 的批次規則推算：quad 或字夾在兩組 path 之間就斷一批）
+    pub path_batches: usize,
+}
+
+fn path_bb(path: &Path<Pixels>) -> [f32; 4] {
+    let mut bb = [f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY];
+    for v in &path.vertices {
+        let (x, y) = (f32::from(v.xy_position.x), f32::from(v.xy_position.y));
+        bb = [bb[0].min(x), bb[1].min(y), bb[2].max(x), bb[3].max(y)];
+    }
+    bb
+}
+
+fn pad(b: [f32; 4], d: f32) -> [f32; 4] {
+    [b[0] - d, b[1] - d, b[2] + d, b[3] + d]
+}
+
+/// 依 z 順序把圖元分組。text_bb：第 i 個字的外框。seq＝每個圖元自己一組（參考答案）。
+pub fn pack<L>(elems: Vec<Elem>, mut labels: Vec<Option<L>>, text_bb: impl Fn(usize) -> [f32; 4], seq: bool) -> (Vec<Group<L>>, GroupStats) {
+    let mut st = GroupStats { elems: elems.len(), ..Default::default() };
+    // 1. 每個圖元的種類＋保守外框
+    let mut items: Vec<(usize, [f32; 4], Elem)> = Vec::with_capacity(elems.len());
+    for mut e in elems {
+        let (k, bb) = match &mut e.k {
+            EK::Quad(q) => (K_QUAD, pad([q[0], q[1], q[0] + q[2], q[1] + q[3]], AA_PAD)),
+            EK::Path(t) => {
+                if t.is_empty() {
+                    continue;
+                }
+                let path = t.take().unwrap();
+                let bb = pad(path_bb(&path), AA_PAD);
+                e.k = EK::Path(Tris::from_path(path));
+                (K_PATH, bb)
+            }
+            EK::Text(i) => (K_TEXT, pad(text_bb(*i), AA_PAD)),
+        };
+        if bb.iter().all(|v| v.is_finite()) {
+            items.push((k, bb, e));
+        }
+    }
+    // 2. 分組（格子空間索引：每格記各種類目前最高的組號）
+    let mut gid = vec![0usize; items.len()];
+    if seq {
+        for (i, g) in gid.iter_mut().enumerate() {
+            *g = i;
+        }
+    } else if !items.is_empty() {
+        let mut u = [f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY];
+        for (_, b, _) in &items {
+            u = [u[0].min(b[0]), u[1].min(b[1]), u[2].max(b[2]), u[3].max(b[3])];
+        }
+        let span = (u[2] - u[0]).max(u[3] - u[1]).max(1.0);
+        let cell = (span / 256.0).max(16.0);
+        let nx = (((u[2] - u[0]) / cell) as usize + 1).min(4096);
+        let ny = (((u[3] - u[1]) / cell) as usize + 1).min(4096);
+        let mut grid = vec![[-1i64; 3]; nx * ny];
+        let ix = |v: f32, o: f32, n: usize| (((v - o) / cell).floor().max(0.0) as usize).min(n - 1);
+        for (i, (k, b, _)) in items.iter().enumerate() {
+            let (x0, x1, y0, y1) = (ix(b[0], u[0], nx), ix(b[2], u[0], nx), ix(b[1], u[1], ny), ix(b[3], u[1], ny));
+            let mut g = 0i64;
+            for y in y0..=y1 {
+                for x in x0..=x1 {
+                    let c = &grid[y * nx + x];
+                    for kk in 0..3 {
+                        if c[kk] >= 0 {
+                            g = g.max(if kk <= *k { c[kk] } else { c[kk] + 1 });
+                        }
+                    }
+                }
+            }
+            for y in y0..=y1 {
+                for x in x0..=x1 {
+                    let c = &mut grid[y * nx + x][*k];
+                    *c = (*c).max(g);
+                }
+            }
+            gid[i] = g as usize;
+        }
+    }
+    let ng = gid.iter().copied().max().map_or(0, |g| g + 1);
+    let mut groups: Vec<Group<L>> = (0..ng).map(|_| Group::default()).collect();
+    // 每組 path 段的外框（同色往回併用）
+    let mut run_bb: Vec<Vec<[f32; 4]>> = vec![Vec::new(); ng];
+    for (i, (_, bb, e)) in items.into_iter().enumerate() {
+        let g = gid[i];
+        let grp = &mut groups[g];
+        match e.k {
+            EK::Quad(q) => grp.quads.push((q, e.c)),
+            EK::Text(t) => {
+                if let Some(l) = labels.get_mut(t).and_then(Option::take) {
+                    grp.labels.push(l);
+                }
+            }
+            EK::Path(mut t) => {
+                let Some(path) = t.take() else { continue };
+                // 同組內往回找同色段：中間隔著的段都不跟它重疊才併（畫面不變）
+                let rb = &mut run_bb[g];
+                let mut hit = None;
+                if !seq {
+                    for j in (0..grp.runs.len()).rev().take(MERGE_LOOKBACK) {
+                        if grp.runs[j].1 == e.c {
+                            hit = Some(j);
+                            break;
+                        }
+                        if overlaps(&rb[j], &bb) {
+                            break;
+                        }
+                    }
+                }
+                match hit {
+                    Some(j) => {
+                        let dst = &mut grp.runs[j].0;
+                        dst.bounds = dst.bounds.union(&path.bounds);
+                        dst.vertices.extend(path.vertices);
+                        let r = &mut rb[j];
+                        *r = [r[0].min(bb[0]), r[1].min(bb[1]), r[2].max(bb[2]), r[3].max(bb[3])];
+                    }
+                    None => {
+                        grp.runs.push((path, e.c));
+                        rb.push(bb);
+                    }
+                }
+            }
+        }
+    }
+    // path 外框外擴 1px：GPUI 合成中介貼圖時只貼外框範圍（＝頂點外框），反鋸齒在外框外的那半個像素會被切掉；
+    // 外擴後線邊緣的反鋸齒完整（中介貼圖外框外是透明的，多貼不會改變畫面）
+    for g in &mut groups {
+        for (path, _) in &mut g.runs {
+            path.bounds.origin.x -= px(1.0);
+            path.bounds.origin.y -= px(1.0);
+            path.bounds.size.width += px(2.0);
+            path.bounds.size.height += px(2.0);
+        }
+    }
+    groups.retain(|g| !(g.quads.is_empty() && g.runs.is_empty() && g.labels.is_empty()));
+    st.groups = groups.len();
+    st.paths = groups.iter().map(|g| g.runs.len()).sum();
+    // path 批次：依序 [quad][path][字]，連續的 path 算一批
+    let mut in_p = false;
+    for g in &groups {
+        if !g.quads.is_empty() {
+            in_p = false;
+        }
+        if !g.runs.is_empty() {
+            if !in_p {
+                st.path_batches += 1;
+            }
+            in_p = true;
+        }
+        if !g.labels.is_empty() {
+            in_p = false;
+        }
+    }
+    (groups, st)
+}
+
+impl<L> Group<L> {
+    /// 一組：layer（quad → path）→ 透明的 1px 隔板 path → 字（另一個 layer）。
+    ///
+    /// 隔板的原因（GPUI 0.3.7 wgpu／Metal 的 draw_paths_from_intermediate）：一批 path 若全部同一個 order（＝都在同一個
+    /// layer 裡），合成時「每條 path 用自己的外框各貼一次」中介貼圖；外框重疊的地方會被貼兩次，半透明就變深。
+    /// 只要同一批裡有不同 order 的 path，就改成貼一張聯集外框（只貼一次）。所以在這組的 path 後面補一條 order 較高、
+    /// 完全透明的小 path，讓這一批一定跨兩個 order。字放到隔板之後的 layer，才不會把這一批切斷。
+    fn paint(&self, window: &mut Window, lb: Bounds<Pixels>, dx: f32, mut text: impl FnMut(&mut Window, &L)) {
+        window.paint_layer(lb, |window| {
+            for (q, c) in &self.quads {
+                gfx::rect(window, q[0] + dx, q[1], q[2], q[3], *c);
+            }
+            for (path, c) in &self.runs {
+                if dx == 0.0 {
+                    window.paint_path(path.clone(), *c);
+                } else {
+                    window.paint_path(gfx::shifted(path, dx), *c);
+                }
+            }
+        });
+        if !self.runs.is_empty() {
+            let o = lb.origin;
+            let mut sep = Path::new(o);
+            let s = gpui::point(0.0f32, 1.0f32);
+            sep.push_triangle((o, gpui::point(o.x + px(1.0), o.y), gpui::point(o.x, o.y + px(1.0))), (s, s, s));
+            window.paint_path(sep, gpui::transparent_black());
+        }
+        if !self.labels.is_empty() {
+            window.paint_layer(lb, |window| {
+                for l in &self.labels {
+                    text(window, l);
+                }
+            });
+        }
+    }
+}
+
+/// 舊做法（Paths／v1）的 path 批次數：模擬 GPUI 依重疊給 order（BoundsTree：重疊者最大 order＋1），再依（order, 種類）排
+fn legacy_batches(runs: &[Run]) -> usize {
+    let mut prims: Vec<(usize, [f32; 4])> = Vec::new();
+    for r in runs {
+        for q in &r.quads {
+            prims.push((K_QUAD, [q[0], q[1], q[0] + q[2], q[1] + q[3]]));
+        }
+        if let Some(p) = &r.path {
+            prims.push((K_PATH, path_bb(p)));
+        }
+    }
+    let mut ord: Vec<(u32, usize)> = Vec::with_capacity(prims.len());
+    for (i, (k, b)) in prims.iter().enumerate() {
+        let o = (0..i).filter(|&j| overlaps(&prims[j].1, b)).map(|j| ord[j].0).max().map_or(1, |m| m + 1);
+        ord.push((o, *k));
+    }
+    ord.sort();
+    let mut n = 0;
+    let mut in_p = false;
+    for (_, k) in ord {
+        if k == K_PATH {
+            if !in_p {
+                n += 1;
+            }
+            in_p = true;
+        } else {
+            in_p = false;
+        }
+    }
+    n
 }
 
 /// 依 z 順序收集圖元：每條畫線的填色、線依序加入，顏色和上一段相同就併進同一條 Path
@@ -471,6 +813,8 @@ pub struct ZEmit {
     pub labels: Vec<(String, f32, f32, f32, Hsla)>,
     /// 目前這條畫線的外框（t() 合併用）
     cur_bb: [f32; 4],
+    /// A3 v2（Grouped／Seq）：依 z 順序的圖元，之後由 pack 分組
+    elems: Vec<Elem>,
 }
 
 /// 往回找同色的段最多看幾段
@@ -486,8 +830,20 @@ impl ZEmit {
     /// path 數從「每條畫線好幾段」降到接近「每種顏色幾段」，GPUI 每個 path 的固定成本跟著少。
     #[inline]
     fn t(&mut self, c: Hsla) -> &mut Tris {
+        if grouped_on() {
+            self.elems.push(Elem { k: EK::Path(Tris::default()), c });
+            let Some(Elem { k: EK::Path(t), .. }) = self.elems.last_mut() else { unreachable!() };
+            return t;
+        }
         let i = self.run_ix(c);
         &mut self.runs[i].0
+    }
+
+    fn label(&mut self, s: String, x: f32, y: f32, size: f32, c: Hsla) {
+        if grouped_on() {
+            self.elems.push(Elem { k: EK::Text(self.labels.len()), c });
+        }
+        self.labels.push((s, x, y, size, c));
     }
 
     /// 軸向矩形（x, y, w, h）：和三角形同一套合併規則（同色段、外框不重疊才往回併）
@@ -498,6 +854,10 @@ impl ZEmit {
         }
         if !quads_on() {
             self.t(c).poly(&[p(x, y), p(x + w, y), p(x + w, y + h), p(x, y + h)]);
+            return;
+        }
+        if grouped_on() {
+            self.elems.push(Elem { k: EK::Quad([x, y, w, h]), c });
             return;
         }
         let i = self.run_ix(c);
@@ -592,7 +952,7 @@ impl ZEmit {
                 for lv in &g.levels {
                     let c = if sel { main } else { gfx::hex(fib_color(lv.k)) };
                     self.seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4), c);
-                    self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, xq_tokens::t().font.sm, gfx::hex(fib_color(lv.k))));
+                    self.label(format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, xq_tokens::t().font.sm, gfx::hex(fib_color(lv.k)));
                 }
                 if let Some([a, b]) = g.diag {
                     self.t(gfx::hex(draw_color())).dashed(a, b, 1.0, 4.0, 4.0);
@@ -606,7 +966,7 @@ impl ZEmit {
                     self.rect(x, y + bh - bwid, bw, bwid, main);
                     self.rect(x, y, bwid, bh, main);
                     self.rect(x + bw - bwid, y, bwid, bh, main);
-                    self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, xq_tokens::t().font.lg, gfx::hex(draw_color())));
+                    self.label(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, xq_tokens::t().font.lg, gfx::hex(draw_color()));
                 }
             }
             Tool::Hline if hline_ext > 0.0 => {
@@ -636,6 +996,17 @@ impl ZEmit {
 
     /// 即時畫（選取段／繪製中）：幾何 → 字（字包一個整窗格的 layer，順序一定在這段幾何之上）
     pub fn paint(mut self, window: &mut Window, cx: &mut App, lb: Bounds<Pixels>) {
+        if grouped_on() {
+            let labels: Vec<_> = std::mem::take(&mut self.labels);
+            let bbs: Vec<[f32; 4]> = labels.iter().map(|(s, x, y, size, _)| label_bb(*x, *y, *size, text_width(s, *size))).collect();
+            let (groups, _) = pack(std::mem::take(&mut self.elems), labels.into_iter().map(Some).collect(), |i| bbs[i], draw_mode() == DrawMode::Seq);
+            for g in &groups {
+                g.paint(window, lb, 0.0, |window, (s, x, y, size, c)| {
+                    gfx::text(window, cx, s.clone(), *x, *y, *size, *c);
+                });
+            }
+            return;
+        }
         for r in self.paths() {
             r.paint(window, 0.0);
         }
@@ -674,12 +1045,23 @@ impl PaintCache {
             }
             em.drawing(d, g, false, ext);
         }
-        let labels = std::mem::take(&mut em.labels)
+        let shaped: Vec<(ShapedLine, f32, f32, f32)> = std::mem::take(&mut em.labels)
             .into_iter()
             .map(|(s, x, y, size, c)| (gfx::shape(window, s, size, c), x, y, size))
             .collect();
+        if grouped_on() {
+            let bbs: Vec<[f32; 4]> = shaped.iter().map(|(l, x, y, size)| label_bb(*x, *y, *size, f32::from(l.width()))).collect();
+            let (groups, stats) = pack(std::mem::take(&mut em.elems), shaped.into_iter().map(Some).collect(), |i| bbs[i], draw_mode() == DrawMode::Seq);
+            return PaintCache { paths: Vec::new(), labels: Vec::new(), h_tags, groups, stats, built_us: t0.elapsed().as_micros() as u64 };
+        }
         let paths = em.paths();
-        PaintCache { paths, labels, h_tags, built_us: t0.elapsed().as_micros() as u64 }
+        let stats = GroupStats {
+            elems: 0,
+            groups: 0,
+            paths: paths.iter().filter(|r| r.path.is_some()).count(),
+            path_batches: legacy_batches(&paths),
+        };
+        PaintCache { paths, labels: shaped, h_tags, groups: Vec::new(), stats, built_us: t0.elapsed().as_micros() as u64 }
     }
 
     /// 貼上快取（dx = 平移量）。clip 到主圖窗格。b = 整個圖面（order 隔板用）。
@@ -701,6 +1083,15 @@ impl PaintCache {
             });
         }
         let lb = xf.clip();
+        if !self.groups.is_empty() {
+            window.paint_layer(b, |_| {});
+            window.with_content_mask(Some(ContentMask { bounds: lb }), |window| {
+                for g in &self.groups {
+                    g.paint(window, lb, dx, |window, (l, x, y, size)| gfx::paint_line(window, cx, l, x + dx, *y, *size));
+                }
+            });
+            return;
+        }
         if !self.paths.is_empty() {
             window.paint_layer(b, |_| {});
         }
@@ -719,14 +1110,15 @@ impl PaintCache {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.paths.is_empty() && self.labels.is_empty() && self.h_tags.is_empty()
+        self.paths.is_empty() && self.labels.is_empty() && self.h_tags.is_empty() && self.groups.is_empty()
     }
 
     pub fn vertex_count(&self) -> usize {
         self.paths.iter().map(|r| r.path.as_ref().map_or(0, |p| p.vertices.len()) + r.quads.len() * 4).sum::<usize>()
+            + self.groups.iter().map(|g| g.runs.iter().map(|(p, _)| p.vertices.len()).sum::<usize>() + g.quads.len() * 4).sum::<usize>()
     }
     pub fn path_count(&self) -> usize {
-        self.paths.iter().filter(|r| r.path.is_some()).count()
+        self.stats.paths
     }
 }
 
