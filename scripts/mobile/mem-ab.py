@@ -10,9 +10,15 @@ def log(*a): print(time.strftime("%H:%M:%S"), *a, flush=True)
 def sh(c, t=240):
     try: return subprocess.run(["adb", "shell", c], capture_output=True, text=True, timeout=t).stdout
     except subprocess.TimeoutExpired: return ""
+def rollup():
+    pid = sh(f"pidof {PKG}").strip()
+    s = sh(f"cat /proc/{pid}/smaps_rollup", 60) if pid.isdigit() else ""
+    g = lambda k: (re.search(rf"^{k}:\s+(\d+)", s, re.M) or [0, 0])[1]
+    return {"pssMb": round(int(g("Pss")) / 1024, 1), "pssAnonMb": round(int(g("Pss_Anon")) / 1024, 1),
+            "pssFileMb": round(int(g("Pss_File")) / 1024, 1), "rssMb": round(int(g("Rss")) / 1024, 1)} if g("Pss") else None
 def meminfo():
-    for _ in range(3):
-        s = sh(f"dumpsys meminfo {PKG}")
+    for _ in range(2):
+        s = sh(f"dumpsys meminfo {PKG}", 150)
         m = re.search(r"TOTAL PSS:\s+(\d+)", s)
         if m:
             g = lambda k: (re.search(rf"^\s*{k}\s+(\d+)", s, re.M) or [0, 0])[1]
@@ -34,18 +40,19 @@ for i in range(1, A.n + 1):
         sh("; ".join([f"setprop debug.xq.e{k} ''" for k in range(10)] + [f"setprop debug.xq.e{k} {a}={b}" for k, (a, b) in enumerate(env.items())]))
         subprocess.run(["adb", "logcat", "-c"], timeout=60)
         sh(f"am start -n {PKG}/{ACT} >/dev/null")
-        ok = wait("BENCH first-quote", 240); time.sleep(20)
-        lst, raw1 = meminfo()
+        ok = wait("BENCH first-quote", 240); sh("cmd statusbar collapse"); time.sleep(20)
+        lstR = rollup(); lst, raw1 = meminfo()
         if i == 1:
             open(f"{A.out}/{mode}-list.png", "wb").write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=120).stdout)
         sh("input tap 200 300"); time.sleep(25)
-        cht, raw2 = meminfo()
-        lc = subprocess.run(["adb", "logcat", "-d", "-s", "gpui-android:*"], capture_output=True, text=True, timeout=120).stdout
+        chtR = rollup(); cht, raw2 = meminfo()
+        lc = subprocess.run(["adb", "logcat", "-d", "-s", "gpui-android:*", "xq:*"], capture_output=True, text=True, timeout=120).stdout
+        scr = re.findall(r'"screen":"(\w+)"', lc)
         fonts = re.findall(r"system fonts: .*", lc)
         if i == 1:
             open(f"{A.out}/{mode}-chart.png", "wb").write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=120).stdout)
             open(f"{A.out}/{mode}-meminfo-chart.txt", "w").write(raw2)
-        r = {"iter": i, "mode": mode, "ok": ok, "list": lst, "chart": cht, "fonts": fonts[-1] if fonts else None}
+        r = {"iter": i, "mode": mode, "ok": ok, "list": lst, "chart": cht, "listRollup": lstR, "chartRollup": chtR, "fonts": fonts[-1] if fonts else None, "screenAtEnd": scr[-1] if scr else None, "focus": sh("dumpsys window | grep mCurrentFocus").strip()[-60:]}
         log(json.dumps(r, ensure_ascii=False)); open(f"{A.out}/mem.jsonl", "a").write(json.dumps(r, ensure_ascii=False) + "\n")
 sh(f"am force-stop {PKG}")
 log("DONE")

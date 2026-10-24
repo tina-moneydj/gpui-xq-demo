@@ -52,11 +52,14 @@ for it in range(1, A.iters + 1):
         fr = json.loads(m[-1])["frames"] if m else None
         if fr != last_frames: last_frames, last_change = fr, time.time()
         if fr is not None and time.time() - last_change > A.stall and not dumped:
-            res = "stall"
             log(f"iter {it}: STALL frames={fr} pid={pid}; dumping")
             open(os.path.join(A.out, f"{A.tag}-i{it}-debuggerd.txt"), "w").write(sh(f"debuggerd -b {pid}", 240))
             open(os.path.join(A.out, f"{A.tag}-i{it}-threads.txt"), "w").write(sh(f"for t in /proc/{pid}/task/*; do echo $t $(cat $t/comm) $(cat $t/stat | cut -d' ' -f3) $(cat $t/wchan); done"))
-            open(os.path.join(A.out, f"{A.tag}-i{it}-window.txt"), "w").write(sh(f"dumpsys window windows | grep -A30 {PKG}") + sh("dumpsys SurfaceFlinger --list"))
+            win = sh(f"dumpsys window windows | grep -A40 'Window{{.*{PKG}'")
+            open(os.path.join(A.out, f"{A.tag}-i{it}-window.txt"), "w").write(win + sh("dumpsys SurfaceFlinger --list"))
+            kg = "isKeyguardShowing=true" in sh("dumpsys window | grep isKeyguardShowing")
+            # 停住時 app 視窗還在畫面上（有 surface、isVisible）＝真的凍住；不在畫面上（鎖屏、被蓋掉）＝本來就不用畫
+            res = "stall-visible" if ("isVisible=true" in win and "mHasSurface=true" in win) else ("stall-hidden-keyguard" if kg else "stall-hidden")
             open(os.path.join(A.out, f"{A.tag}-i{it}-state.txt"), "w").write(sh(f"dumpsys activity processes | grep -B2 -A30 'ProcessRecord.*{PKG}'") + sh("dumpsys input | grep -A3 -i focused") + sh(f"cat /proc/{pid}/cgroup; cat /proc/{pid}/status | grep State"))
             dumped = True
             time.sleep(20); break
@@ -67,4 +70,4 @@ for it in range(1, A.iters + 1):
     log(json.dumps(r)); summary.append(r)
     with open(os.path.join(A.out, "summary.jsonl"), "a") as f: f.write(json.dumps(r) + "\n")
 sh(f"am force-stop {PKG}")
-log("DONE", sum(r["result"] == "stall" for r in summary), "stalls /", len(summary))
+log("DONE", sum(r["result"] == "stall-visible" for r in summary), "visible stalls,", sum(r["result"].startswith("stall-hidden") for r in summary), "hidden stalls /", len(summary))
