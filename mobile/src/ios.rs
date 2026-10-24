@@ -5,8 +5,37 @@
 //!   要連 Mac 上的真行情服務：設 `XQ_FEED_ADDR=192.168.x.x:47631`（第一次會跳「區域網路」權限）。
 //! - log：stderr 直接出現在 Xcode 下方的主控台。
 
+/// `log` 巨集（gpui／gpui-mobile 內部的警告、錯誤）印到 stderr＝Xcode 主控台
+struct StderrLog;
+impl log::Log for StderrLog {
+    fn enabled(&self, m: &log::Metadata) -> bool {
+        m.level() <= log::Level::Info
+    }
+    fn log(&self, r: &log::Record) {
+        if self.enabled(r.metadata()) {
+            eprintln!("[{} {}] {}", r.level(), r.target(), r.args());
+        }
+    }
+    fn flush(&self) {}
+}
+static LOGGER: StderrLog = StderrLog;
+
+/// 啟動時印出 CoreText 找得到的字型（PingFang TC／Menlo／Helvetica）與檔案位置，字型問題好查
+fn font_report() {
+    for name in ["PingFangTC-Regular", "Menlo-Regular", "Helvetica"] {
+        match core_text::font::new_from_name(name, 16.0) {
+            Ok(f) => eprintln!("[fonts] {name} → family={:?} path={:?}", f.family_name(), f.copy_descriptor().font_path()),
+            Err(()) => eprintln!("[fonts] {name} → CoreText 找不到"),
+        }
+    }
+}
+
 /// 共同啟動：環境變數預設值、app 內建行情
 pub fn init() {
+    if log::set_logger(&LOGGER).is_ok() {
+        log::set_max_level(log::LevelFilter::Info);
+    }
+    font_report();
     if std::env::var_os("XQ_FEED_ADDR").is_none() && std::env::var("XQ_DEMO_FEED").map(|v| v != "0").unwrap_or(true) {
         let addr = format!("127.0.0.1:{}", xq_feed::DEFAULT_PORT);
         match xq_demofeed::spawn(&addr, std::time::Duration::from_millis(25)) {

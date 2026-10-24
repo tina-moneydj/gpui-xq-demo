@@ -7,7 +7,7 @@ PREFIX=tw.moneydj.xqdemo.gpui
 cd "$(dirname "$0")"
 IOS_DIR="$(pwd)"
 say() { printf '\n\033[1;34m▶ %s\033[0m\n' "$*"; }
-fail() { printf '\n\033[1;31m✗ %s\033[0m\n' "$*"; read -r -p "按 Enter 關閉…" _; exit 1; }
+fail() { printf '\n\033[1;31m✗ %s\033[0m\n' "$*"; [ -n "${XQ_NO_PAUSE:-}" ] || read -r -p "按 Enter 關閉…" _; exit 1; }
 
 say "1/5 檢查 Xcode"
 if [ ! -d /Applications/Xcode.app ] && ! xcode-select -p 2>/dev/null | grep -q Xcode; then
@@ -28,14 +28,22 @@ fi
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim || fail "加入 iOS 編譯目標失敗"
 
 say "3/5 設定 Bundle ID 與開發團隊（Local.xcconfig）"
+# 開發團隊（Team ID）：先看 Xcode 專案裡選過的，再看 Xcode 已登入的帳號；都沒有就留空，等一下在 Xcode 裡選
+TEAM=$(grep -o 'DEVELOPMENT_TEAM = [A-Z0-9]\{10\}' XQGPUI.xcodeproj/project.pbxproj 2>/dev/null | head -1 | awk '{print $3}')
+[ -z "$TEAM" ] && TEAM=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null | grep -o 'teamID = [A-Z0-9]*' | head -1 | awk '{print $3}')
 if [ ! -f Local.xcconfig ]; then
   SUFFIX=$(uuidgen | tr -d '-' | cut -c1-6 | tr 'A-Z' 'a-z')
-  TEAM=""
-  # Xcode 已登入 Apple ID 的話，自動帶入第一個團隊（之後也可以在 Xcode 裡換）
-  TEAM=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null | grep -o 'teamID = [A-Z0-9]*' | head -1 | awk '{print $3}')
   { echo "// 這台 Mac 專用（不進 git）。Bundle ID 要全世界唯一，所以後面加了亂數。"; echo "XQ_BUNDLE_ID = $PREFIX.$SUFFIX"; echo "DEVELOPMENT_TEAM = $TEAM"; } > Local.xcconfig
+elif [ -n "$TEAM" ] && grep -q '^DEVELOPMENT_TEAM = *$' Local.xcconfig; then
+  sed -i '' "s/^DEVELOPMENT_TEAM = *$/DEVELOPMENT_TEAM = $TEAM/" Local.xcconfig
 fi
 cat Local.xcconfig
+
+if [ ! -d XQGPUI.xcodeproj ]; then
+  echo "還沒有 Xcode 專案檔，下載 XcodeGen 產生一個…"
+  mkdir -p "$HOME/.xq-tools" && curl -fsSL -o /tmp/xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip \
+    && unzip -oq /tmp/xcodegen.zip -d "$HOME/.xq-tools" && "$HOME/.xq-tools/xcodegen/bin/xcodegen" generate || fail "產生 Xcode 專案失敗"
+fi
 
 say "4/5 先編 Rust（模擬器＋iPhone 各一次；第一次比較久）"
 cd "$IOS_DIR/.."
@@ -53,4 +61,4 @@ cat <<MSG
   2. Team 選你的 Apple ID（Personal Team）
   3. 上方中間選你的 iPhone（或某台模擬器）→ 按左上角 ▶ 執行
 MSG
-read -r -p "按 Enter 關閉這個視窗…" _
+[ -n "${XQ_NO_PAUSE:-}" ] || read -r -p "按 Enter 關閉這個視窗…" _
