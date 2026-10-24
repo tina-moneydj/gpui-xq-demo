@@ -1,0 +1,42 @@
+{
+ "date": "2026-10-24 21:56 +0800",
+ "runs": 1,
+ "durationSec": 30.0,
+ "rate": 10000,
+ "screen": "3840x2160",
+ "scale": "2",
+ "tile": [
+  1920,
+  1080
+ ],
+ "medians": {
+  "gpui/4w": {
+   "runs": 1,
+   "sent": 299971,
+   "loss": 0,
+   "lat_p50": 225.1,
+   "lat_p99": 327.7,
+   "lat_max": 1050.8,
+   "worst_window_p99": 330.0,
+   "fps_per_window": [
+    11,
+    11,
+    11,
+    11.0
+   ],
+   "fps_min_window": 11,
+   "fps_mean": 11.0,
+   "cpu": 522.6,
+   "cpuExLlvmpipe": 22.2,
+   "rssEnd": 482.6,
+   "pssEnd": 454.8,
+   "rssPeak": 482.6,
+   "pssPeak": 454.8,
+   "rssStart": 482.5,
+   "pssStart": 454.6,
+   "procs": [
+    "gpui-xq-demo"
+   ]
+  }
+ }
+}

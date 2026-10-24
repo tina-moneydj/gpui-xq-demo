@@ -1,0 +1,50 @@
+{
+ "baseline": [
+  {
+   "app": "gpui",
+   "window_s": 0.21877918300015153,
+   "first_frame_s": 0.25435296300202026,
+   "first_quote_s": 0.3658464800028014,
+   "idle10": {
+    "rss_mb": 187.07421875,
+    "pss_mb": 159.130859375,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 187.1,
+      "pss_mb": 159.1,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 187.21875,
+    "pss_mb": 159.2734375,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 187.2,
+      "pss_mb": 159.3,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 109.9,
+    "gpui-xq-demo/gpui-xq-demo": 9.9
+   },
+   "cpu_pct": 121.13314184575235,
+   "fps_avg": 20.2,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 1
+  }
+ ],
+ "stress": []
+}
