@@ -51,6 +51,21 @@ use theme::*;
 /// 根 view 畫過的 frame 總數（走勢圖壓測算 FPS 用）
 pub static FRAMES: AtomicU64 = AtomicU64::new(0);
 
+/// A4（2026-10-24）：實機高頻情境偶爾整個停 0.3–0.47 秒，原因還不知道。超過門檻（XQ_LONGFRAME_MS，預設 100 ms）的幀
+/// 在 stderr 印一行 `LONGFRAME|{json}`：kind＝wake（行情到了、這個視窗隔多久才開始畫；gapMs＝距上一次畫，
+/// 涵蓋上一幀 paint／present 卡住）／apply（套用行情本身）。有了時間點就能對照是第一次畫某種字、開新視窗、還是 GPU present 卡住。
+fn longframe_ms() -> f64 {
+    static V: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
+    *V.get_or_init(|| crate::plat::var("XQ_LONGFRAME_MS").ok().and_then(|v| v.parse().ok()).unwrap_or(100.0))
+}
+fn since_start_s() -> f64 {
+    static T0: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+    T0.get_or_init(Instant::now).elapsed().as_secs_f64()
+}
+fn log_long(win: usize, kind: &str, ms: f64, extra: &str) {
+    eprintln!("LONGFRAME|{{\"win\":{win},\"kind\":\"{kind}\",\"ms\":{ms:.1},\"t\":{:.3}{extra}}}", since_start_s());
+}
+
 fn title_h() -> f32 { xq_tokens::t().layout.title_bar }
 /// 主視窗超過這麼久沒畫（被蓋住／縮小），後備計時器直接套用行情
 const FALLBACK_MS: u64 = 25;
@@ -255,6 +270,9 @@ struct Terminal {
     sync: Option<SyncCheck>,
     /// A1：共用行情匯流（主視窗建立，其他視窗共用）
     hub: Rc<Hub>,
+    /// A4：第一次被行情叫醒、還沒畫的時間
+    wake_at: Option<Instant>,
+    long_frames: u64,
     _tasks: Vec<Task<()>>,
     _subs: Vec<Subscription>,
 }
@@ -392,6 +410,8 @@ impl Terminal {
             fallback_applies: 0,
             sync: (crate::plat::var_os("XQ_SYNC_CHECK").is_some_and(|v| v != "0")).then(SyncCheck::default),
             hub,
+            wake_at: None,
+            long_frames: 0,
             _tasks: feed_task.into_iter().chain(fallback_task).chain([stats_task]).collect(),
             _subs: subs,
         };
@@ -530,11 +550,16 @@ impl Terminal {
 
     /// 行情一到：叫全部視窗畫（每個視窗在自己的 render 開頭 pump）
     fn notify_all(&mut self, cx: &mut Context<Self>) {
+        let now = Instant::now();
+        self.wake_at.get_or_insert(now);
         cx.notify();
         if !self.peers.is_empty() {
             self.peers.retain(|p| p.upgrade().is_some());
             for p in self.peers.clone() {
-                let _ = p.update(cx, |_, cx| cx.notify());
+                let _ = p.update(cx, |p, cx| {
+                    p.wake_at.get_or_insert(now);
+                    cx.notify()
+                });
             }
         }
     }
@@ -782,10 +807,25 @@ impl Render for Terminal {
                 }
             }
         }
-        self.last_render = Some(Instant::now());
+        let r0 = Instant::now();
+        let prev_render = self.last_render.replace(r0);
+        let thr = longframe_ms();
+        if let Some(w) = self.wake_at.take() {
+            let wake_ms = r0.duration_since(w).as_secs_f64() * 1000.0;
+            let gap_ms = prev_render.map(|p| r0.duration_since(p).as_secs_f64() * 1000.0);
+            if wake_ms > thr {
+                self.long_frames += 1;
+                log_long(self.win, "wake", wake_ms, &format!(",\"gapMs\":{:.1},\"frames\":{},\"n\":{}", gap_ms.unwrap_or(-1.0), self.total_frames, self.long_frames));
+            }
+        }
         // 行情在這一幀開頭套用：子 view 在這之後才 prepaint，被 notify 的會在同一幀重畫
         if self.render_apply && (self.hub.taker.pending() || self.hub.has_queued(self.win)) {
             self.pump(cx);
+            let ms = r0.elapsed().as_secs_f64() * 1000.0;
+            if ms > thr {
+                self.long_frames += 1;
+                log_long(self.win, "apply", ms, &format!(",\"frames\":{},\"n\":{}", self.total_frames, self.long_frames));
+            }
         }
         if let Some(tb) = self.tick.as_mut() {
             tb.on_render(window);
