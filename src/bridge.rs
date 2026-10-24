@@ -45,6 +45,25 @@ pub struct Counters {
     pub quote_rows: AtomicU64,
 }
 
+/// 只能取件、不能訂閱的 FeedBridge 分身（給其他視窗用）
+#[derive(Clone)]
+pub struct Taker {
+    inbox: Arc<Mutex<Inbox>>,
+    pending: Arc<AtomicBool>,
+}
+
+impl Taker {
+    /// UI 端：先清旗標再取走，之後到的包會再喚醒一次。
+    pub fn take(&self) -> Inbox {
+        self.pending.store(false, Ordering::Release);
+        std::mem::take(&mut *self.inbox.lock())
+    }
+    /// 背景有新東西還沒被 UI 取走（render 套用／後備套用用）
+    pub fn pending(&self) -> bool {
+        self.pending.load(Ordering::Acquire)
+    }
+}
+
 pub struct FeedBridge {
     pub inbox: Arc<Mutex<Inbox>>,
     pending: Arc<AtomicBool>,
@@ -72,15 +91,9 @@ impl FeedBridge {
         (FeedBridge { inbox, pending, counters, cmd: cmd_tx, last_sub: None }, wake_rx)
     }
 
-    /// UI 端：先清旗標再取走，之後到的包會再喚醒一次。
-    pub fn take(&self) -> Inbox {
-        self.pending.store(false, Ordering::Release);
-        std::mem::take(&mut *self.inbox.lock())
-    }
-
-    /// 背景有新東西還沒被 UI 取走（render 套用／後備套用用）
-    pub fn pending(&self) -> bool {
-        self.pending.load(Ordering::Acquire)
+    /// 多視窗共用的取件口（A1：哪個視窗先畫就由它取走）
+    pub fn taker(&self) -> Taker {
+        Taker { inbox: self.inbox.clone(), pending: self.pending.clone() }
     }
 
     pub fn subscribe(&mut self, sub: Subscribe) {
