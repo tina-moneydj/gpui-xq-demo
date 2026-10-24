@@ -1,0 +1,12 @@
+[package]
+name = "xq-tokens"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "XQ 設計 token（W3C DTCG 2025.10 JSON）→ 型別化的 Theme；egui 與 GPUI 共用。不依賴任何 UI 框架。"
+
+[dependencies]
+serde_json = "1"
+
+[build-dependencies]
+serde_json = "1"

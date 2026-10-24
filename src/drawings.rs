@@ -81,9 +81,10 @@ impl Drawing {
 }
 
 pub const FIB: [f64; 7] = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
-pub const FIB_COLORS: [u32; 7] = [0x9e9e9e, 0xe5484d, 0xf5a623, 0x4caf50, 0x26a69a, 0x4fc3f7, 0x9e9e9e];
-pub const DRAW_COLOR: u32 = 0xffb000;
-pub const SEL_COLOR: u32 = 0xffffff;
+// 畫線配色：來自設計 token（color.drawing.*）
+pub fn fib_color(k: usize) -> u32 { let f = &xq_tokens::t().drawing.fib; f[k % f.len()] }
+pub fn draw_color() -> u32 { xq_tokens::t().drawing.stroke }
+pub fn sel_color() -> u32 { xq_tokens::t().drawing.selected }
 
 /// 價格窗格的座標轉換（與 wry xOf / yOf 相同）
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -500,12 +501,12 @@ impl ZEmit {
     /// 一條畫線。hline_ext：水平線往左右各多畫一個寬度（快取平移時不會斷）
     pub fn drawing(&mut self, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
         let w: f32 = if sel { 2.0 } else { 1.4 };
-        let main = gfx::hex(if sel { SEL_COLOR } else { DRAW_COLOR });
+        let main = gfx::hex(if sel { sel_color() } else { draw_color() });
         // 外框（含線寬餘量；水平線含左右延伸）
         let ext = if d.kind == Tool::Hline { hline_ext } else { 0.0 };
         self.cur_bb = [g.bbox[0] - ext - 4.0, g.bbox[1] - 4.0, g.bbox[2] + ext + 4.0, g.bbox[3] + 4.0];
         if let Some(f) = &g.fill {
-            let c = gfx::hexa(DRAW_COLOR, if d.kind == Tool::Rect { 0.10 } else { 0.07 });
+            let c = gfx::hexa(draw_color(), if d.kind == Tool::Rect { 0.10 } else { 0.07 });
             self.t(c).poly(f);
         }
         match d.kind {
@@ -513,27 +514,27 @@ impl ZEmit {
                 for n in 1..g.levels.len() {
                     let (lv, prev) = (&g.levels[n], &g.levels[n - 1]);
                     let (ya, yb) = (lv.y.min(prev.y), lv.y.max(prev.y));
-                    self.quad(lv.x1, ya, lv.x2 - lv.x1, yb - ya, gfx::hexa(FIB_COLORS[lv.k], 0x14 as f32 / 255.0));
+                    self.quad(lv.x1, ya, lv.x2 - lv.x1, yb - ya, gfx::hexa(fib_color(lv.k), 0x14 as f32 / 255.0));
                 }
                 for lv in &g.levels {
-                    let c = if sel { main } else { gfx::hex(FIB_COLORS[lv.k]) };
+                    let c = if sel { main } else { gfx::hex(fib_color(lv.k)) };
                     self.t(c).seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4));
-                    self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, 11.0, gfx::hex(FIB_COLORS[lv.k])));
+                    self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, xq_tokens::t().font.sm, gfx::hex(fib_color(lv.k))));
                 }
                 if let Some([a, b]) = g.diag {
-                    self.t(gfx::hex(DRAW_COLOR)).dashed(a, b, 1.0, 4.0, 4.0);
+                    self.t(gfx::hex(draw_color())).dashed(a, b, 1.0, 4.0, 4.0);
                 }
             }
             Tool::Text => {
                 if let Some([x, y, bw, bh]) = g.text_box {
-                    self.quad(x, y, bw, bh, gfx::hexa(0x1e1e1e, 0.85));
+                    self.quad(x, y, bw, bh, gfx::hexa(xq_tokens::t().drawing.text_bg.rgb, xq_tokens::t().drawing.text_bg.a));
                     let t = self.t(main);
                     let bwid = if sel { 2.0 } else { 1.0 };
                     t.poly(&[p(x, y), p(x + bw, y), p(x + bw, y + bwid), p(x, y + bwid)]);
                     t.poly(&[p(x, y + bh - bwid), p(x + bw, y + bh - bwid), p(x + bw, y + bh), p(x, y + bh)]);
                     t.poly(&[p(x, y), p(x + bwid, y), p(x + bwid, y + bh), p(x, y + bh)]);
                     t.poly(&[p(x + bw - bwid, y), p(x + bw, y), p(x + bw, y + bh), p(x + bw - bwid, y + bh)]);
-                    self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, gfx::hex(DRAW_COLOR)));
+                    self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, xq_tokens::t().font.lg, gfx::hex(draw_color())));
                 }
             }
             Tool::Hline if hline_ext > 0.0 => {
@@ -546,7 +547,7 @@ impl ZEmit {
                     t.seg(s[0], s[1], w);
                 }
                 if let Some([a, b]) = g.mid {
-                    self.t(gfx::hex(DRAW_COLOR)).dashed(a, b, 1.0, 4.0, 4.0);
+                    self.t(gfx::hex(draw_color())).dashed(a, b, 1.0, 4.0, 4.0);
                 }
             }
         }
@@ -574,14 +575,14 @@ impl ZEmit {
 /// 選取畫線的控制點（live 層，永遠在最上面）
 pub fn paint_handles(window: &mut Window, hs: &[P]) {
     for h in hs {
-        gfx::boxed(window, h.x - 4.5, h.y - 4.5, 9.0, 9.0, gfx::hex(SEL_COLOR), gfx::hex(0x000000), 1.0);
+        gfx::boxed(window, h.x - 4.5, h.y - 4.5, 9.0, 9.0, gfx::hex(sel_color()), gfx::hex(xq_tokens::t().drawing.handle_border), 1.0);
     }
 }
 
 impl PaintCache {
     /// 由幾何快取建出一段（idxs = 由下到上的畫線索引）的圖元：只處理可見畫線
     pub fn build(window: &mut Window, list: &[Drawing], gc: &GeomCache, xf: &Xf, idxs: &[u32]) -> PaintCache {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         let mut em = ZEmit::default();
         let mut h_tags = Vec::new();
         let ext = xf.plot_r - xf.plot_l;
@@ -591,7 +592,7 @@ impl PaintCache {
             if d.kind == Tool::Hline {
                 let y = g.segs[0][0].y;
                 if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
-                    h_tags.push((y, gfx::shape(window, fmt_p(d.pts[0].p), 11.0, gfx::hex(0xffffff))));
+                    h_tags.push((y, gfx::shape(window, fmt_p(d.pts[0].p), xq_tokens::t().font.sm, gfx::hex(xq_tokens::t().chart.tag_text))));
                 }
             }
             em.drawing(d, g, false, ext);
@@ -617,7 +618,7 @@ impl PaintCache {
             let tb = Bounds::new(gpui::point(px(xf.plot_r), px(xf.pane_top)), gpui::size(px(66.0), px(xf.pane_h)));
             window.paint_layer(tb, |window| {
                 for (y, l) in &self.h_tags {
-                    gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(0x8a6a00));
+                    gfx::rect(window, xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, gfx::hex(xq_tokens::t().chart.label_bg_hline));
                     gfx::paint_line(window, cx, l, xf.plot_r + 5.0, *y, 11.0);
                 }
             });

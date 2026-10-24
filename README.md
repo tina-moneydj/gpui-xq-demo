@@ -3,6 +3,13 @@
 與 [`wry-xq-demo`](https://github.com/tina-moneydj/wry-xq-demo)（tao + wry，HTML/JS 畫面）**接同一個行情來源**：
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
+> **main 現在有什麼（2026-10-24 合併，台北時間）**
+> - **選型最新結論**先看「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
+> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android 手機版**（`mobile/`，見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
+> - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
+> - **GPUI 三項優化**（沒變的視窗不重畫、捲動卡頓、報價延遲）已在 main，數字見「[GPUI 優化](#gpui-優化2026-10-23)」。
+> - 成交明細（`XQ_TAPE=1`）往下捲看舊成交時，新成交不會再把畫面推走（`Home` 回到最新）。
+
 > **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
 
 > **Mac 壓測包（mac-bench 分支）**：在自己的 Mac 上比 GPUI vs egui，一個指令跑完、結果 zip 傳回來 → [bench/mac/README.md](bench/mac/README.md)（目前還沒有 Mac 實測數字）。
@@ -12,6 +19,453 @@
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
+
+## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
+
+> Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；由 **NVIDIA GTX 1650 入門獨立顯卡**繪圖，另有 Intel UHD 770 內顯未使用；2 個 1920×1200 螢幕、59 Hz）。
+> 每項 3 輪取中位數；差距 5% 以內算平手；FPS 兩邊都到螢幕上限算平手。完整數字與診斷：[docs/bench/real-hw/](docs/bench/real-hw/README.md)。
+
+### 結論先看
+
+| 項目 | Mac M4 | Windows i7-13700 |
+|---|---|---|
+| 單視窗報價延遲 p50／p99 | **平手**：GPUI 30.6–32.7／35.2–36.2 ms；egui 30.4–32.1／33.4–36.7 ms | **平手**：兩邊約 31／34 ms |
+| 重圖表 1000 條畫線、100 層 FPS | **平手**：三版都 60 | 壓測包逾時沒有正式數字；log 裡兩邊都約 60 |
+| 開啟到第一筆報價 | 🏆 **GPUI** 190.5 ms（egui 246–248） | 🏆 **egui** 192 ms（GPUI 316） |
+| 一般畫面記憶體 | 🏆 **GPUI** RSS 101 MB（egui 116–121） | 大致平手（Working Set 74 vs 77.5 MB） |
+| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
+| CPU（高頻報價） | 🏆 **egui OpenGL** 6–7%（GPUI 30–35%；egui wgpu 23–35%） | 🏆 **egui** 8.9–13.6%（GPUI 20.8–25.2%） |
+| GPU 使用率／GPU 記憶體 | 整機數字，只當參考 | 🏆 **egui**：GPUI 是 2.3–5 倍／2.3–2.8 倍 |
+| 4 個視窗 延遲 p50／p99 | 🏆 **egui** 17.6／33.4 ms（GPUI 44.8／49.6） | 🏆 **egui** 21.8／33.7 ms（GPUI 43／64.3，57–58 FPS） |
+| 5 萬列捲動 | 都到 60 FPS；卡頓 GPUI 2 次、egui 0 | 🏆 **egui** 60 FPS、0 次（GPUI 51.7 FPS、70 次） |
+
+- **和 Linux 沒顯卡的結果比**：GPUI 的 FPS 和單視窗延遲差距**在一般電腦上消失了**（Linux GPUI 延遲中位數 74–75 ms、重圖表約 21 FPS → 這裡約 31 ms、60 FPS）。但 **CPU／GPU 用量和多視窗**，egui 仍然明顯較好，Windows 上最明顯。
+- **選型建議改成「GPUI 有條件」**：GPUI 沒有做不到的事（60 FPS、0 掉筆、延遲一樣），但效率約差 2 倍、多視窗落後。先修我們自己程式的三項（多視窗晚一幀、報價表改自己畫、水平垂直線改矩形），再請 Tina 在同兩台重跑；如果多視窗和 Windows CPU 還是明顯落後，看盤核心就改用 egui。
+- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有），原因還在查。
+- 細節、框架限制 vs 可修項目、測試包本身的錯（Windows 重圖表逾時、Mac 摘要勝負標錯）：見 [docs/bench/real-hw/README.md](docs/bench/real-hw/README.md)。
+
+## GPUI 優化（2026-10-23）
+
+### 結論先看
+
+- **捲動 5 萬列報價表變順了**：每秒畫面 24.2 → **31.8**，大約多 3 成。卡頓次數兩邊都是 146 次（中位數），沒有變少。
+- **主視窗變省電**：平常看盤的 CPU 用量 142.7% → **120.5%**，約省 15%。
+- **開 1 個視窗（4K）時報價上畫面更快**：一半報價的延遲在 102.1 ms 以內 → 現在 **62.9 ms**；最慢的 1% 從 253.1 → **146.6 ms**。
+- **開 4 個視窗**：最慢的 1% 延遲 829.2 → **553.0 ms**，CPU 488.6% → **340.0%**。不過一般延遲只從 343.1 小降到 321.3 ms，記憶體也沒有變少（439 → 446 MB）。
+- **高頻報價單視窗**：每秒 10 萬筆時，一半報價的延遲 66.8 → **32.0 ms**；開盤爆量時 61.5 → **40.3 ms**。
+  但每秒 1 千筆和 1 萬筆時，最慢 1%（p99）反而變差，大約 103／88 → 110／109 ms（原因看下面「注意事項」）。
+- **4 個視窗的報價同步測試通過**：跑了 3 次，**沒有任何一個視窗落後超過自己的一幀**。
+  被藏起來的視窗**完全不畫**（0 幀），重新顯示後會馬上補畫。
+- **egui 版還是快很多**（同一台機器、同一時段測）。捲動每秒 74.9 幀、0 次卡頓；4 個視窗一般延遲 51.7 ms；CPU 42.6%。
+  GPUI 這次縮小了差距，但沒有追上。
+
+> 測試環境：這台機器**沒有顯示卡**，畫面全靠 CPU 模擬（Mesa lavapipe），所以絕對數字比真的電腦慢很多。前後比較才有意義。
+> 測的時候，同一台機器上還有其他工作在跑（Android 模擬器、Mac 版編譯），系統負載大約 4–17，數字的起伏比較大。
+> 為了公平，「優化前、優化後、egui」三個版本**輪流交錯各跑 3 輪**，下面都取中位數。
+
+### 改了什麼（白話）
+
+1. **沒變的視窗就不重畫**。報價表、資訊格、走勢圖只在「自己顯示的資料真的變了」才要求重畫；被遮住或最小化的視窗不畫，重新露出來立刻補一幀。
+2. **報價一到就排下一幀**。原本是背景每 16 ms 定時把報價套進畫面，現在改成「報價到了 → 要求畫一幀 → 畫之前才把最新報價套進去」，少等一輪計時器。
+   另外加了一個 25 ms 的保險：如果主視窗被藏起來沒在畫，其他視窗也照樣拿到最新報價。
+3. **捲動卡頓的原因**（用 perf 找的）是每幀要花 14–16 ms，剛好卡在 60 Hz 的 16.7 ms 邊緣，常常趕不上就變成 33 ms 一幀。
+   最大的開銷是左側 11 個工具列圖示：它們用「向量路徑」畫，在沒有顯示卡的環境下每條路徑都要清一整張多重取樣圖，光這 11 個圖示每幀就要約 3 ms。
+   現在改成 SVG 小圖示，畫一次就快取起來，外觀完全一樣。
+4. **量測方式修正**：舊的量測程式自己會讓「不在前景的視窗」被 GPUI 降到大約 30 fps，量出來比實際慢。
+   現在改成在下一次畫面開始時記錄時間（`XQ_PROBE=nextframe` 可以切回舊方法比較）。所以「優化前」的數字是舊版程式碼加上新的量測方式。
+5. **共用字形／圖集快取**：文字系統本來就是整個程式共用。但每個視窗的 GPU 圖集、交換鏈、多重取樣暫存圖是 GPUI 內部每個視窗各一份（每個視窗約多 80 MB），**不改 GPUI 原始碼就沒辦法共用**，這次沒有做。
+
+### 數字（交錯 3 輪中位數；優化前 7954c22 → 優化後 4ec0a12；egui 當參考）
+
+| 項目 | 優化前 | 優化後 | egui |
+|---|---|---|---|
+| 主視窗一般看盤 CPU（%） | 142.7 | **120.5** | 42.6 |
+| 主視窗記憶體 PSS（MB，60 秒） | 146.2 | 149.4 | 84.3 |
+| 第一筆報價上畫面（秒） | 0.6 | 0.4 | 0.2 |
+| 5 萬列捲動 fps | 24.2 | **31.8** | 74.9 |
+| 5 萬列捲動卡頓次數 | 146 | 146 | 0 |
+| 4K 1 視窗 延遲 p50／p99（ms） | 102.1／253.1 | **62.9／146.6** | 29.8／39.6 |
+| 4K 4 視窗 延遲 p50／p99（ms） | 343.1／829.2 | **321.3／553.0** | 51.7／96.8 |
+| 4K 4 視窗 最慢視窗 p99（ms） | 891.7 | **591.8** | 113.7 |
+| 4K 4 視窗 CPU（%）／PSS（MB） | 488.6／439.4 | 340.0／445.5 | 414.2／119.3 |
+| 每秒 1 千筆 延遲 p50／p99（ms） | 67.8／103.1 | 47.6／110.7 | 29.6／35.7 |
+| 每秒 1 萬筆 延遲 p50／p99（ms） | 47.0／87.9 | 47.6／109.2 | 30.5／38.8 |
+| 每秒 10 萬筆 延遲 p50／p99（ms） | 66.8／142.9 | **32.0／110.0** | 31.3／39.8 |
+| 開盤爆量 延遲 p50／p99（ms） | 61.5／172.4 | **40.3／78.3** | — |
+| 高頻報價時 CPU（1 萬筆，%） | 303.5 | 182.7 | 113.1 |
+
+所有情境都沒有掉任何報價（loss 0）。p50＝一半的報價在這個時間內上畫面；p99＝最慢的 1%。
+
+**負載比較低時的補充（不是中位數，只當參考）**：在交錯測之前，負載比較低時各跑過一次單次測試，數字比上表穩定。
+- 5 萬列捲動（`main-*`，負載約 1.4–5）：優化前 48.8–55.7 fps、卡頓 55–97 次；優化後約 60 fps、卡頓 22–27 次。
+- 每秒 1 萬筆（:63 單次測試，原始紀錄在 /workspace/opt/exp，沒有放進 repo）：優化前 p50 58.6／p99 79.6 ms、39 fps；優化後 29.6／32.3 ms、63 fps。
+
+上表中「1 千筆／1 萬筆 p99 變差」只在高負載的交錯測出現。我們推測是和其他工作搶 CPU，但**沒有證實**，所以照實列出。
+
+### 4 視窗報價同步測試
+
+`scripts/bench-sync-occlude.py`：4K、4 個視窗、每秒 1 萬筆，共跑 30 秒。中間先把主視窗藏 5 秒，再把第 4 個視窗藏 5 秒。
+每畫一幀，就檢查畫面上的價格是不是「上一幀開始前就已經到的最新價」。如果不是，就算一次違規。
+
+| | 第 1 次 | 第 2 次 | 第 3 次 |
+|---|---|---|---|
+| 違規（落後超過一幀） | **0** | **0** | **0** |
+| 被藏起來的視窗畫了幾幀 | 0／0 | 0／0 | 0／0 |
+| 主視窗被藏時，其他視窗靠保險機制更新的次數 | 35 | 10 | 26 |
+| 重新顯示後第一幀（ms，主視窗／#4） | 87.3／91.9 | 247.4／337.5 | 97.7／186.4 |
+| 每幀間隔 p50（ms，全開） | 103.5 | 326.9 | 307.8 |
+| 最大落後（ms） | 116.9 | 319.2 | 296.0 |
+
+「落後」的上限大約就是一幀的時間。第 2、3 次時機器很忙（負載 11–13），每幀要 300 ms 左右，所以落後也跟著變大，但仍然沒有超過一幀。
+
+### 注意事項
+
+- 沒有顯示卡，畫面全靠 CPU 模擬。在真的電腦上，路徑和多重取樣的成本會小很多，改善幅度可能不同。
+- 量測期間有其他工作在跑，負載很高。原始資料、每輪的負載紀錄都在 `ilv/loads.log`。
+- wry 版這次沒有測，也沒有改。
+
+### 原始資料與重跑
+
+- `docs/bench/2026-10-23-opt/ilv/`：交錯 3 輪的原始結果。
+- `summary.json`：中位數，用 `python3 docs/bench/2026-10-23-opt/agg.py` 產生。
+- `run2.sh`：交錯測的腳本。
+- `main-*`、`multi-*`：較早、負載較低的單次測試。
+- `sync/`：同步測試，`summary.json` 是 3 次的重點。
+- 重跑方法：`BENCH_SHARED_BOX=1 ./docs/bench/2026-10-23-opt/run2.sh`（會用 :62／:63 顯示、埠 47761／47781）。
+
+## 網頁版（WebAssembly，egui 與 GPUI 都有）
+
+> 2026-10-24 已合併到 main。同一份程式碼編成 `wasm32-unknown-unknown`，在瀏覽器裡跑同一個主畫面：
+> 5 萬列報價表、重圖表、可拖曳分隔線、狀態列、搜尋框（注音可打）、內嵌中文字型。行情透過 `xq-ws-bridge`（TCP 47631 ⇄ WebSocket）進瀏覽器，**解碼還是原生那份 `xq-feed`**。
+
+### 結論先看
+
+- **兩個都真的跑得起來，而且功能跟原生一樣。** GPUI 網頁版不是實驗品：Zed 官方 2026-02 已合併 `gpui_web`（證據見下）。這台沒顯卡，兩版都走 WebGL2（Chrome 的 ANGLE＋軟體 llvmpipe）。
+- **下載量：egui 較小 🏆** — gzip 後 egui **4.2 MB**、GPUI **6.0 MB**（其中 2.5 MB 是兩版共用的中文字型子集）。
+- **開啟速度：egui 較快 🏆** — 瀏覽器已開好、檔案在本機時，到第一筆報價 egui 0.40 秒、GPUI 0.60 秒（原生 0.15／0.41 秒）。
+- **報價延遲：egui 較低 🏆** — 中位數 egui 網頁 **32 ms**（≈ egui 原生 31 ms）、GPUI 網頁 **48–51 ms**（**比 GPUI 原生 74–75 ms 還快**：這台的瀏覽器 WebGL 比原生的軟體 Vulkan 快）。每秒 10 萬筆兩版都 **0 掉筆**。p99 網頁版約 60–70 ms（原生 36–39 ms），多了瀏覽器排程的抖動。
+- **捲動順暢：GPUI 較好 🏆** — 5 萬列邊跳價邊捲，卡頓次數 GPUI 20、egui 167（egui 原生只有 1）；捲動 FPS GPUI 49、egui 42。
+- **重圖表 FPS：egui 較高 🏆** — 33 vs 26（原生 42 vs 21）。
+- **記憶體：網頁版都比原生多很多，也比 wry 多** — 整個 Chrome 加起來 egui 546、GPUI 580 MB PSS（原生 87／150、wry 402）。但**空白 Chrome 本身就 423 MB**，扣掉後程式本身約 egui 120、GPUI 150 MB；wasm 記憶體只有 10／15 MB（重圖表 16／54 MB）。
+- **圖層／上下順序在網頁版正常**（截圖見下），但拖曳／改順序比原生慢很多：單次冒煙測試拖曳 FPS egui 10、GPUI 5（原生 56／10），每次重建約 3 ms（原生約 0.3 ms）。只跑一次、每段 3 秒，**當方向參考，不是正式數字**。
+- **怎麼選：** 要網頁版的話 egui 比較划算（小、快、延遲低）；GPUI 網頁版能用，捲動較順，但檔案大、延遲較高。**網頁版共同的代價**是多一個瀏覽器的記憶體、只有一個視窗、要有 WebSocket 轉接（見「做不到的地方」）。
+
+> **注意事項（重要）**：這台 **沒有 GPU**，Chrome 155 用 WebGL2 on ANGLE＋Mesa llvmpipe（軟體繪圖）；FPS 和「CPU 全部」主要反映軟體繪圖速度，有顯卡時會高很多、低很多。
+> 「CPU 扣軟體繪圖」＝扣掉 llvmpipe 執行緒後的 CPU。開啟時間是「瀏覽器已開、檔案在本機（不含網路下載時間）」，原生是「程式啟動→」，兩者起點不同。
+> 記憶體用 **PSS**（共用頁面按比例分攤，Chrome 多行程時才不會重複算），RSS 也列了。
+> 測試期間 VM 有數次暫停（box 時間跳 4–5 分鐘），受影響的 3 個場次已重跑；另一組「box 很吵時」的數據（同時有別的壓測，負載 6–10）放在 `2026-10-23-contended/`，結論相同。
+
+### 數字（3 輪中位數，box 安靜時；`docs/bench/web/2026-10-23-quiet/`）
+
+原生三欄取自 `docs/bench/2026-10-21-parity`（同一台、同樣的場景）。
+
+#### 主視窗（33 檔自選、日K＋MA＋量，demo-ticks 行情）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 開啟→第一筆報價 (秒) | 0.40 | 0.60 | 0.15 | 0.41 | 0.89 |
+| PSS 60 秒 (MB) | 546 | 580 | 87 | 150 | 402 |
+| RSS 60 秒 (MB) | 1,233 | 1,268 | 124 | 185 | 627 |
+| 　其中 wasm 記憶體 (MB) | 10 | 15 | — | — | — |
+| CPU 全部 (%) | 128 | 221 | 56 | 247 | 171 |
+| CPU 扣軟體繪圖 (%) | 14 | 20 | 4 | 19 | 70 |
+| FPS | 19.4 | 19.8 | 23.9 | 26.0 | 59.7 |
+
+#### 5 萬列報價表（每秒 3000 筆合成跳價 30 秒，再邊跳邊捲 10 秒）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 跳價 FPS | 33.5 | 40.4 | 54.5 | 32.2 | 59.7 |
+| 捲動 FPS | 42.0 | 49.1 | 85.4 | 32.4 | 59.9 |
+| 捲動卡頓次數（>16.7ms×2） | 167 | 20 | 1 | 154 | 1 |
+| 跳價 CPU 全部／扣軟體繪圖 (%) | 232／25 | 447／35 | 126／12 | 299／22 | 182／67 |
+| PSS 跳價中 (MB) | 546 | 582 | 93 | 154 | 397 |
+
+#### 重圖表（20 疊加＋8 副圖＋1000 條畫線，每幀跳價／十字線／平移各 10 秒）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 開啟→重圖表第一幀 (秒) | 0.80 | 1.00 | 0.48 | 0.68 | 1.23 |
+| FPS 跳價／十字線／平移 | 32.7／33.3／33.8 | 26.4／26.9／25.9 | 41.8／39.6／41.7 | 20.5／20.7／20.8 | 36.1／36.5／26.2 |
+| CPU 全部 (%)（十字線段） | 488 | 559 | 226 | 353 | 255 |
+| CPU 扣軟體繪圖 (%)（十字線段） | 61 | 60 | 53 | 33 | 131 |
+| PSS（十字線段，MB） | 634 | 658 | 104 | 186 | 485 |
+| 　其中 wasm 記憶體 (MB) | 16 | 54 | — | — | — |
+
+#### 高頻報價（xq-tickgen，5 萬列表＋2330 日K；延遲＝產生器送出→畫面，中位數／p99，ms）
+
+| 項目 | egui 網頁 | GPUI 網頁 | egui 原生 | GPUI 原生 | wry（WebKitGTK） |
+|---|---|---|---|---|---|
+| 每秒 1 千筆 延遲 | 32／65 | 48／60 | 30／36 | 75／79 | 46／54 |
+| 每秒 1 萬筆 延遲 | 32／64 | 49／61 | 31／39 | 74／79 | 47／66 |
+| 每秒 5 萬筆 延遲 | 32／64 | 51／72 | 31／36 | 74／80 | 49／67 |
+| 每秒 10 萬筆 延遲 | 32／64 | 49／64 | 31／37 | 75／82 | 51／66 |
+| 開盤爆量（前 3 秒約 30 萬筆） 延遲 | 31／64 | 49／61 | 30／34 | 46／80 | 46／58 |
+| 每秒 10 萬筆 掉筆 | 0 | 0 | 0 | 0 | 0 |
+| 每秒 10 萬筆 CPU 全部／扣軟體繪圖 (%) | 331／52 | 407／53 | 154／24 | 300／30 | 225／111 |
+| 每秒 10 萬筆 FPS | 54.0 | 39.0 | 61.0 | 32.0 | 55.0 |
+| 每秒 10 萬筆 PSS 結束 (MB) | 554 | 603 | 105 | 164 | 571 |
+
+### 下載量（`dist/web`，wasm-opt -O3 之後）
+
+| | wasm | wasm gzip | js（膠水碼） | js gzip | 其中中文字型 |
+|---|---|---|---|---|---|
+| **egui 網頁** 🏆 | 7.5 MB | **4.2 MB** | 86 KB | 12 KB | 3.0 MB（gzip 2.5 MB） |
+| GPUI 網頁 | 13.0 MB | 6.0 MB | 160 KB | 23 KB | 同上 |
+| 參考：原生執行檔 | egui 13.0 MB／GPUI 25.5 MB／wry 1.7 MB（另需系統 WebKitGTK） | | | | |
+
+- 字型：Noto Sans CJK TC 子集（Big5 常用字 5,401 字＋Big5 符號＋注音＋程式裡出現的所有字，共 6,762 字），另加 13 KB 的等寬英數字。罕用字會變方塊；完整字型約 16 MB。
+- 數字是合併 main（畫線圖層）之後重建的大小；壓測時用的是合併前的版本（egui 7,475,729／GPUI 12,908,932 bytes，差不到 1%）。
+
+### 截圖
+
+| egui 網頁 | GPUI 網頁 |
+|---|---|
+| ![egui 網頁](docs/bench/web/2026-10-23-quiet/egui-web.png) | ![GPUI 網頁](docs/bench/web/2026-10-23-quiet/gpui-web.png) |
+| ![egui 網頁 5 萬列](docs/bench/web/2026-10-23-quiet/egui-web-stress.png) | ![GPUI 網頁 5 萬列](docs/bench/web/2026-10-23-quiet/gpui-web-stress.png) |
+| ![egui 網頁重圖表](docs/bench/web/2026-10-23-quiet/egui-web-heavy.png) | ![GPUI 網頁重圖表](docs/bench/web/2026-10-23-quiet/gpui-web-heavy.png) |
+| 圖層正確性（上層文字框蓋住選取中的矩形）<br>![egui 網頁圖層](docs/bench/web/2026-10-23-layers-smoke/egui-web-layers100-zshot.png) | <br>![GPUI 網頁圖層](docs/bench/web/2026-10-23-layers-smoke/gpui-web-layers100-zshot.png) |
+| 注音輸入（fcitx5＋新酷音，打「台積電」）<br>![egui 注音](docs/bench/web/ime/egui-web-ime-typing.png) | <br>![GPUI 注音](docs/bench/web/ime/gpui-web-ime-typing.png) |
+| 選字後搜尋結果<br>![egui 搜尋](docs/bench/web/ime/egui-web-ime-result.png) | <br>![GPUI 搜尋](docs/bench/web/ime/gpui-web-ime-result.png) |
+
+**注音輸入**：兩版都可以在網頁搜尋框用注音打字（Linux Chrome＋fcitx5 新酷音，`GTK_IM_MODULE=fcitx`），打「台積電」後出現 2330。這次只測了直接送字；候選字視窗的位置沒有驗證（這台截圖看不到 fcitx 的候選窗）。
+
+### GPUI 網頁版：實際狀況（查證＋實測）
+
+先更正之前的說法（「GPUI 網頁版還不能拿來做產品、只有社群實驗移植」）——**這已經過時**：
+
+| 證據 | 內容 |
+|---|---|
+| Zed 官方 PR [#50228 GPUI on the web](https://github.com/zed-industries/zed/pull/50228) | 2026-02-26（台北時間 02-27）由 Zed 員工合併，新增 `crates/gpui_web`：`wasm32-unknown-unknown`、一張 canvas＝一個視窗、**WebGPU 優先、自動退回 WebGL2**、可選的 Web Worker 多執行緒模式 |
+| 我們用的 `gpui-pre 0.3.7` | 同一組快照就有 `gpui-pre-web 0.3.7`（crates.io；最新 0.3.9），不用換 GPUI 版本 |
+| 長橋 gpui-kit（原 gpui-component） | PR [#2102](https://github.com/longbridge/gpui-component/pull/2102)（huacnlee，2026-02-27）用 gpui_web 做網頁版元件展示；現在官網 [gpui-kit.com/gallery](https://gpui-kit.com/gallery/) 就是 wasm。當時 PR 自己列的待辦：沒有 app 選單（`set_menus`）、tree-sitter 編不進 wasm、**中文字型要自己內嵌** |
+| 社群打包 | `gpui-web-gpui-unofficial`（gpui-archipelago，跟著 Zed 版本自動發佈，1.25.2） |
+
+**我們的實測：GPUI 版 demo 整套編得過、跑得起來，功能跟原生一樣**（報價表 5 萬列、重圖表 1000 畫線、分隔線拖曳、搜尋框、行情）。過程中遇到、已解決的：
+
+1. 第一次直接 `cargo build --target wasm32-unknown-unknown` 失敗：
+   ```
+   error[E0554]: `#![feature]` may not be used on the stable release channel
+    --> wasm_thread-0.3.3/src/lib.rs:1:37
+   ```
+   原因：`gpui_platform` 會開 `gpui_web` 的預設 feature `multithreaded`（`wasm_thread`，要 nightly＋atomics＋SharedArrayBuffer）。
+   解法：wasm 時不經過 `gpui_platform`，直接依賴 `gpui_web`（`default-features = false`），用 `WebPlatform::new(false)` 單執行緒。
+   （長橋官網的 wasm 也是用 nightly 編多執行緒版。）
+2. `std::time::Instant::now()`、`SystemTime::now()` 在 wasm32 會 panic → 換成 web-time（`plat.rs`）。
+3. 原生的行情是背景執行緒＋TCP → 網頁版改成 WebSocket（`xq-ws-bridge` 轉送），解碼還是同一份 `xq-feed`。
+4. 瀏覽器沒有系統的 Noto Sans CJK → 內嵌子集字型（`cx.text_system().add_fonts`）。
+   gpui_web 其實會在缺字時退回瀏覽器 canvas 畫字（`CanvasFontFallback`），但為了跟原生同字型、同排版，這裡兩版都內嵌同一份子集。
+5. 這台沒有 GPU：Chrome 有 `navigator.gpu` 但拿不到 adapter，gpui_web 印 `WebGPU initialization failed; falling back to WebGL2` 後改用 WebGL2（ANGLE＋Mesa llvmpipe）；
+   另外 `Dual-source blending not available … Subpixel text antialiasing will be disabled`（文字少了次像素反鋸齒，原生 Linux 也一樣是灰階）。
+   另外試了 Chrome 的軟體 WebGPU（`--enable-unsafe-webgpu --use-webgpu-adapter=swiftshader`）：gpui_web 印 `Browser graphics initialized successfully with BrowserWebGpu`，但截圖整片白（`docs/bench/web/webgpu-swiftshader-try.png`，只在 gpui repo），沒再深究、也沒壓測；上面的數字都是 WebGL2。
+
+gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第二個視窗／彈出視窗／浮動視窗（回 `WebWindowError`）、原生選單（`set_menus` 空實作）、
+檔案對話框（`prompt_for_paths` 回「not supported on the web」）、`reveal_path`、防休眠、結束程式。輸入法走隱藏 `<textarea>`（`ime_mirror.rs`）。
+
+### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
+
+| 原生有 | 網頁版 |
+|---|---|
+| 多視窗（`XQ_WINDOWS=N`） | **不行**：一個分頁只有一張 canvas。要多視窗只能開多個分頁／視窗，各自一份 wasm＋一條行情連線（不共用報價表）。程式裡強制 1 |
+| 直接連行情 TCP 127.0.0.1:47631 | 瀏覽器不能開 TCP → 要 `xq-ws-bridge`（或引擎本身提供 WebSocket）。多一跳，本機實測 <1 ms（網頁版與原生的延遲差都在 ±1 ms 內） |
+| 系統字型（mmap Noto Sans CJK，0 下載） | 要內嵌或下載字型：子集 3.0 MB（Big5 常用字＋注音），罕用字會變方塊；完整字型約 16 MB |
+| 背景執行緒解碼行情 | 單執行緒：解碼、合併、畫面都在瀏覽器主執行緒（多執行緒 wasm 要 nightly＋COOP/COEP，未做） |
+| 存檔 `~/.local/share/...` | 沒有檔案系統（這版不存；要存得改用 localStorage／IndexedDB） |
+| 記憶體只有程式本身 | 要加上整個瀏覽器：**空白分頁的 Chrome 本身就 423 MB PSS**（開一張 WebGL2 canvas 431 MB；3 次中位數，`2026-10-23-chrome-baseline/`） |
+| 原生選單、系統匣、檔案對話框、內嵌網頁格 | 沒有（瀏覽器本身就是網頁，所以「內嵌網頁」反而可以用一般 HTML 疊上去，但 canvas 上的元件無法和 DOM 混排） |
+| 無障礙、文字選取、Ctrl+F 搜尋頁面 | 整個畫面是一張圖，瀏覽器看不到裡面的文字（egui 有實驗性 AccessKit→DOM，這版沒開） |
+| 沒有 GPU／驅動被 Chrome 列入黑名單的電腦 | **畫面全黑**：Chrome 預設不讓軟體 OpenGL 開 WebGL（`WebGL2 blocklisted`），要加 `--ignore-gpu-blocklist` 才會畫（本測試有加）。一般有顯卡的電腦沒問題，但虛擬桌面／遠端桌面環境要先試 |
+
+
+### 怎麼建置、怎麼跑
+
+```bash
+# 一次性：wasm 目標、wasm-bindgen（版本要跟 Cargo.lock 一樣，現在是 0.2.129）、binaryen 的 wasm-opt（可省略，省略就不最佳化）
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129
+
+# 建置（stable Rust 即可；輸出到 dist/web/）
+WASM_OPT=/path/to/wasm-opt ./web/build.sh
+
+# 轉接＋網頁伺服器（在 gpui-xq-demo repo：crates/xq-ws-bridge）
+cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:47631 --www dist/web
+# 瀏覽器開 http://127.0.0.1:8080/index.html
+```
+
+- **網址參數＝原生的環境變數**：例如 `?XQ_PERIOD=D`、`?XQ_BENCH=1`、`?XQ_CHART_STRESS=1&XQ_CHART_LAYERS=100`、`?XQ_FEED_WS=ws://主機:埠/feed`（預設連同一個網址的 `/feed`）、`?XQ_SEARCH=0`（關搜尋框）。
+- `xq-ws-bridge`：同一個埠同時提供網頁檔（`--www`，帶 `Cache-Control: no-store` 與 COOP/COEP 標頭）和 WebSocket 轉接（原封不動轉送位元組）。
+- 壓測（在 gpui-xq-demo repo 的 `scripts/web/`，用 puppeteer-core 開系統 Chrome）：`OUT=輸出資料夾 ./run-all.sh 3` → `summarize.py 輸出資料夾` → `tables.py 輸出資料夾/summary.json docs/bench/2026-10-21-parity`。
+  單場：`node bench-web.js <egui|gpui> <main|stress|heavy|ticks:s1k|…|ticks:burst> <輪次> <輸出資料夾>`。另有 `chrome-baseline.js`（空白 Chrome 記憶體）、`layers-smoke.js`（圖層冒煙測試）、`ime-web.sh`（注音）、`webgpu-try.js`（WebGPU 試跑）。
+- 原始數據：`docs/bench/web/`（`results.jsonl` 每場一行、`summary.json` 中位數、`progress.log`、每場瀏覽器 console log、`contention.log` 每 10 秒的系統負載）。
+
+## 手機版（Android）（2026-10-23 新增，egui 和 GPUI 一起做）
+
+> 程式在 `mobile/` 資料夾（2026-10-24 合併到 main）。原始數據在 [`docs/bench/mobile/2026-10-23/`](docs/bench/mobile/2026-10-23/)（`summary.md` 是中位數表，`results.jsonl` 是每一輪原始值）。
+
+### 結論先看
+
+1. **兩個都能在 Android 上跑，功能一樣**：5 萬列報價表（手指甩動捲動）、點一列進走勢圖、雙指縮放、單指平移、長按出十字線、1000 條畫線／100 層的重圖表、中文字型、搜尋框。GPUI 用的是長橋（Longbridge）社群版 `gpui-mobile`，**不是 Zed 官方**；圖表邏輯照搬，沒有改寫。
+2. **在這台模擬器上，egui 幾乎每一項都贏** 🏆：畫面更新快 2～4 倍、記憶體約一半、APK 約一半、每秒 1 千筆時的報價延遲約 1/4。啟動速度差不多（egui 12.2 秒、GPUI 13.7 秒）。
+3. **不只是 GL 和 Vulkan 的差別**：egui 改用和 GPUI 一樣的 wgpu／Vulkan 畫圖（下表「egui（wgpu）」），大部分項目還是比 GPUI 快。
+4. **重圖表 GPUI 只有約 1.4 fps，在模擬器上等於不能用**；egui 約 5 fps，也不順。
+5. ⚠️ **這些都不是手機上的真實數字**。這台機器**沒有顯示卡**，硬體虛擬化（KVM）也壞了，所以：
+   - 模擬器整顆手機 CPU 都是用軟體模擬，比真的慢很多倍；
+   - 每一幀都由 CPU 用軟體畫（SwiftShader），沒有 GPU。
+
+   真手機有 GPU。GPUI 又是靠 GPU 吃重活的設計，**到真機上差距可能縮小，甚至反過來**。這裡只能看「同一個環境下誰比較快」，而且這個排名到真機上也要重測才算數。
+
+### 數字（3 輪取中位數；括號內 n＝有效輪數，不到 3 的原因見下面「沒做到／要注意」）
+
+| 項目 | egui（glow） | egui（wgpu） | GPUI | 誰好 |
+|---|---|---|---|---|
+| APK 大小 x86_64（模擬器用） | **7.9 MB** | 13.7 MB | 17.0 MB | egui |
+| APK 大小 arm64（真手機用） | **6.7 MB** | — | 15.4 MB | egui |
+| 啟動 → 第一筆報價 | **12.2 秒** | 26.9 秒 | 13.7 秒 | 差不多 |
+| 記憶體 PSS（報價表） | **58 MB**（n=1） | 69 MB（n=1） | 105 MB（n=2） | egui |
+| 記憶體 PSS（走勢圖） | **53 MB**（n=2） | 64 MB（n=1） | 101 MB | egui |
+| 畫面更新 fps：報價表跳價 | **6.3** | 5.5 | 3.3（n=2） | egui |
+| 　報價表手指甩動 | **7.7** | 4.9 | 3.9（n=2） | egui |
+| 　走勢圖跳價 | **13.3** | 5.1 | 3.1（n=2） | egui |
+| 　走勢圖平移／雙指縮放／長按十字線 | **8.7／10.6／8.6** | 5.1／5.8／4.6 | 3.7／3.5／3.0（n=2） | egui |
+| 重圖表（1000 畫線／100 層）跳價 fps | **5.0** | 3.6 | 1.4 | egui |
+| 　重圖表每幀繪圖時間 | **55 ms** | 97 ms | 207 ms | egui |
+| 耗電參考：app 每分鐘用掉的 CPU 秒（報價表） | **70 秒** | 81 秒 | 98 秒（n=2） | egui |
+| 　同上（走勢圖） | **64 秒** | 72 秒 | 66 秒（n=2） | 差不多 |
+| 模擬器整體 CPU（含軟體畫圖），報價表 | **202%** | 598% | 649%（n=2） | egui |
+| 報價→畫面延遲，每秒 1 千筆（中位數／最慢 5%） | **101／164 ms** | 270／547 ms（n=2） | 443／600 ms | egui |
+| 　每秒 1 萬筆 | 320／741 ms | **271／421 ms**（n=2） | 565／849 ms | egui |
+| 　每秒 10 萬筆 | 8.9 秒 | 17.8 秒 | 10.0 秒（n=2） | 都跟不上 |
+| 指標計算：每筆 tick 只補最後一根 | 19.6 µs | 20.0 µs | 22.3 µs | 一樣（同一份程式） |
+| 指標計算：整段重算（1200 根、20 疊加＋8 副圖） | 122 ms | 210 ms | 189 ms | 見說明 |
+
+怎麼看這張表：
+- **fps**：每秒畫幾張畫面，越高越順。手機一般要 60。這裡全部都很低，原因就是上面講的軟體模擬。
+- **PSS**：這個 app 真正分到的記憶體，Android 判斷要不要砍背景 app 就看它。
+- **耗電參考**：app 每分鐘用掉幾秒 CPU。CPU 用越多越耗電。但模擬器裡畫圖是外面的主機代畫，**這個數字不含畫圖的電**。含畫圖的成本要看「模擬器整體 CPU」那一列：egui（glow）約 2 顆核心，wgpu 那兩個約 6 顆。
+- **延遲**：從行情送出到畫面出現的時間。模擬器和主機的時鐘對不準，所以用「所有封包裡最快那一包」當基準來校正，數字算是**下界**（實際只會更長）。另外記了一個只用模擬器時鐘的「收到→畫面」，排名一樣，見 `summary.md` 的 `recvToPresent*`。
+- **每秒 10 萬筆**：三個都積壓到好幾秒，產生器也被 TCP 擋住送不完（三邊中位數 168～193 萬筆／應送 200 萬）。資料最後都有收到，沒有掉，只是慢。這一項在模擬器上沒有參考價值。
+- **指標計算**：兩邊是**同一份 Rust 程式**（`model.rs`），所以：
+  - 每筆 tick 只補最後一根的時間三邊一樣，約 20 µs，跳價時指標不是瓶頸；
+  - 「整段重算」是在 app 剛啟動、圖表剛建好時量的，那時候 GPUI／wgpu 還在初始化 Vulkan、載字型，CPU 被搶，所以比較慢。這個差距**反映的是當時 CPU 多忙，不是指標程式的快慢**。
+
+截圖（左三張 egui：報價表、縮放後走勢圖、重圖表；右三張 GPUI 同樣三個畫面）：
+
+![手機版截圖](docs/bench/mobile/2026-10-23/shots/mobile-shots.png)
+
+GPUI 長按出十字線（左：長按中；右：放開後）：
+
+![GPUI 十字線](docs/bench/mobile/2026-10-23/shots/gpui-crosshair.png)
+
+### 兩邊怎麼做的
+
+| | egui | GPUI |
+|---|---|---|
+| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130）＋ `gpui-pre` 0.3.9 |
+| 畫圖 | glow（OpenGL ES）；可選 wgpu（Vulkan） | wgpu（Vulkan）；GLES 在模擬器上開不起來（見下） |
+| 觸控 | egui 內建：甩動慣性、雙指 `zoom_delta`；長按 400ms 自己判斷 | 0.3.9 內建手勢：拖曳→捲動事件（含甩動慣性）、`on_pinch`、`LongPressEvent` |
+| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | gpui-mobile 啟動時把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB），這是 PSS 高的原因之一 |
+| 輸入法 | NativeActivity 沒有組字（中文輸入法候選字）介面 | `GpuiInputActivity` 有 InputConnection，理論上可組字 |
+
+### 沒做到／要注意
+
+- **沒有真手機測試**，全部是模擬器。box 上的 KVM 一開就讓主機核心報錯（`kvm_spurious_fault`，vCPU 直接當掉），只能用純軟體模擬（`-accel off`）。
+- **GPUI 不能改用 OpenGL ES**：設 `XQ_GPU=gl` 時，wgpu 要求的 `max_compute_workgroups_per_dimension=65535` 超過模擬器 GLES 的上限，視窗開不起來（log：`docs/bench/mobile/2026-10-23/gpui-gles-fail.log`）。所以 GPUI 只有 Vulkan。模擬器的 Vulkan 和 GLES 其實都是外面主機的 SwiftShader 代畫。
+- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。原因沒查到（可能是 gpui-mobile 的問題，也可能是模擬器螢幕狀態），要重現才知道。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。
+- **egui（wgpu）第 3 輪**每秒 1 千／1 萬筆兩項沒收到延遲樣本，排除不算（n=2）。
+- 有幾次讀記憶體（dumpsys）逾時，所以部分 PSS 是 n=1。
+- 測試期間（2026-10-23 12:45～20:08，Asia/Taipei）box 重開機兩次：
+  - 第 1、2 輪的行情來自 box 上原本在跑的 127.0.0.1:47631 行情服務；
+  - 第 3 輪是重開機後另外開的 `WryFeedHost --demo-ticks`；
+  - 同一台 box 上還有別的工作在編譯／壓測，主機負載不固定，每一列都記了 `load1`。
+- 「卡頓（jank）」沒有放進表：幀率低於每秒 4 張時這個定義沒意義。
+- **中文輸入法沒測**：模擬器映像只有英文 LatinIME。搜尋框的比對功能有做，但沒用輸入法實際打中文。
+- 第 1～2 輪原本有在跑的行情服務是哪種模式（真實或模擬）沒有記錄到，只確定是 127.0.0.1:47631 上的 dotnet 服務。
+
+### iOS 呢？
+
+- 需要 macOS＋Xcode，這台 Linux box 不能建。
+- GPUI：Zed 官方已合併實驗性的 `gpui_ios`（zed PR #63068，2026-10-15 合併，Asia/Taipei），有 UIKit 觸控、手勢、輸入法橋接，但官方說明還不是完整功能。
+- egui：官方沒有 iOS 目標（egui issue #3117 還開著），要靠社群補丁（winit／eframe 分支），鍵盤輸入過去一直有問題。
+
+### 建置／執行
+
+```bash
+# 需要：Android SDK（platform 35、build-tools 35）、NDK 28.2、JDK 17 以上、cargo-ndk、
+#       rustup target add x86_64-linux-android aarch64-linux-android
+cd mobile
+./build-apk.sh x86_64                 # 模擬器；真手機用 arm64-v8a；兩個都要用 "x86_64,arm64-v8a"
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb reverse tcp:47631 tcp:47631       # 讓手機連到電腦上的行情服務（127.0.0.1:47631）
+# 設定用 system property 傳（debug.xq.e0～e9 各放一個 KEY=VAL），例如：
+adb shell setprop debug.xq.e0 XQ_METRICS=1     # 每秒在 logcat（tag xq）印 FRAMES|{fps, 記憶體, 指標計算時間…}
+```
+
+- egui 要 wgpu 版：`CARGO_FEATURES=wgpu ./build-apk.sh x86_64`，再設 `XQ_RENDERER=wgpu`。
+- GPUI 要試 GLES：`XQ_GPU=gl`。真機可以試，模擬器開不起來。
+- 壓測：`scripts/mobile/bench-android.py`，需要 adb root。觸控手勢用 `scripts/mobile/mt.c`，用 NDK 編成靜態執行檔，直接寫多點觸控事件，所以能做雙指縮放。
+- 統計：`scripts/mobile/summarize.py docs/bench/mobile/2026-10-23` 產生中位數表。排除規則寫在程式開頭：畫面停住、沒有延遲樣本、重圖表沒跑完。
+
+## 設計 token：一套設計規範，egui／GPUI 兩版共用（2026-10-23）
+
+### 結論先看
+
+- ✅ **可行，而且畫面完全沒變**：兩版的顏色、字級、圓角、線寬、版面尺寸都改成讀**同一份** token 檔
+  （[`crates/xq-tokens/tokens/`](https://github.com/tina-moneydj/gpui-xq-demo/tree/main/crates/xq-tokens/tokens)，W3C DTCG 2025.10 格式，Figma 原生就能匯入／匯出）。
+  用預設 token 截圖和 main 逐像素比對：**除了狀態列每秒變動的 RSS 數字，其他 0 個像素不同**（兩版都是）。
+- ✅ **改一個 token，兩個 App 一起變**：只把 `color.chart.up`（K 棒漲色）從 `#e5484d` 改成 `#a855f7`，兩版都沒改程式，K 棒和成交量柱的漲色一起變紫（約 1.8 萬個像素）。
+- ✅ **深色／淺色主題**：按 **F8** 即時切換，或 `XQ_THEME=light` 啟動；切換後的畫面和直接用淺色啟動一樣（只差每秒變的計數）。
+- ✅ **熱更新**：`XQ_TOKENS_DIR=資料夾 XQ_TOKENS_WATCH=1` 執行時，程式每 0.3 秒檢查一次檔案，設計師存檔後畫面就換色（實測存檔後 2.5 秒截圖已是新顏色），不用重編。
+- ✅ **效能沒變差**：主視窗中位數 GPUI 52.0→50.2 FPS、egui 61.3→60.9 FPS，每幀 CPU、走勢圖繪製時間、記憶體的差距都比同一版每輪之間的起伏小（記憶體多約 0.4–0.7 MB，是兩份主題的 token 表）。
+- ✅ **改錯會被擋**：token 少一個或格式錯，`cargo build` 直接失敗並寫出是哪個 token（例：`[light] token「color.market.up」缺少`）。
+- ⚠️ **盤點時發現兩版本來就不一致**：按鈕圓角 GPUI 4px、egui 2px；K 棒漲色（`#e5484d`）和報價表漲色（`#ff4d4f`）也是兩個不同的紅。先各給一個 token 保持畫面不變，之後由設計師決定要不要統一。
+
+### 設計師怎麼改（不用懂程式）
+
+1. 打開 `crates/xq-tokens/tokens/`：`color.dark.tokens.json`（深色）、`color.light.tokens.json`（淺色）、`base.tokens.json`（字級、間距、圓角、尺寸）。
+2. **用 Figma**：第一次把這三個檔拖進 Figma 的 Variables 視窗匯入（名稱會變成 `color/market/up` 這種斜線分層）。之後在 Figma 改，
+   在 collection 上按右鍵 → **Export modes**，每個 mode 一個 JSON，改成上面的檔名蓋回去、送 PR。
+   **不用 Figma**：直接改 JSON 裡的 `"hex": "#ff4d4f"`（和旁邊的 `components`）也可以。
+3. 想先看效果：`XQ_TOKENS_DIR=你的資料夾 XQ_TOKENS_WATCH=1 ./target/release/gpui-xq-demo`（egui 版同樣），邊改邊看。
+4. 合進去後兩個 App 重編就會帶新值（token 內嵌在執行檔裡，不用另外附檔案）。
+
+### 兩個 App 怎麼拿到
+
+- GPUI 版直接依賴 workspace 裡的 `crates/xq-tokens`；egui 版用 Cargo git 依賴同一個 crate（鎖定 rev，和 `xq-feed` 的做法一樣）。
+- 程式裡原本寫死的 `0xff4d4f`、`px(11.)`、`ROW_H = 22.0` 等，改成 `tk().market.up`、`tk().font.sm`、`tk().layout.table_row`。
+  讀一個 token 只是一次原子讀取，沒有鎖、沒有查表。
+- 換主題或熱更新時版本號 +1；App 看到就把烤了顏色的快取（走勢圖畫線、報價表列）丟掉重畫。
+- 詳細格式、Figma 限制、完整盤點表：[`crates/xq-tokens/README.md`](https://github.com/tina-moneydj/gpui-xq-demo/blob/main/crates/xq-tokens/README.md)。
+
+### 截圖（[docs/bench/2026-10-23-tokens/](docs/bench/2026-10-23-tokens/)）
+
+| | GPUI | egui |
+|---|---|---|
+| 預設 token（和 main 一樣） | ![](docs/bench/2026-10-23-tokens/gpui-tokens-default.png) | ![](docs/bench/2026-10-23-tokens/egui-tokens-default.png) |
+| 只改 `color.chart.up` → 紫色 | ![](docs/bench/2026-10-23-tokens/gpui-up-token.png) | ![](docs/bench/2026-10-23-tokens/egui-up-token.png) |
+| 淺色主題（F8） | ![](docs/bench/2026-10-23-tokens/gpui-f8.png) | ![](docs/bench/2026-10-23-tokens/egui-f8.png) |
+
+逐像素比對數字在 `shots-diff.json`；行情用 `xq-tickgen --rate 0 --seed 1`（只送一次快照，畫面固定才能逐像素比）。
+
+### 效能（主視窗、每秒 2000 筆跳價、量 30 秒，main 與 token 版交錯跑 5 輪取中位數）
+
+| 指標（中位數） | GPUI main | GPUI token | egui main | egui token |
+|---|---|---|---|---|
+| FPS | 52.0 | 50.2 | 61.3 | 60.9 |
+| 記憶體 RSS (MB) | 190.5 | 191.2 | 124.8 | 125.2 |
+| CPU（100%＝1 核） | 350.2% | 350.2% | 133.8% | 137.9% |
+| 每幀 CPU (ms) | 60.89 | 61.70 | 21.83 | 22.63 |
+| 走勢圖繪製 (µs/次) | 66 | 64 | 58 | 60 |
+
+怎麼看：**差距都在雜訊內**。這台測試機沒有 GPU（軟體繪圖），而且同時跑著其他測試，GPUI 同一版 5 輪的 FPS 就在 31–61 之間跳（token 版 32–61），
+所以 FPS 要看「每幀 CPU」比較穩：GPUI 差 1.3%、egui 差 3.7%，而 egui 同一版每輪自己就在 20.6–24.7 ms 之間。
+egui 被螢幕更新率卡在約 60 FPS。原始資料：`docs/bench/2026-10-23-tokens/perf.json`；量測腳本 `tokbench.py`（獨立 Xvfb :73、行情埠 47793）。
+
+### 還沒做的
+
+- 間距 token 已定義，但 GPUI 的 `px_2()`／`gap_1()` 這類簡寫和 egui 的 `item_spacing` 還沒全部換；畫布上的小幾何（標籤高 16、控制點 9×9）和透明度係數也還寫在程式裡。
+- egui 的字型是讀字型**檔**，字型名稱 token 目前只有 GPUI 用。
+- 淺色主題的配色是我先排的初稿，要請設計師定稿。
+- 網頁版、Android 版合併後也讀同一份 token（共用的報價表、走勢圖顏色都跟著變）；但手機版自己的版面（字級、列高等）還寫在 `mobile/src/` 裡，沒有換成 token。
 
 ## 功能
 
@@ -105,7 +559,7 @@ src/main.rs         ← Terminal 根 view：版面、分隔線、狀態列、資
    新分鐘才 append。換代號／週期／指標設定才 O(n) 重建一次。tick 只通知主圖層與即時層，
    畫線層只有在可見價格範圍改變時才重建（平移只位移）。每層包成一個 scene layer，讓 GPUI 每層只做一次 path 光柵批次。
 
-## 效能數字（本機 box：8 核、無 GPU、Mesa lavapipe 軟體 Vulkan、Xvfb 1280×800，demo-ticks 行情；初版量測，完整對照見下一節）
+## 效能數字（本機 box：8 核、無 GPU、Mesa lavapipe 軟體 Vulkan、Xvfb 1280×800，demo-ticks 行情；初版量測，完整對照見「效能比較」一節）
 
 | 項目 | GPUI 版 | wry 版（同時段量測） |
 |---|---|---|
@@ -888,15 +1342,16 @@ GPUI 三層的細項（中位數那次）：主圖層 ≈ 1.2 ms／幀；畫線�
 - **macOS**：GPUI 的主平台（Zed 編輯器），Metal 繪圖，最成熟。
 - **Windows**：已有官方支援（DirectX 11 / DirectComposition），Zed Windows 版已釋出；中文輸入法、HiDPI 要實測。
 - **Linux**：X11 與 Wayland 都支援，這個版本（`gpui-pre 0.3.7`）繪圖走 wgpu（Vulkan 為主）；需要可用的 Vulkan/GL 驅動。
-- **iOS / iPadOS**：2026-10-14 Zed 合併**實驗性** `gpui_ios`（[zed#63068](https://github.com/zed-industries/zed/pull/63068)：UIKit、Metal、觸控、軟鍵盤輸入；編輯選單、Return 鍵等還沒做），crates.io 有 `gpui-pre-ios 0.3.9`（2026-10-19）。這個 repo 目前鎖 `0.3.7`，還沒接 iOS。
-- **Android**：官方沒有；社群 [longbridge/gpui-mobile](https://github.com/longbridge/gpui-mobile)（zed#43207 未合併）。
+- **網頁（WebAssembly）**：Zed 官方 `gpui_web`（2026-02 合併），這個 demo 已能完整跑（WebGPU 優先、退回 WebGL2；單一視窗、沒有原生選單／檔案對話框），見上面「網頁版」。
+- **iOS**：Zed 官方已合併實驗性的 `gpui_ios`（zed PR #63068，2026-10-15 合併，台北時間），還不是完整功能；這個 demo 還沒做 iOS（要 Mac＋Xcode）。
+- **Android**：Zed 官方還沒有（zed PR #43207 未合併）；這個 demo 用長橋社群版 `gpui-mobile` 做出 Android 版（`mobile/`，`gpui-pre` 0.3.9），見上面「手機版」。
 - 依賴：`gpui-pre` 是社群發佈的 Zed GPUI 快照（crates.io 上官方 `gpui` 0.2.x 版本較舊），API 仍在變動，版本鎖在 `=0.3.7`。
 
 ## 跟 wry 版相比還沒做的
 
 - 右下嵌網頁（Yahoo 等）、多分頁、安裝檔。
 - 畫線樣式（顏色／線寬）、畫線複製、指標顏色自訂。
-- 自選清單編輯、搜尋代號。
+- 自選清單編輯。（股名／代號搜尋框已有：網頁版預設開，原生版 `XQ_SEARCH=1` 才開。）
 - `xq-feed` 已抽成獨立 crate；wry 版目前仍用自己的 `src/engine.rs`（同格式），之後可改成 path/git 依賴共用同一份實作。
 
 ## 已知行情來源問題（不是這個程式的 bug）

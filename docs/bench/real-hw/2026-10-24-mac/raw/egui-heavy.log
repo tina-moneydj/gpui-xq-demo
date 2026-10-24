@@ -1,0 +1,96 @@
+==== heavy 2026-10-23T20:31:23
+   0.020 [egui] renderer=Glow
+   0.151 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.151 [xq-feed] 已連上 127.0.0.1:47631
+   0.201 BENCH first-frame
+   0.234 BENCH first-quote
+   0.576 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.56}
+   0.593 BENCH heavy-frame
+   0.593 CHARTPERF|{"phase":"setup","cssW":1166,"cssH":505,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":193,"drawVertices":19634,"bars":1200,"sinceStartMs":443,"rebuildMs":1.11,"paintMsTotal":2.17,"rssMb":124.3}
+   0.593 CHARTPHASE|warm|start
+   3.610 CHARTPHASE|ticks|start
+  13.623 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":622,"fps":62.1,"steps":621,"avgPaintMs":1.584,"plotPaints":622,"plotMs":0.672,"drawPaints":622,"drawMs":0.564,"livePaints":622,"liveMs":0.347,"selPaints":622,"selMs":0.000,"drawRebuilds":622,"rebuildMsTotal":350.97,"rssMb":131.1}
+  13.623 CHARTPHASE|ticks|end
+  13.623 CHARTPHASE|crosshair|start
+  23.629 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":623,"fps":62.3,"steps":622,"avgPaintMs":1.542,"plotPaints":622,"plotMs":0.585,"drawPaints":622,"drawMs":0.515,"livePaints":622,"liveMs":0.445,"selPaints":622,"selMs":0.000,"drawRebuilds":622,"rebuildMsTotal":320.16,"rssMb":133.9}
+  23.629 CHARTPHASE|crosshair|end
+  23.629 CHARTPHASE|pan|start
+  33.636 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":632,"fps":63.2,"steps":631,"avgPaintMs":1.106,"plotPaints":632,"plotMs":0.606,"drawPaints":631,"drawMs":0.095,"livePaints":632,"liveMs":0.405,"selPaints":632,"selMs":0.000,"drawRebuilds":1,"rebuildMsTotal":0.33,"rssMb":137.2}
+  33.636 CHARTPHASE|pan|end
+  33.636 CHARTPHASE|drag|start
+  43.639 CHARTPERF|{"phase":"drag","seconds":10.00,"frames":620,"fps":62.0,"steps":619,"avgPaintMs":0.864,"plotPaints":620,"plotMs":0.578,"drawPaints":1,"drawMs":1.448,"livePaints":620,"liveMs":0.275,"selPaints":620,"selMs":0.008,"drawRebuilds":1,"rebuildMsTotal":1.45,"rssMb":138.0,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.639 CHARTPHASE|drag|end
+  43.640 CHARTPHASE|select|start
+  53.649 CHARTPERF|{"phase":"select","seconds":10.01,"frames":628,"fps":62.7,"steps":627,"avgPaintMs":0.878,"plotPaints":303,"plotMs":0.543,"drawPaints":628,"drawMs":0.437,"livePaints":628,"liveMs":0.177,"selPaints":628,"selMs":0.002,"drawRebuilds":628,"rebuildMsTotal":274.52,"rssMb":140.7,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":627,"allRebuildP50":0.376,"allRebuildP99":0.999,"allTtfP50":17.316,"allTtfP99":19.169,"selectOps":314,"selectRebuildP50":0.379,"selectRebuildP99":1.011,"selectTtfP50":16.492,"selectTtfP99":19.165,"deselectOps":313,"deselectRebuildP50":0.363,"deselectRebuildP99":0.948,"deselectTtfP50":18.027,"deselectTtfP99":19.180}
+  53.649 CHARTPHASE|select|end
+  53.649 CHARTPHASE|reorder|start
+  63.659 CHARTPERF|{"phase":"reorder","seconds":10.01,"frames":620,"fps":61.9,"steps":619,"avgPaintMs":0.906,"plotPaints":302,"plotMs":0.548,"drawPaints":620,"drawMs":0.451,"livePaints":620,"liveMs":0.184,"selPaints":620,"selMs":0.004,"drawRebuilds":620,"rebuildMsTotal":279.78,"rssMb":140.7,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":619,"allRebuildP50":0.392,"allRebuildP99":0.988,"allTtfP50":17.376,"allTtfP99":19.192,"zopOps":311,"zopRebuildP50":0.415,"zopRebuildP99":0.988,"zopTtfP50":17.407,"zopTtfP99":19.192,"layerVisOps":154,"layerVisRebuildP50":0.350,"layerVisRebuildP99":1.060,"layerVisTtfP50":17.399,"layerVisTtfP99":19.201,"layerMoveOps":154,"layerMoveRebuildP50":0.385,"layerMoveRebuildP99":0.804,"layerMoveTtfP50":17.201,"layerMoveTtfP99":19.185}
+  63.659 CHARTPHASE|reorder|end
+  63.659 CHARTPHASE|zshot|start
+  66.674 CHARTPERF|{"phase":"zshot","seconds":3.01,"frames":195,"fps":64.7,"steps":194,"avgPaintMs":0.161,"plotPaints":95,"plotMs":0.186,"drawPaints":1,"drawMs":0.572,"livePaints":195,"liveMs":0.057,"selPaints":195,"selMs":0.011,"drawRebuilds":1,"rebuildMsTotal":0.57,"rssMb":140.7,"layers":3,"drawingsTotal":7,"pick":500}
+  66.674 CHARTPHASE|zshot|end
+  66.674 CHARTPERF|{"phase":"done","sinceStartMs":66523}
+==== heavy 2026-10-23T20:55:02
+   0.021 [egui] renderer=Glow
+   0.137 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.137 [xq-feed] 已連上 127.0.0.1:47631
+   0.194 BENCH first-frame
+   0.194 BENCH first-quote
+   0.567 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.45}
+   0.584 BENCH heavy-frame
+   0.584 CHARTPERF|{"phase":"setup","cssW":1166,"cssH":505,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":193,"drawVertices":19634,"bars":1200,"sinceStartMs":447,"rebuildMs":0.91,"paintMsTotal":1.77,"rssMb":124.5}
+   0.584 CHARTPHASE|warm|start
+   3.586 CHARTPHASE|ticks|start
+  13.596 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":620,"fps":61.9,"steps":619,"avgPaintMs":1.427,"plotPaints":620,"plotMs":0.592,"drawPaints":619,"drawMs":0.525,"livePaints":620,"liveMs":0.311,"selPaints":620,"selMs":0.000,"drawRebuilds":619,"rebuildMsTotal":324.85,"rssMb":130.9}
+  13.596 CHARTPHASE|ticks|end
+  13.596 CHARTPHASE|crosshair|start
+  23.605 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":624,"fps":62.3,"steps":623,"avgPaintMs":1.296,"plotPaints":623,"plotMs":0.485,"drawPaints":623,"drawMs":0.441,"livePaints":623,"liveMs":0.371,"selPaints":623,"selMs":0.000,"drawRebuilds":623,"rebuildMsTotal":274.60,"rssMb":131.1}
+  23.605 CHARTPHASE|crosshair|end
+  23.605 CHARTPHASE|pan|start
+  33.610 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":635,"fps":63.5,"steps":634,"avgPaintMs":1.008,"plotPaints":635,"plotMs":0.549,"drawPaints":634,"drawMs":0.086,"livePaints":635,"liveMs":0.373,"selPaints":635,"selMs":0.000,"drawRebuilds":1,"rebuildMsTotal":0.36,"rssMb":133.1}
+  33.610 CHARTPHASE|pan|end
+  33.610 CHARTPHASE|drag|start
+  43.617 CHARTPERF|{"phase":"drag","seconds":10.01,"frames":627,"fps":62.7,"steps":626,"avgPaintMs":0.786,"plotPaints":627,"plotMs":0.518,"drawPaints":1,"drawMs":1.495,"livePaints":627,"liveMs":0.258,"selPaints":627,"selMs":0.007,"drawRebuilds":1,"rebuildMsTotal":1.50,"rssMb":134.2,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.618 CHARTPHASE|drag|end
+  43.618 CHARTPHASE|select|start
+  53.632 CHARTPERF|{"phase":"select","seconds":10.01,"frames":628,"fps":62.7,"steps":627,"avgPaintMs":0.880,"plotPaints":306,"plotMs":0.543,"drawPaints":628,"drawMs":0.437,"livePaints":628,"liveMs":0.177,"selPaints":628,"selMs":0.002,"drawRebuilds":628,"rebuildMsTotal":274.12,"rssMb":136.6,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":627,"allRebuildP50":0.368,"allRebuildP99":1.041,"allTtfP50":17.277,"allTtfP99":19.177,"selectOps":314,"selectRebuildP50":0.373,"selectRebuildP99":1.026,"selectTtfP50":17.411,"selectTtfP99":19.186,"deselectOps":313,"deselectRebuildP50":0.365,"deselectRebuildP99":1.054,"deselectTtfP50":17.113,"deselectTtfP99":19.166}
+  53.632 CHARTPHASE|select|end
+  53.632 CHARTPHASE|reorder|start
+  63.637 CHARTPERF|{"phase":"reorder","seconds":10.00,"frames":617,"fps":61.7,"steps":616,"avgPaintMs":0.747,"plotPaints":302,"plotMs":0.460,"drawPaints":617,"drawMs":0.369,"livePaints":617,"liveMs":0.150,"selPaints":617,"selMs":0.003,"drawRebuilds":617,"rebuildMsTotal":227.71,"rssMb":138.1,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":616,"allRebuildP50":0.305,"allRebuildP99":0.808,"allTtfP50":17.245,"allTtfP99":19.169,"zopOps":308,"zopRebuildP50":0.306,"zopRebuildP99":0.808,"zopTtfP50":17.221,"zopTtfP99":19.163,"layerVisOps":154,"layerVisRebuildP50":0.287,"layerVisRebuildP99":0.741,"layerVisTtfP50":17.073,"layerVisTtfP99":19.188,"layerMoveOps":154,"layerMoveRebuildP50":0.315,"layerMoveRebuildP99":1.033,"layerMoveTtfP50":17.337,"layerMoveTtfP99":19.164}
+  63.637 CHARTPHASE|reorder|end
+  63.637 CHARTPHASE|zshot|start
+  66.651 CHARTPERF|{"phase":"zshot","seconds":3.01,"frames":194,"fps":64.4,"steps":193,"avgPaintMs":0.118,"plotPaints":93,"plotMs":0.137,"drawPaints":1,"drawMs":0.414,"livePaints":194,"liveMs":0.042,"selPaints":194,"selMs":0.007,"drawRebuilds":1,"rebuildMsTotal":0.41,"rssMb":138.1,"layers":3,"drawingsTotal":7,"pick":500}
+  66.651 CHARTPHASE|zshot|end
+  66.651 CHARTPERF|{"phase":"done","sinceStartMs":66514}
+==== heavy 2026-10-23T21:18:41
+   0.018 [egui] renderer=Glow
+   0.153 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.153 [xq-feed] 已連上 127.0.0.1:47631
+   0.207 BENCH first-frame
+   0.207 BENCH first-quote
+   0.577 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.50}
+   0.593 BENCH heavy-frame
+   0.593 CHARTPERF|{"phase":"setup","cssW":1166,"cssH":505,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":193,"drawVertices":19634,"bars":1200,"sinceStartMs":440,"rebuildMs":0.97,"paintMsTotal":1.80,"rssMb":124.9}
+   0.593 CHARTPHASE|warm|start
+   3.603 CHARTPHASE|ticks|start
+  13.611 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":625,"fps":62.5,"steps":624,"avgPaintMs":1.287,"plotPaints":625,"plotMs":0.527,"drawPaints":624,"drawMs":0.481,"livePaints":625,"liveMs":0.280,"selPaints":625,"selMs":0.000,"drawRebuilds":624,"rebuildMsTotal":299.99,"rssMb":135.7}
+  13.611 CHARTPHASE|ticks|end
+  13.611 CHARTPHASE|crosshair|start
+  23.622 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":626,"fps":62.5,"steps":625,"avgPaintMs":1.374,"plotPaints":625,"plotMs":0.515,"drawPaints":625,"drawMs":0.465,"livePaints":625,"liveMs":0.397,"selPaints":625,"selMs":0.000,"drawRebuilds":625,"rebuildMsTotal":290.41,"rssMb":136.0}
+  23.622 CHARTPHASE|crosshair|end
+  23.622 CHARTPHASE|pan|start
+  33.627 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":624,"fps":62.4,"steps":623,"avgPaintMs":1.009,"plotPaints":623,"plotMs":0.554,"drawPaints":622,"drawMs":0.085,"livePaints":624,"liveMs":0.371,"selPaints":623,"selMs":0.000,"drawRebuilds":0,"rebuildMsTotal":0.00,"rssMb":137.5}
+  33.628 CHARTPHASE|pan|end
+  33.628 CHARTPHASE|drag|start
+  43.633 CHARTPERF|{"phase":"drag","seconds":10.01,"frames":618,"fps":61.8,"steps":617,"avgPaintMs":0.757,"plotPaints":618,"plotMs":0.508,"drawPaints":1,"drawMs":1.610,"livePaints":618,"liveMs":0.240,"selPaints":618,"selMs":0.007,"drawRebuilds":1,"rebuildMsTotal":1.61,"rssMb":138.2,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.633 CHARTPHASE|drag|end
+  43.633 CHARTPHASE|select|start
+  53.647 CHARTPERF|{"phase":"select","seconds":10.01,"frames":614,"fps":61.3,"steps":613,"avgPaintMs":0.874,"plotPaints":299,"plotMs":0.545,"drawPaints":614,"drawMs":0.431,"livePaints":614,"liveMs":0.175,"selPaints":614,"selMs":0.002,"drawRebuilds":614,"rebuildMsTotal":264.85,"rssMb":141.0,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":613,"allRebuildP50":0.365,"allRebuildP99":1.017,"allTtfP50":17.407,"allTtfP99":19.246,"selectOps":307,"selectRebuildP50":0.373,"selectRebuildP99":1.092,"selectTtfP50":17.293,"selectTtfP99":19.185,"deselectOps":306,"deselectRebuildP50":0.355,"deselectRebuildP99":1.003,"deselectTtfP50":17.529,"deselectTtfP99":19.256}
+  53.647 CHARTPHASE|select|end
+  53.647 CHARTPHASE|reorder|start
+  63.656 CHARTPERF|{"phase":"reorder","seconds":10.01,"frames":621,"fps":62.0,"steps":620,"avgPaintMs":0.855,"plotPaints":299,"plotMs":0.533,"drawPaints":621,"drawMs":0.424,"livePaints":621,"liveMs":0.171,"selPaints":621,"selMs":0.003,"drawRebuilds":621,"rebuildMsTotal":263.26,"rssMb":141.0,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":620,"allRebuildP50":0.338,"allRebuildP99":1.017,"allTtfP50":17.154,"allTtfP99":19.269,"zopOps":312,"zopRebuildP50":0.356,"zopRebuildP99":0.985,"zopTtfP50":17.075,"zopTtfP99":19.280,"layerVisOps":154,"layerVisRebuildP50":0.335,"layerVisRebuildP99":1.022,"layerVisTtfP50":16.924,"layerVisTtfP99":19.205,"layerMoveOps":154,"layerMoveRebuildP50":0.321,"layerMoveRebuildP99":1.032,"layerMoveTtfP50":17.392,"layerMoveTtfP99":19.304}
+  63.656 CHARTPHASE|reorder|end
+  63.656 CHARTPHASE|zshot|start
+  66.662 CHARTPERF|{"phase":"zshot","seconds":3.01,"frames":186,"fps":61.9,"steps":185,"avgPaintMs":0.129,"plotPaints":92,"plotMs":0.145,"drawPaints":1,"drawMs":0.622,"livePaints":186,"liveMs":0.045,"selPaints":186,"selMs":0.008,"drawRebuilds":1,"rebuildMsTotal":0.62,"rssMb":141.0,"layers":3,"drawingsTotal":7,"pick":500}
+  66.662 CHARTPHASE|zshot|end
+  66.662 CHARTPERF|{"phase":"done","sinceStartMs":66509}

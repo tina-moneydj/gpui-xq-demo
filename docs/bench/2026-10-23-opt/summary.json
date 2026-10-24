@@ -1,0 +1,221 @@
+{
+ "before/main": {
+  "n": 3,
+  "first_quote_s": 0.6,
+  "rss60": 183.8,
+  "pss60": 146.2,
+  "cpu": 142.7,
+  "fps": 20.7
+ },
+ "before/scroll": {
+  "n": 3,
+  "scrollFps": 24.2,
+  "jank": 146,
+  "cpu_scroll": 160.7
+ },
+ "before/multi1w": {
+  "n": 3,
+  "lat_p50": 102.1,
+  "lat_p99": 253.1,
+  "fps_min_window": 21,
+  "cpu": 288.4,
+  "pss": 196.4,
+  "worst_window_p99": 253.1,
+  "loss": 0
+ },
+ "before/multi4w": {
+  "n": 3,
+  "lat_p50": 343.1,
+  "lat_p99": 829.2,
+  "fps_min_window": 7.0,
+  "cpu": 488.6,
+  "pss": 439.4,
+  "worst_window_p99": 891.7,
+  "loss": 0
+ },
+ "before/ticks-s1k": {
+  "n": 3,
+  "lat_p50": 67.8,
+  "lat_p99": 103.1,
+  "fps": 34,
+  "cpu": 228.3,
+  "loss": 0,
+  "switch_p50": 57.0
+ },
+ "before/ticks-s10k": {
+  "n": 3,
+  "lat_p50": 47.0,
+  "lat_p99": 87.9,
+  "fps": 43,
+  "cpu": 303.5,
+  "loss": 0,
+  "switch_p50": 54.9
+ },
+ "before/ticks-s50k": {
+  "n": 3,
+  "lat_p50": 46.7,
+  "lat_p99": 79.7,
+  "fps": 45,
+  "cpu": 303.3,
+  "loss": 0,
+  "switch_p50": 44.9
+ },
+ "before/ticks-s100k": {
+  "n": 3,
+  "lat_p50": 66.8,
+  "lat_p99": 142.9,
+  "fps": 28,
+  "cpu": 205.0,
+  "loss": 0,
+  "switch_p50": 54.8
+ },
+ "before/ticks-burst": {
+  "n": 3,
+  "lat_p50": 61.5,
+  "lat_p99": 172.4,
+  "fps": 29,
+  "cpu": 205.5,
+  "loss": 0,
+  "switch_p50": 51.1
+ },
+ "after/main": {
+  "n": 3,
+  "first_quote_s": 0.4,
+  "rss60": 187.0,
+  "pss60": 149.4,
+  "cpu": 120.5,
+  "fps": 22.9
+ },
+ "after/scroll": {
+  "n": 3,
+  "scrollFps": 31.8,
+  "jank": 146,
+  "cpu_scroll": 153.1
+ },
+ "after/multi1w": {
+  "n": 3,
+  "lat_p50": 62.9,
+  "lat_p99": 146.6,
+  "fps_min_window": 26,
+  "cpu": 294.3,
+  "pss": 201.0,
+  "worst_window_p99": 146.6,
+  "loss": 0
+ },
+ "after/multi4w": {
+  "n": 3,
+  "lat_p50": 321.3,
+  "lat_p99": 553.0,
+  "fps_min_window": 7,
+  "cpu": 340.0,
+  "pss": 445.5,
+  "worst_window_p99": 591.8,
+  "loss": 0
+ },
+ "after/ticks-s1k": {
+  "n": 3,
+  "lat_p50": 47.6,
+  "lat_p99": 110.7,
+  "fps": 34,
+  "cpu": 182.1,
+  "loss": 0,
+  "switch_p50": 55.9
+ },
+ "after/ticks-s10k": {
+  "n": 3,
+  "lat_p50": 47.6,
+  "lat_p99": 109.2,
+  "fps": 36,
+  "cpu": 182.7,
+  "loss": 0,
+  "switch_p50": 58.2
+ },
+ "after/ticks-s50k": {
+  "n": 3,
+  "lat_p50": 41.8,
+  "lat_p99": 108.8,
+  "fps": 34,
+  "cpu": 215.9,
+  "loss": 0,
+  "switch_p50": 59.0
+ },
+ "after/ticks-s100k": {
+  "n": 3,
+  "lat_p50": 32.0,
+  "lat_p99": 110.0,
+  "fps": 36,
+  "cpu": 209.4,
+  "loss": 0,
+  "switch_p50": 57.5
+ },
+ "after/ticks-burst": {
+  "n": 3,
+  "lat_p50": 40.3,
+  "lat_p99": 78.3,
+  "fps": 49,
+  "cpu": 261.4,
+  "loss": 0,
+  "switch_p50": 40.9
+ },
+ "egui/main": {
+  "n": 3,
+  "first_quote_s": 0.2,
+  "rss60": 124.0,
+  "pss60": 84.3,
+  "cpu": 42.6,
+  "fps": 22.6
+ },
+ "egui/scroll": {
+  "n": 3,
+  "scrollFps": 74.9,
+  "jank": 0,
+  "cpu_scroll": 141.5
+ },
+ "egui/multi1w": {
+  "n": 3,
+  "lat_p50": 29.8,
+  "lat_p99": 39.6,
+  "fps_min_window": 60.0,
+  "cpu": 243.0,
+  "pss": 105.5,
+  "worst_window_p99": 39.6,
+  "loss": 0
+ },
+ "egui/multi4w": {
+  "n": 3,
+  "lat_p50": 51.7,
+  "lat_p99": 96.8,
+  "fps_min_window": 26,
+  "cpu": 414.2,
+  "pss": 119.3,
+  "worst_window_p99": 113.7,
+  "loss": 0
+ },
+ "egui/ticks-s1k": {
+  "n": 3,
+  "lat_p50": 29.6,
+  "lat_p99": 35.7,
+  "fps": 61,
+  "cpu": 117.1,
+  "loss": 0,
+  "switch_p50": 17.5
+ },
+ "egui/ticks-s10k": {
+  "n": 3,
+  "lat_p50": 30.5,
+  "lat_p99": 38.8,
+  "fps": 60.0,
+  "cpu": 113.1,
+  "loss": 0,
+  "switch_p50": 17.8
+ },
+ "egui/ticks-s100k": {
+  "n": 3,
+  "lat_p50": 31.3,
+  "lat_p99": 39.8,
+  "fps": 60.0,
+  "cpu": 124.3,
+  "loss": 0,
+  "switch_p50": 18.6
+ }
+}

@@ -8,7 +8,7 @@
 //! - zshot：正確性截圖用的小場景：底層矩形＋斜線、中層半透明矩形（選取並拖曳中）、上層文字框＋費波納契＋斜線。
 //!   拖曳中的矩形必須被上層蓋住（白色選取框穿過文字框時要被文字框遮住）。
 
-use std::time::Instant;
+use crate::plat::Instant;
 
 use crate::drawings::{self, Drawing, Pt, Tool};
 use crate::gfx::{p, P};
@@ -41,7 +41,7 @@ const K_LAYER_VIS: u8 = 3;
 const K_LAYER_MOVE: u8 = 4;
 
 pub fn env_layers() -> usize {
-    std::env::var("XQ_CHART_LAYERS").ok().and_then(|v| v.parse().ok()).unwrap_or(100).clamp(1, crate::layers::MAX_LAYERS)
+    crate::plat::var("XQ_CHART_LAYERS").ok().and_then(|v| v.parse().ok()).unwrap_or(100).clamp(1, crate::layers::MAX_LAYERS)
 }
 
 pub struct ZState {

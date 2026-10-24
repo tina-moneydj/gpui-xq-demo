@@ -1,0 +1,60 @@
+==== tick-gpui-s1k 2026-10-23T20:16:18
+   0.140 [xq-feed] 已連上 127.0.0.1:47631
+   0.166 BENCH first-frame
+   0.166 BENCH first-quote
+==== tick-gpui-s10k 2026-10-23T20:17:01
+   0.128 [xq-feed] 已連上 127.0.0.1:47631
+   0.154 BENCH first-frame
+   0.154 BENCH first-quote
+==== tick-gpui-s50k 2026-10-23T20:17:43
+   0.141 [xq-feed] 已連上 127.0.0.1:47631
+   0.163 BENCH first-frame
+   0.163 BENCH first-quote
+==== tick-gpui-s100k 2026-10-23T20:18:26
+   0.145 [xq-feed] 已連上 127.0.0.1:47631
+   0.168 BENCH first-frame
+   0.168 BENCH first-quote
+==== tick-gpui-burst 2026-10-23T20:19:09
+   0.146 [xq-feed] 已連上 127.0.0.1:47631
+   0.169 BENCH first-frame
+   0.169 BENCH first-quote
+==== tick-gpui-s1k 2026-10-23T20:39:57
+   0.139 [xq-feed] 已連上 127.0.0.1:47631
+   0.156 BENCH first-frame
+   0.156 BENCH first-quote
+==== tick-gpui-s10k 2026-10-23T20:40:40
+   0.148 [xq-feed] 已連上 127.0.0.1:47631
+   0.169 BENCH first-frame
+   0.169 BENCH first-quote
+==== tick-gpui-s50k 2026-10-23T20:41:22
+   0.145 [xq-feed] 已連上 127.0.0.1:47631
+   0.166 BENCH first-frame
+   0.166 BENCH first-quote
+==== tick-gpui-s100k 2026-10-23T20:42:05
+   0.141 [xq-feed] 已連上 127.0.0.1:47631
+   0.168 BENCH first-frame
+   0.168 BENCH first-quote
+==== tick-gpui-burst 2026-10-23T20:42:48
+   0.132 [xq-feed] 已連上 127.0.0.1:47631
+   0.160 BENCH first-frame
+   0.160 BENCH first-quote
+==== tick-gpui-s1k 2026-10-23T21:03:36
+   0.133 [xq-feed] 已連上 127.0.0.1:47631
+   0.157 BENCH first-frame
+   0.157 BENCH first-quote
+==== tick-gpui-s10k 2026-10-23T21:04:19
+   0.146 [xq-feed] 已連上 127.0.0.1:47631
+   0.171 BENCH first-frame
+   0.171 BENCH first-quote
+==== tick-gpui-s50k 2026-10-23T21:05:02
+   0.138 [xq-feed] 已連上 127.0.0.1:47631
+   0.158 BENCH first-frame
+   0.158 BENCH first-quote
+==== tick-gpui-s100k 2026-10-23T21:05:44
+   0.143 [xq-feed] 已連上 127.0.0.1:47631
+   0.161 BENCH first-frame
+   0.161 BENCH first-quote
+==== tick-gpui-burst 2026-10-23T21:06:27
+   0.129 [xq-feed] 已連上 127.0.0.1:47631
+   0.156 BENCH first-frame
+   0.156 BENCH first-quote

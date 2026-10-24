@@ -1,0 +1,50 @@
+{
+ "run1": {
+  "violations": 0,
+  "worstMaxStaleMs": 116.9,
+  "worstStaleOverFrameP50": 1.13,
+  "frameMsP50_allopen1": 103.5,
+  "latP50_allopen1": 234.1,
+  "hiddenFrames": [
+   0,
+   0
+  ],
+  "fallbackWhilePrimaryHidden": 35,
+  "firstPresentAfterShow_ms": [
+   87.3,
+   91.9
+  ]
+ },
+ "run2": {
+  "violations": 0,
+  "worstMaxStaleMs": 319.2,
+  "worstStaleOverFrameP50": 0.95,
+  "frameMsP50_allopen1": 326.9,
+  "latP50_allopen1": 675.8,
+  "hiddenFrames": [
+   0,
+   0
+  ],
+  "fallbackWhilePrimaryHidden": 10,
+  "firstPresentAfterShow_ms": [
+   247.4,
+   337.5
+  ]
+ },
+ "run3": {
+  "violations": 0,
+  "worstMaxStaleMs": 296.0,
+  "worstStaleOverFrameP50": 0.97,
+  "frameMsP50_allopen1": 307.8,
+  "latP50_allopen1": 690.5,
+  "hiddenFrames": [
+   0,
+   0
+  ],
+  "fallbackWhilePrimaryHidden": 26,
+  "firstPresentAfterShow_ms": [
+   97.7,
+   186.4
+  ]
+ }
+}

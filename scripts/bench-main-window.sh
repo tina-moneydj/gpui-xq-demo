@@ -381,7 +381,7 @@ def measure(name, app, proc, t0, events, fps, log, shot):
             "cpu_threads": thread_breakdown(th0, th1, tc1 - tc0), "cpu_pct": cpu, "fps_avg": statistics.mean(fps_win) if fps_win else None, "geom": geom}
 
 def main():
-    for name, app in APPS.items():
+    for name, app in ({} if os.environ.get("BENCH_SHARED_BOX") else APPS).items():  # BENCH_SHARED_BOX=1：同機有別人的程式在跑（用不同 DISPLAY／埠，不會互搶 feed）時略過這個檢查
         if subprocess.run(["pgrep", "-f", "-x", ".*" + app["cmd"][0].split("/")[-1] + "$"],
                           capture_output=True).returncode == 0:
             raise SystemExit(f"{name} 已在執行，請先關掉（會互搶 feed）")

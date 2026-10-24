@@ -1,0 +1,139 @@
+{
+ "note": "main＝origin/main 編的執行檔；tokens＝design-tokens 分支。行情 xq-tickgen --rate 0 --seed 1（只送一次快照，畫面固定）。最下 30px 狀態列有每秒變的 RSS；資訊格右下『走勢圖重畫 次/秒·µs』也是每秒變的計數。檔名對照：shots-default/X-main.png＝X-main-default.png、X-tokens.png＝X-tokens-default.png、shots-demo/X-hot.png＝X-hot-reload.png。",
+ "default_main_vs_tokens": [
+  {
+   "a": "shots-default/gpui-main.png",
+   "b": "shots-default/gpui-tokens.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 39,
+   "diff_pixels_excl_status_bar": 0,
+   "bbox": [
+    1080,
+    746,
+    1085,
+    754
+   ]
+  },
+  {
+   "a": "shots-default/egui-main.png",
+   "b": "shots-default/egui-tokens.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 35,
+   "diff_pixels_excl_status_bar": 0,
+   "bbox": [
+    1080,
+    746,
+    1085,
+    754
+   ]
+  }
+ ],
+ "up_token_changed_vs_default": [
+  {
+   "a": "shots-default/gpui-tokens.png",
+   "b": "shots-demo/gpui-up-token.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 18129,
+   "diff_pixels_excl_status_bar": 18093,
+   "bbox": [
+    55,
+    57,
+    1141,
+    754
+   ]
+  },
+  {
+   "a": "shots-default/egui-tokens.png",
+   "b": "shots-demo/egui-up-token.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 18123,
+   "diff_pixels_excl_status_bar": 18123,
+   "bbox": [
+    55,
+    56,
+    1141,
+    400
+   ]
+  }
+ ],
+ "f8_toggle_vs_start_light": [
+  {
+   "a": "shots-demo/gpui-light.png",
+   "b": "shots-demo/gpui-f8.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 516,
+   "diff_pixels_excl_status_bar": 476,
+   "bbox": [
+    611,
+    373,
+    1086,
+    754
+   ]
+  },
+  {
+   "a": "shots-demo/egui-light.png",
+   "b": "shots-demo/egui-f8.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 369,
+   "diff_pixels_excl_status_bar": 301,
+   "bbox": [
+    883,
+    574,
+    1085,
+    754
+   ]
+  }
+ ],
+ "hot_reload_vs_start_with_changed_token": [
+  {
+   "a": "shots-demo/gpui-up-token.png",
+   "b": "shots-demo/gpui-hot.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 343,
+   "diff_pixels_excl_status_bar": 314,
+   "bbox": [
+    889,
+    574,
+    1085,
+    754
+   ]
+  },
+  {
+   "a": "shots-demo/egui-up-token.png",
+   "b": "shots-demo/egui-hot.png",
+   "size": [
+    1240,
+    760
+   ],
+   "diff_pixels": 38,
+   "diff_pixels_excl_status_bar": 0,
+   "bbox": [
+    1080,
+    746,
+    1085,
+    754
+   ]
+  }
+ ]
+}
