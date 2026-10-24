@@ -2,7 +2,7 @@
 # 產出：
 #   - artifact xq-bench-windows-gpui
 #   - 預發行版 windows-bench-latest：xq-bench-windows-gpui.zip（只有 GPUI，公開）＋各 exe
-# egui-xq-demo（私人 repo）的 Windows workflow 會下載這個 zip、加進 egui，發佈完整版 xq-bench-windows.zip（私人 release）。
+# egui-xq-demo（公開 repo）的 Windows workflow 會下載這個 zip、加進 egui，發佈完整版 xq-bench-windows.zip（公開 release）。
 name: windows
 
 on:
@@ -81,4 +81,4 @@ jobs:
           $global:LASTEXITCODE = 0
           gh release create windows-bench-latest dist/* --prerelease --target $env:GITHUB_SHA `
             --title "Windows 壓測包（GPUI 版，windows-bench-ci $($env:GITHUB_SHA.Substring(0,7))）" `
-            --notes "自動產生的 Windows 預先編譯版。xq-bench-windows-gpui.zip 只含 GPUI；含 egui 的完整版在 egui-xq-demo 的 windows-bench-latest（私人）。下載 → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。說明：bench/windows/README.md"
+            --notes "自動產生的 Windows 預先編譯版。xq-bench-windows-gpui.zip 只含 GPUI；含 egui 的完整版在 egui-xq-demo 的 windows-bench-latest。下載 → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。說明：bench/windows/README.md"

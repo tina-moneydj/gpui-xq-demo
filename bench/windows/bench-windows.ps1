@@ -3,7 +3,7 @@
   XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
 .DESCRIPTION
   與 Linux 版 scripts/bench-main-window.sh、bench-ticks.sh、bench-multi.sh 同情境、同量法（3 輪取中位數）。
-  執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「windows-bench-latest」自動下載（egui 是私人 repo：需要 gh 已登入或 GITHUB_TOKEN）。
+  執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「windows-bench-latest」自動下載（兩個 repo 都公開，不用登入）。
   結果：results\<時間>-<電腦名>\ 內的 results.json、summary.md（中文、結論在前）、log、截圖，以及同名 .zip。
 .EXAMPLE
   .\bench-windows.ps1                 # 全部（約 75 分鐘）
@@ -65,7 +65,7 @@ $EXES = [ordered]@{
     demofeed = @{ file = "xq-demofeed.exe";  repo = "gpui-xq-demo"; private = $false }
     gpui     = @{ file = "gpui-xq-demo.exe"; repo = "gpui-xq-demo"; private = $false }
     tickgen  = @{ file = "xq-tickgen.exe";   repo = "gpui-xq-demo"; private = $false }
-    egui     = @{ file = "egui-xq-demo.exe"; repo = "egui-xq-demo"; private = $true }
+    egui     = @{ file = "egui-xq-demo.exe"; repo = "egui-xq-demo"; private = $false }
 }
 # 同一個 exe 用不同 renderer 跑的 app（XQ_RENDERER）：egui＝glow／OpenGL，egui-wgpu＝wgpu（Windows 上走 DX12／Vulkan）
 $APP_BIN = @{ gpui = "gpui"; "gpui-quads" = "gpui"; egui = "egui"; "egui-wgpu" = "egui" }
@@ -135,7 +135,7 @@ function Download-Asset($repo, $file, $dest, $private) {
     }
     $gh = Get-Command gh -ErrorAction SilentlyContinue
     if ($gh) {
-        Say "用 gh 下載 $Owner/$repo $Tag/$file（私人 repo）"
+        Say "用 gh 下載 $Owner/$repo $Tag/$file"
         $ea = $ErrorActionPreference; $ErrorActionPreference = "Continue"
         & gh release download $Tag -R "$Owner/$repo" -p $file -D (Split-Path $dest) --clobber 2>&1 | ForEach-Object { Say "  gh: $_" }
         $ErrorActionPreference = $ea
@@ -143,7 +143,7 @@ function Download-Asset($repo, $file, $dest, $private) {
     }
     $tok = $env:GITHUB_TOKEN; if (-not $tok) { $tok = $env:GH_TOKEN }
     if ($tok) {
-        Say "用 GITHUB_TOKEN 下載 $Owner/$repo $Tag/$file（私人 repo）"
+        Say "用 GITHUB_TOKEN 下載 $Owner/$repo $Tag/$file"
         $hdr = @{ Authorization = "Bearer $tok"; "User-Agent" = "xq-bench" }
         $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$Owner/$repo/releases/tags/$Tag" -Headers $hdr -UseBasicParsing
         $asset = @($rel.assets | Where-Object { $_.name -eq $file })[0]
@@ -911,7 +911,7 @@ if ($bad.Count) { throw "不認得的 app：$($bad -join '、')（可用 $(($APP
 $Apps = @($Apps | Where-Object {
     $k = $APP_BIN[$_]
     if ($Bins.ContainsKey($k)) { $true } else {
-        $hint = ""; if ($EXES[$k].private) { $hint = "（私人 repo：先 gh auth login、或設 GITHUB_TOKEN、或把 exe 放進 bin\）" }
+        $hint = "（下載失敗：檢查網路，或把 exe 放進 bin\）"
         Say "⚠️ 找不到 $($EXES[$k].file)，這次不量 $_$hint" "Yellow"; $false } })
 if (-not $Apps.Count) { throw "一個 app 都沒有可以量" }
 $Script:BinInfo = @($Bins.Keys | Sort-Object | ForEach-Object {

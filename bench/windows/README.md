@@ -19,8 +19,8 @@ wry 已經淘汰，不在這次的比較裡。
 ## 你只要做四件事（不用裝 Rust、不用編譯）
 
 1. **下載**完整版：[egui-xq-demo → windows-bench-latest → `xq-bench-windows.zip`](https://github.com/tina-moneydj/egui-xq-demo/releases/tag/windows-bench-latest)
-   - egui-xq-demo 是**私人 repo**，要先在瀏覽器登入 GitHub（tina-moneydj）才看得到這個下載頁。
-   - 沒有登入的人只能下載公開的 GPUI 版：[gpui-xq-demo → windows-bench-latest → `xq-bench-windows-gpui.zip`](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/windows-bench-latest)，這個版本只會測 GPUI。
+   - 兩個 repo 都是公開的，不用登入 GitHub 就能下載。
+   - 只想測 GPUI 可以改下載 GPUI 版：[gpui-xq-demo → windows-bench-latest → `xq-bench-windows-gpui.zip`](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/windows-bench-latest)，這個版本只會測 GPUI。
 2. **解壓縮**：在 zip 上按右鍵 →「全部解壓縮」，例如解到 `C:\xq-bench`。
 3. **執行**：打開解出來的 `xq-bench-windows` 資料夾，雙擊 **`run-bench.cmd`**。
    - 如果跳出藍色的「Windows 已保護您的電腦」：按「其他資訊」→「仍要執行」。（程式沒有數位簽章，這是正常的。）
@@ -80,7 +80,7 @@ wry 已經淘汰，不在這次的比較裡。
 ### 執行檔從哪來
 
 完整版 zip 的 `bin\` 已經放好 `gpui-xq-demo.exe`、`egui-xq-demo.exe`、`xq-tickgen.exe`、`xq-demofeed.exe`，由 GitHub Actions 在 `windows-bench-ci` 分支自動編譯。
-找不到時，腳本會依序找 `-BinDir <資料夾>` → `bin\` → 從 `windows-bench-latest` release 下載（egui 是私人 repo，需要 `gh auth login` 或環境變數 `GITHUB_TOKEN`）。`-Update` 會重新下載。
+找不到時，腳本會依序找 `-BinDir <資料夾>` → `bin\` → 從 `windows-bench-latest` release 下載（兩個 repo 都公開，不用登入）。`-Update` 會重新下載。
 
 想自己從原始碼編譯（需要 Rust、Visual Studio Build Tools＋Windows SDK）：
 
