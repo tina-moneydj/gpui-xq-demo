@@ -18,6 +18,31 @@
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
 
+## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）
+
+### 結論先看
+
+- 🏆 **多視窗修好，Mac 勉強通過門檻**：MacBook Air M4 上 4 個視窗，GPUI 和 egui 的比較：
+
+  | 項目 | GPUI 第一次 | GPUI 這次 | egui wgpu | egui OpenGL |
+  |---|---:|---:|---:|---:|
+  | 延遲 p50 | 44.8 ms | 31.1 ms | 25.3 ms | 18.0 ms |
+  | 延遲 p99 | 49.6 ms | 35.4 ms | 33.5 ms | 33.4 ms |
+  | 最慢視窗 p99 | 50.1 ms | 35.8 ms | 35.3 ms | 35.9 ms |
+
+  最慢視窗已經和 egui 平手。**Windows 還沒重跑**。
+- **「GPUI 每次高頻測試停 0.3–0.5 秒」不是畫面真的卡住**，有兩個來源：
+  - GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間（egui 版會主動排重畫，所以沒有）。已在 Linux 重現並修好。
+  - 壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
+  - p50／p99 不受影響。
+- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。多出來的在 GPUI／Metal 那一層，不是我們的資料，Linux 也重現不了。新版壓測包會把記憶體拆開記（malloc vs GPU 緩衝區），之後再決定怎麼減。
+- 新加的：
+  - 所有視窗關掉 GPUI 的背景視窗限速（`inactive_frame_interval: None`）。
+  - macOS 申請延遲敏感模式。
+  - 停頓看門狗（卡住就自動抓呼叫堆疊）。
+  - 壓測包多一欄「GPUI 舊設定」對照。
+- 細節：[docs/bench/real-hw/2026-10-25-mac/](docs/bench/real-hw/2026-10-25-mac/README.md)。
+
 ## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
 
 > Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；由 **NVIDIA GTX 1650 入門獨立顯卡**繪圖，另有 Intel UHD 770 內顯未使用；2 個 1920×1200 螢幕、59 Hz）。
@@ -39,7 +64,7 @@
 
 - **和 Linux 沒顯卡的結果比**：GPUI 的 FPS 和單視窗延遲差距**在一般電腦上消失了**（Linux GPUI 延遲中位數 74–75 ms、重圖表約 21 FPS → 這裡約 31 ms、60 FPS）。但 **CPU／GPU 用量和多視窗**，egui 仍然明顯較好，Windows 上最明顯。
 - **選型建議改成「GPUI 有條件」**：GPUI 沒有做不到的事（60 FPS、0 掉筆、延遲一樣），但效率約差 2 倍、多視窗落後。先修我們自己程式的三項（多視窗晚一幀、報價表改自己畫、水平垂直線改矩形），再請 Tina 在同兩台重跑；如果多視窗和 Windows CPU 還是明顯落後，看盤核心就改用 egui。
-- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有），原因還在查。
+- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有）。**10-25 查明：量測假象＋壓測包 vmmap，畫面沒有真的卡住**（見上面）。
 - 細節、框架限制 vs 可修項目、測試包本身的錯（Windows 重圖表逾時、Mac 摘要勝負標錯）：見 [docs/bench/real-hw/README.md](docs/bench/real-hw/README.md)。
 
 ## GPUI 優化第 2 批（2026-10-24，gpui-opt2）

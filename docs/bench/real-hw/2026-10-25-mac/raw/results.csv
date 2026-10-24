@@ -1,0 +1,400 @@
+﻿group,metric,label,unit,higher_is_better,app,median,run1,run2,run3,winner
+main,first_frame_ms,啟動到第一幀,ms,False,gpui,152.5,514.9,132.4,152.5,gpui+egui-wgpu
+main,first_frame_ms,啟動到第一幀,ms,False,egui-wgpu,147.9,1282.9,147.8,147.9,gpui+egui-wgpu
+main,first_frame_ms,啟動到第一幀,ms,False,egui,177.4,177.4,158.7,190.2,gpui+egui-wgpu
+main,first_quote_ms,啟動到第一筆報價,ms,False,gpui,152.5,514.9,132.5,152.5,gpui
+main,first_quote_ms,啟動到第一筆報價,ms,False,egui-wgpu,186.3,1321.4,182.6,186.3,gpui
+main,first_quote_ms,啟動到第一筆報價,ms,False,egui,218.7,218.7,158.7,229.8,gpui
+main,rss10_mb,RSS 第 10 秒,MB,False,gpui,100.5,100.3,100.5,100.6,gpui
+main,rss10_mb,RSS 第 10 秒,MB,False,egui-wgpu,116.7,116.7,116.7,116.7,gpui
+main,rss10_mb,RSS 第 10 秒,MB,False,egui,120.7,121.5,120.7,120.4,gpui
+main,rss60_mb,RSS 第 60 秒,MB,False,gpui,100.6,100.6,101.4,100.6,gpui
+main,rss60_mb,RSS 第 60 秒,MB,False,egui-wgpu,116.8,116.8,116.8,116.8,gpui
+main,rss60_mb,RSS 第 60 秒,MB,False,egui,120.9,121.7,120.9,120.6,gpui
+main,footprint60_mb,實體記憶體（活動監視器）第 60 秒,MB,False,gpui,147.5,147.3,150.0,147.5,gpui
+main,footprint60_mb,實體記憶體（活動監視器）第 60 秒,MB,False,egui-wgpu,168.4,168.5,168.4,168.4,gpui
+main,footprint60_mb,實體記憶體（活動監視器）第 60 秒,MB,False,egui,174.3,174.3,174.3,173.2,gpui
+main,cpu_pct,CPU（第 30–60 秒）,%,False,gpui,12.7,14.7,12.7,12.2,egui
+main,cpu_pct,CPU（第 30–60 秒）,%,False,egui-wgpu,12.8,12.8,13.1,12.7,egui
+main,cpu_pct,CPU（第 30–60 秒）,%,False,egui,11.3,11.3,11.4,11.3,egui
+main,fps,FPS（第 30–60 秒）,fps,True,gpui,31.7,35.1,31.7,31.4,tie
+main,fps,FPS（第 30–60 秒）,fps,True,egui-wgpu,31.4,31.4,31.4,31.2,tie
+main,fps,FPS（第 30–60 秒）,fps,True,egui,31.4,31.3,31.4,31.4,tie
+main,gpu_util,整機 GPU 使用率,%,False,gpui,7.6,9.9,7.5,7.6,gpui+egui-wgpu
+main,gpu_util,整機 GPU 使用率,%,False,egui-wgpu,6.9,6.7,6.9,6.9,gpui+egui-wgpu
+main,gpu_util,整機 GPU 使用率,%,False,egui,10.4,10.4,10.5,10.3,gpui+egui-wgpu
+stress,cpu_tick_pct,CPU（跳價）,%,False,gpui,16.9,18.2,15.8,16.9,gpui+egui
+stress,cpu_tick_pct,CPU（跳價）,%,False,egui-wgpu,20.7,20.1,20.7,20.7,gpui+egui
+stress,cpu_tick_pct,CPU（跳價）,%,False,egui,16.1,16.1,15.9,16.6,gpui+egui
+stress,cpu_scroll_pct,CPU（跳價＋捲動）,%,False,gpui,21.0,21.7,20.8,21.0,egui
+stress,cpu_scroll_pct,CPU（跳價＋捲動）,%,False,egui-wgpu,22.6,22.5,22.9,22.6,egui
+stress,cpu_scroll_pct,CPU（跳價＋捲動）,%,False,egui,11.7,6.8,16.2,11.7,egui
+stress,tick_fps,FPS（跳價）,fps,True,gpui,45.9,47.4,42.6,45.9,egui-wgpu+egui
+stress,tick_fps,FPS（跳價）,fps,True,egui-wgpu,54.1,54.1,54.4,54.0,egui-wgpu+egui
+stress,tick_fps,FPS（跳價）,fps,True,egui,53.5,53.5,54.0,53.4,egui-wgpu+egui
+stress,scroll_fps,FPS（捲動）,fps,True,gpui,59.9,59.9,59.4,60.0,tie
+stress,scroll_fps,FPS（捲動）,fps,True,egui-wgpu,60.1,60.1,60.1,60.1,tie
+stress,scroll_fps,FPS（捲動）,fps,True,egui,85.4,88.4,82.9,85.4,tie
+stress,tick_paint_ms,每次重畫表格耗時（跳價）,ms,False,gpui,0.1,0.1,0.1,0.1,tie
+stress,tick_paint_ms,每次重畫表格耗時（跳價）,ms,False,egui-wgpu,0.4,0.4,0.4,0.4,tie
+stress,tick_paint_ms,每次重畫表格耗時（跳價）,ms,False,egui,0.4,0.4,0.4,0.4,tie
+stress,scroll_paint_ms,每次重畫表格耗時（捲動）,ms,False,gpui,0.1,0.1,0.1,0.1,tie
+stress,scroll_paint_ms,每次重畫表格耗時（捲動）,ms,False,egui-wgpu,0.6,0.6,0.6,0.6,tie
+stress,scroll_paint_ms,每次重畫表格耗時（捲動）,ms,False,egui,0.2,0.1,0.3,0.2,tie
+stress,scroll_jank,捲動卡頓次數,次,False,gpui,1.0,1.0,6.0,0.0,tie
+stress,scroll_jank,捲動卡頓次數,次,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+stress,scroll_jank,捲動卡頓次數,次,False,egui,0.0,0.0,0.0,0.0,tie
+stress,rss_tick_mb,RSS（跳價末）,MB,False,gpui,105.1,105.1,105.1,105.2,gpui
+stress,rss_tick_mb,RSS（跳價末）,MB,False,egui-wgpu,122.6,122.6,122.6,122.4,gpui
+stress,rss_tick_mb,RSS（跳價末）,MB,False,egui,126.3,126.0,126.9,126.3,gpui
+stress,footprint_mb,實體記憶體（結束時）,MB,False,gpui,151.9,151.9,151.8,151.9,gpui
+stress,footprint_mb,實體記憶體（結束時）,MB,False,egui-wgpu,174.5,174.5,174.5,174.2,gpui
+stress,footprint_mb,實體記憶體（結束時）,MB,False,egui,185.8,185.8,184.6,190.2,gpui
+stress,gpu_tick,整機 GPU（跳價）,%,False,gpui,13.9,14.7,13.2,13.9,egui-wgpu
+stress,gpu_tick,整機 GPU（跳價）,%,False,egui-wgpu,11.6,11.6,11.6,11.6,egui-wgpu
+stress,gpu_tick,整機 GPU（跳價）,%,False,egui,17.8,18.2,17.6,17.8,egui-wgpu
+heavy,heavy_frame_ms,啟動到第一個重圖表幀,ms,False,gpui,571.7,571.7,534.0,588.3,tie
+heavy,heavy_frame_ms,啟動到第一個重圖表幀,ms,False,gpui-quads,573.1,592.2,573.1,562.8,tie
+heavy,heavy_frame_ms,啟動到第一個重圖表幀,ms,False,egui-wgpu,554.8,561.4,554.8,546.5,tie
+heavy,heavy_frame_ms,啟動到第一個重圖表幀,ms,False,egui,565.1,565.1,561.2,573.7,tie
+heavy,ticks_fps,ticks：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,ticks_fps,ticks：FPS,fps,True,gpui-quads,60.0,59.9,60.0,60.0,tie
+heavy,ticks_fps,ticks：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,ticks_fps,ticks：FPS,fps,True,egui,62.3,62.3,62.1,63.4,tie
+heavy,ticks_paint_ms,ticks：每幀圖表繪製,ms,False,gpui,2.2,2.0,2.2,2.2,tie
+heavy,ticks_paint_ms,ticks：每幀圖表繪製,ms,False,gpui-quads,2.4,2.2,2.4,2.4,tie
+heavy,ticks_paint_ms,ticks：每幀圖表繪製,ms,False,egui-wgpu,1.9,1.9,1.8,1.9,tie
+heavy,ticks_paint_ms,ticks：每幀圖表繪製,ms,False,egui,1.6,1.5,1.6,1.6,tie
+heavy,ticks_cpu,ticks：CPU,%,False,gpui,32.8,28.8,32.8,33.1,egui
+heavy,ticks_cpu,ticks：CPU,%,False,gpui-quads,38.9,38.3,38.9,39.0,egui
+heavy,ticks_cpu,ticks：CPU,%,False,egui-wgpu,37.6,37.7,37.6,37.5,egui
+heavy,ticks_cpu,ticks：CPU,%,False,egui,29.6,29.1,31.2,29.6,egui
+heavy,ticks_rss_mb,ticks：RSS,MB,False,gpui,321.2,320.7,321.2,321.6,egui-wgpu+egui
+heavy,ticks_rss_mb,ticks：RSS,MB,False,gpui-quads,328.0,327.1,328.0,328.0,egui-wgpu+egui
+heavy,ticks_rss_mb,ticks：RSS,MB,False,egui-wgpu,130.7,129.8,130.7,131.1,egui-wgpu+egui
+heavy,ticks_rss_mb,ticks：RSS,MB,False,egui,131.9,131.9,131.5,134.8,egui-wgpu+egui
+heavy,crosshair_fps,crosshair：FPS,fps,True,gpui,59.9,59.9,59.9,59.9,tie
+heavy,crosshair_fps,crosshair：FPS,fps,True,gpui-quads,60.0,60.0,60.0,60.0,tie
+heavy,crosshair_fps,crosshair：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,crosshair_fps,crosshair：FPS,fps,True,egui,62.4,62.5,62.4,62.2,tie
+heavy,crosshair_paint_ms,crosshair：每幀圖表繪製,ms,False,gpui,2.0,1.9,2.0,2.0,tie
+heavy,crosshair_paint_ms,crosshair：每幀圖表繪製,ms,False,gpui-quads,2.3,2.2,2.3,2.3,tie
+heavy,crosshair_paint_ms,crosshair：每幀圖表繪製,ms,False,egui-wgpu,1.8,1.8,1.8,1.8,tie
+heavy,crosshair_paint_ms,crosshair：每幀圖表繪製,ms,False,egui,1.5,1.5,1.5,1.5,tie
+heavy,crosshair_cpu,crosshair：CPU,%,False,gpui,28.0,27.2,28.0,28.3,egui
+heavy,crosshair_cpu,crosshair：CPU,%,False,gpui-quads,37.2,37.0,37.2,37.6,egui
+heavy,crosshair_cpu,crosshair：CPU,%,False,egui-wgpu,34.5,34.7,34.5,34.2,egui
+heavy,crosshair_cpu,crosshair：CPU,%,False,egui,25.9,27.0,25.4,25.9,egui
+heavy,crosshair_rss_mb,crosshair：RSS,MB,False,gpui,321.4,320.9,321.4,321.8,egui-wgpu+egui
+heavy,crosshair_rss_mb,crosshair：RSS,MB,False,gpui-quads,328.4,331.1,328.3,328.4,egui-wgpu+egui
+heavy,crosshair_rss_mb,crosshair：RSS,MB,False,egui-wgpu,133.5,133.5,133.4,134.0,egui-wgpu+egui
+heavy,crosshair_rss_mb,crosshair：RSS,MB,False,egui,135.0,135.0,134.4,135.0,egui-wgpu+egui
+heavy,pan_fps,pan：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,pan_fps,pan：FPS,fps,True,gpui-quads,60.0,60.0,60.0,60.0,tie
+heavy,pan_fps,pan：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,pan_fps,pan：FPS,fps,True,egui,62.5,62.5,61.7,62.7,tie
+heavy,pan_paint_ms,pan：每幀圖表繪製,ms,False,gpui,1.4,1.3,1.4,1.4,tie
+heavy,pan_paint_ms,pan：每幀圖表繪製,ms,False,gpui-quads,1.3,1.2,1.3,1.3,tie
+heavy,pan_paint_ms,pan：每幀圖表繪製,ms,False,egui-wgpu,1.4,1.5,1.4,1.4,tie
+heavy,pan_paint_ms,pan：每幀圖表繪製,ms,False,egui,1.1,1.1,1.1,1.1,tie
+heavy,pan_cpu,pan：CPU,%,False,gpui,26.9,25.6,26.9,27.1,egui
+heavy,pan_cpu,pan：CPU,%,False,gpui-quads,35.6,34.9,35.6,35.6,egui
+heavy,pan_cpu,pan：CPU,%,False,egui-wgpu,30.3,30.5,30.3,30.1,egui
+heavy,pan_cpu,pan：CPU,%,False,egui,22.9,23.0,22.9,22.9,egui
+heavy,pan_rss_mb,pan：RSS,MB,False,gpui,328.3,328.1,328.3,328.9,egui-wgpu+egui
+heavy,pan_rss_mb,pan：RSS,MB,False,gpui-quads,335.8,335.8,335.6,335.8,egui-wgpu+egui
+heavy,pan_rss_mb,pan：RSS,MB,False,egui-wgpu,134.0,133.8,134.0,134.3,egui-wgpu+egui
+heavy,pan_rss_mb,pan：RSS,MB,False,egui,136.2,136.2,136.0,136.8,egui-wgpu+egui
+heavy,drag_fps,drag：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,drag_fps,drag：FPS,fps,True,gpui-quads,60.0,60.0,60.0,60.0,tie
+heavy,drag_fps,drag：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,drag_fps,drag：FPS,fps,True,egui,62.7,62.7,63.1,62.5,tie
+heavy,drag_paint_ms,drag：每幀圖表繪製,ms,False,gpui,1.3,1.2,1.3,1.3,tie
+heavy,drag_paint_ms,drag：每幀圖表繪製,ms,False,gpui-quads,1.2,1.2,1.2,1.3,tie
+heavy,drag_paint_ms,drag：每幀圖表繪製,ms,False,egui-wgpu,1.1,1.1,1.1,1.1,tie
+heavy,drag_paint_ms,drag：每幀圖表繪製,ms,False,egui,0.8,0.8,0.8,0.8,tie
+heavy,drag_cpu,drag：CPU,%,False,gpui,26.4,24.4,26.6,26.4,egui
+heavy,drag_cpu,drag：CPU,%,False,gpui-quads,35.1,34.6,35.1,35.2,egui
+heavy,drag_cpu,drag：CPU,%,False,egui-wgpu,26.9,26.9,27.2,26.7,egui
+heavy,drag_cpu,drag：CPU,%,False,egui,20.0,20.0,20.7,19.7,egui
+heavy,drag_rss_mb,drag：RSS,MB,False,gpui,324.9,324.7,324.9,325.6,egui-wgpu+egui
+heavy,drag_rss_mb,drag：RSS,MB,False,gpui-quads,332.1,332.4,332.1,332.1,egui-wgpu+egui
+heavy,drag_rss_mb,drag：RSS,MB,False,egui-wgpu,134.2,134.0,134.2,134.4,egui-wgpu+egui
+heavy,drag_rss_mb,drag：RSS,MB,False,egui,136.9,136.9,136.7,137.5,egui-wgpu+egui
+heavy,select_fps,select：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,select_fps,select：FPS,fps,True,gpui-quads,60.0,60.0,60.0,60.0,tie
+heavy,select_fps,select：FPS,fps,True,egui-wgpu,60.0,60.0,59.9,60.0,tie
+heavy,select_fps,select：FPS,fps,True,egui,62.0,62.0,62.1,61.2,tie
+heavy,select_paint_ms,select：每幀圖表繪製,ms,False,gpui,1.9,1.7,1.9,1.9,gpui+egui-wgpu+egui
+heavy,select_paint_ms,select：每幀圖表繪製,ms,False,gpui-quads,2.2,2.1,2.2,2.2,gpui+egui-wgpu+egui
+heavy,select_paint_ms,select：每幀圖表繪製,ms,False,egui-wgpu,1.1,1.1,1.1,1.1,gpui+egui-wgpu+egui
+heavy,select_paint_ms,select：每幀圖表繪製,ms,False,egui,0.9,0.9,0.9,0.9,gpui+egui-wgpu+egui
+heavy,select_cpu,select：CPU,%,False,gpui,26.4,23.7,26.5,26.4,egui
+heavy,select_cpu,select：CPU,%,False,gpui-quads,35.5,35.3,35.5,36.1,egui
+heavy,select_cpu,select：CPU,%,False,egui-wgpu,25.9,25.9,25.7,26.4,egui
+heavy,select_cpu,select：CPU,%,False,egui,18.6,18.7,17.9,18.6,egui
+heavy,select_rss_mb,select：RSS,MB,False,gpui,325.5,325.5,325.5,326.1,egui-wgpu+egui
+heavy,select_rss_mb,select：RSS,MB,False,gpui-quads,332.6,332.8,332.6,332.5,egui-wgpu+egui
+heavy,select_rss_mb,select：RSS,MB,False,egui-wgpu,134.3,134.3,132.8,137.6,egui-wgpu+egui
+heavy,select_rss_mb,select：RSS,MB,False,egui,140.2,140.5,139.4,140.2,egui-wgpu+egui
+heavy,reorder_fps,reorder：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,reorder_fps,reorder：FPS,fps,True,gpui-quads,60.0,60.0,60.0,60.0,tie
+heavy,reorder_fps,reorder：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,reorder_fps,reorder：FPS,fps,True,egui,62.0,61.6,62.5,62.0,tie
+heavy,reorder_paint_ms,reorder：每幀圖表繪製,ms,False,gpui,1.9,1.6,1.9,1.9,gpui+egui-wgpu+egui
+heavy,reorder_paint_ms,reorder：每幀圖表繪製,ms,False,gpui-quads,2.2,2.1,2.2,2.2,gpui+egui-wgpu+egui
+heavy,reorder_paint_ms,reorder：每幀圖表繪製,ms,False,egui-wgpu,1.1,1.1,1.1,1.2,gpui+egui-wgpu+egui
+heavy,reorder_paint_ms,reorder：每幀圖表繪製,ms,False,egui,0.9,0.9,0.9,0.8,gpui+egui-wgpu+egui
+heavy,reorder_cpu,reorder：CPU,%,False,gpui,26.3,22.3,26.4,26.3,egui
+heavy,reorder_cpu,reorder：CPU,%,False,gpui-quads,35.6,35.1,35.6,36.0,egui
+heavy,reorder_cpu,reorder：CPU,%,False,egui-wgpu,25.9,25.1,25.9,28.2,egui
+heavy,reorder_cpu,reorder：CPU,%,False,egui,18.8,18.8,18.8,17.1,egui
+heavy,reorder_rss_mb,reorder：RSS,MB,False,gpui,325.5,325.5,325.5,326.2,egui-wgpu+egui
+heavy,reorder_rss_mb,reorder：RSS,MB,False,gpui-quads,332.6,332.9,332.6,332.6,egui-wgpu+egui
+heavy,reorder_rss_mb,reorder：RSS,MB,False,egui-wgpu,134.6,134.6,134.6,137.6,egui-wgpu+egui
+heavy,reorder_rss_mb,reorder：RSS,MB,False,egui,140.2,141.3,139.5,140.2,egui-wgpu+egui
+heavy,zshot_fps,zshot：FPS,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+heavy,zshot_fps,zshot：FPS,fps,True,gpui-quads,60.0,59.7,60.0,60.0,tie
+heavy,zshot_fps,zshot：FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+heavy,zshot_fps,zshot：FPS,fps,True,egui,62.0,63.1,62.0,61.4,tie
+heavy,zshot_paint_ms,zshot：每幀圖表繪製,ms,False,gpui,0.2,0.1,0.2,0.2,tie
+heavy,zshot_paint_ms,zshot：每幀圖表繪製,ms,False,gpui-quads,0.2,0.2,0.2,0.2,tie
+heavy,zshot_paint_ms,zshot：每幀圖表繪製,ms,False,egui-wgpu,0.2,0.2,0.2,0.2,tie
+heavy,zshot_paint_ms,zshot：每幀圖表繪製,ms,False,egui,0.1,0.2,0.1,0.1,tie
+heavy,zshot_cpu,zshot：CPU,%,False,gpui,17.0,12.1,17.0,18.5,egui
+heavy,zshot_cpu,zshot：CPU,%,False,gpui-quads,17.7,16.3,17.8,17.7,egui
+heavy,zshot_cpu,zshot：CPU,%,False,egui-wgpu,15.8,13.8,16.7,15.8,egui
+heavy,zshot_cpu,zshot：CPU,%,False,egui,10.1,10.5,10.1,8.7,egui
+heavy,zshot_rss_mb,zshot：RSS,MB,False,gpui,325.5,325.5,325.5,326.2,egui-wgpu+egui
+heavy,zshot_rss_mb,zshot：RSS,MB,False,gpui-quads,332.6,232.4,332.6,332.6,egui-wgpu+egui
+heavy,zshot_rss_mb,zshot：RSS,MB,False,egui-wgpu,134.2,134.2,131.3,134.3,egui-wgpu+egui
+heavy,zshot_rss_mb,zshot：RSS,MB,False,egui,140.3,141.6,139.6,140.3,egui-wgpu+egui
+heavy,footprint_mb,實體記憶體（結束時）,MB,False,gpui,367.4,369.4,364.9,367.4,egui-wgpu+egui
+heavy,footprint_mb,實體記憶體（結束時）,MB,False,gpui-quads,383.2,280.8,384.7,383.2,egui-wgpu+egui
+heavy,footprint_mb,實體記憶體（結束時）,MB,False,egui-wgpu,189.8,189.8,186.9,189.8,egui-wgpu+egui
+heavy,footprint_mb,實體記憶體（結束時）,MB,False,egui,198.2,205.3,196.1,198.2,egui-wgpu+egui
+ticks-s1k,lat_p50,延遲 p50,ms,False,gpui,31.0,30.5,31.3,31.0,tie
+ticks-s1k,lat_p50,延遲 p50,ms,False,egui-wgpu,30.8,30.6,30.8,31.2,tie
+ticks-s1k,lat_p50,延遲 p50,ms,False,egui,31.1,31.1,31.2,30.9,tie
+ticks-s1k,lat_p99,延遲 p99,ms,False,gpui,34.9,33.9,35.2,34.9,tie
+ticks-s1k,lat_p99,延遲 p99,ms,False,egui-wgpu,33.5,33.5,33.5,33.4,tie
+ticks-s1k,lat_p99,延遲 p99,ms,False,egui,34.4,34.4,33.2,36.1,tie
+ticks-s1k,lat_max,延遲最大,ms,False,gpui,349.7,276.7,349.7,407.3,egui-wgpu
+ticks-s1k,lat_max,延遲最大,ms,False,egui-wgpu,35.0,34.5,43.4,35.0,egui-wgpu
+ticks-s1k,lat_max,延遲最大,ms,False,egui,41.9,37.1,50.4,41.9,egui-wgpu
+ticks-s1k,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+ticks-s1k,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+ticks-s1k,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+ticks-s1k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,gpui,-0.1,-0.1,-0.1,-0.1,tie
+ticks-s1k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui-wgpu,-0.2,-0.2,-0.0,-0.2,tie
+ticks-s1k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui,-0.2,-0.2,-0.2,0.3,tie
+ticks-s1k,cpu,CPU,%,False,gpui,25.7,25.7,26.6,24.0,egui
+ticks-s1k,cpu,CPU,%,False,egui-wgpu,23.8,24.1,23.8,23.5,egui
+ticks-s1k,cpu,CPU,%,False,egui,8.0,8.0,6.1,17.1,egui
+ticks-s1k,fps,FPS 中位數,fps,True,gpui,61.0,60.0,61.0,61.0,tie
+ticks-s1k,fps,FPS 中位數,fps,True,egui-wgpu,61.0,61.0,61.0,61.0,tie
+ticks-s1k,fps,FPS 中位數,fps,True,egui,61.0,61.0,61.0,60.0,tie
+ticks-s1k,fpsMin,FPS 最低,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+ticks-s1k,fpsMin,FPS 最低,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+ticks-s1k,fpsMin,FPS 最低,fps,True,egui,59.0,60.0,59.0,59.0,tie
+ticks-s1k,rss_end_mb,RSS（結束）,MB,False,gpui,124.3,124.3,126.0,122.6,gpui
+ticks-s1k,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,141.4,141.3,141.4,141.5,gpui
+ticks-s1k,rss_end_mb,RSS（結束）,MB,False,egui,142.4,142.3,142.4,145.1,gpui
+ticks-s1k,footprint_mb,實體記憶體（結束後）,MB,False,gpui,171.0,171.0,172.7,169.3,gpui
+ticks-s1k,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,182.5,182.0,184.3,182.5,gpui
+ticks-s1k,footprint_mb,實體記憶體（結束後）,MB,False,egui,195.7,195.7,195.8,188.8,gpui
+ticks-s1k,gpu_util,整機 GPU,%,False,gpui,19.4,19.4,18.7,19.5,egui-wgpu
+ticks-s1k,gpu_util,整機 GPU,%,False,egui-wgpu,12.2,12.0,12.4,12.2,egui-wgpu
+ticks-s1k,gpu_util,整機 GPU,%,False,egui,22.0,22.0,22.3,20.9,egui-wgpu
+ticks-s10k,lat_p50,延遲 p50,ms,False,gpui,31.7,31.8,31.7,31.6,tie
+ticks-s10k,lat_p50,延遲 p50,ms,False,egui-wgpu,30.5,31.4,30.5,30.4,tie
+ticks-s10k,lat_p50,延遲 p50,ms,False,egui,31.3,31.3,31.2,31.6,tie
+ticks-s10k,lat_p99,延遲 p99,ms,False,gpui,35.4,33.8,35.5,35.4,egui-wgpu+egui
+ticks-s10k,lat_p99,延遲 p99,ms,False,egui-wgpu,33.6,33.6,33.6,33.8,egui-wgpu+egui
+ticks-s10k,lat_p99,延遲 p99,ms,False,egui,33.4,33.1,34.8,33.4,egui-wgpu+egui
+ticks-s10k,lat_max,延遲最大,ms,False,gpui,287.7,283.4,287.7,303.2,egui
+ticks-s10k,lat_max,延遲最大,ms,False,egui-wgpu,45.2,34.5,47.5,45.2,egui
+ticks-s10k,lat_max,延遲最大,ms,False,egui,37.0,48.5,37.0,36.5,egui
+ticks-s10k,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+ticks-s10k,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+ticks-s10k,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+ticks-s10k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,gpui,0.1,0.1,0.2,-0.2,tie
+ticks-s10k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui-wgpu,-0.1,0.2,-0.1,-0.1,tie
+ticks-s10k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui,-0.2,-0.2,-0.2,-0.2,tie
+ticks-s10k,cpu,CPU,%,False,gpui,27.3,27.5,27.3,27.3,egui
+ticks-s10k,cpu,CPU,%,False,egui-wgpu,26.0,25.9,26.6,26.0,egui
+ticks-s10k,cpu,CPU,%,False,egui,7.6,6.4,9.9,7.6,egui
+ticks-s10k,fps,FPS 中位數,fps,True,gpui,61.0,61.0,61.0,60.5,tie
+ticks-s10k,fps,FPS 中位數,fps,True,egui-wgpu,61.0,61.0,60.0,61.0,tie
+ticks-s10k,fps,FPS 中位數,fps,True,egui,61.0,61.0,61.0,61.0,tie
+ticks-s10k,fpsMin,FPS 最低,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+ticks-s10k,fpsMin,FPS 最低,fps,True,egui-wgpu,60.0,60.0,59.0,60.0,tie
+ticks-s10k,fpsMin,FPS 最低,fps,True,egui,60.0,60.0,60.0,60.0,tie
+ticks-s10k,rss_end_mb,RSS（結束）,MB,False,gpui,124.8,122.5,124.9,124.8,gpui
+ticks-s10k,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,141.5,141.5,141.1,141.5,gpui
+ticks-s10k,rss_end_mb,RSS（結束）,MB,False,egui,145.2,142.5,145.2,145.2,gpui
+ticks-s10k,footprint_mb,實體記憶體（結束後）,MB,False,gpui,171.5,169.1,171.6,171.5,gpui
+ticks-s10k,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,191.3,191.3,192.8,191.2,gpui
+ticks-s10k,footprint_mb,實體記憶體（結束後）,MB,False,egui,199.1,199.1,190.2,201.8,gpui
+ticks-s10k,gpu_util,整機 GPU,%,False,gpui,19.6,19.4,19.6,19.6,egui-wgpu
+ticks-s10k,gpu_util,整機 GPU,%,False,egui-wgpu,11.9,11.9,12.2,11.9,egui-wgpu
+ticks-s10k,gpu_util,整機 GPU,%,False,egui,22.1,22.3,21.8,22.1,egui-wgpu
+ticks-s50k,lat_p50,延遲 p50,ms,False,gpui,32.4,32.6,32.4,32.0,tie
+ticks-s50k,lat_p50,延遲 p50,ms,False,egui-wgpu,31.5,30.7,31.5,31.5,tie
+ticks-s50k,lat_p50,延遲 p50,ms,False,egui,31.0,30.9,31.6,31.0,tie
+ticks-s50k,lat_p99,延遲 p99,ms,False,gpui,36.0,34.5,36.1,36.0,egui-wgpu+egui
+ticks-s50k,lat_p99,延遲 p99,ms,False,egui-wgpu,33.6,33.7,33.6,33.6,egui-wgpu+egui
+ticks-s50k,lat_p99,延遲 p99,ms,False,egui,34.1,33.4,34.1,35.2,egui-wgpu+egui
+ticks-s50k,lat_max,延遲最大,ms,False,gpui,348.3,333.3,348.3,400.7,egui-wgpu
+ticks-s50k,lat_max,延遲最大,ms,False,egui-wgpu,35.2,35.2,35.4,33.9,egui-wgpu
+ticks-s50k,lat_max,延遲最大,ms,False,egui,37.3,36.9,38.6,37.3,egui-wgpu
+ticks-s50k,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+ticks-s50k,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+ticks-s50k,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+ticks-s50k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,gpui,0.0,0.0,0.4,0.0,tie
+ticks-s50k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui-wgpu,0.1,0.1,0.1,0.1,tie
+ticks-s50k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui,-0.2,-0.2,-0.2,-0.1,tie
+ticks-s50k,cpu,CPU,%,False,gpui,31.3,30.9,31.3,31.9,egui
+ticks-s50k,cpu,CPU,%,False,egui-wgpu,32.2,32.2,32.2,31.9,egui
+ticks-s50k,cpu,CPU,%,False,egui,9.9,9.9,9.0,11.3,egui
+ticks-s50k,fps,FPS 中位數,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+ticks-s50k,fps,FPS 中位數,fps,True,egui-wgpu,61.0,61.0,60.0,61.0,tie
+ticks-s50k,fps,FPS 中位數,fps,True,egui,61.0,61.0,61.0,61.0,tie
+ticks-s50k,fpsMin,FPS 最低,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+ticks-s50k,fpsMin,FPS 最低,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+ticks-s50k,fpsMin,FPS 最低,fps,True,egui,59.0,60.0,59.0,59.0,tie
+ticks-s50k,rss_end_mb,RSS（結束）,MB,False,gpui,124.4,124.3,124.4,125.5,gpui
+ticks-s50k,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,141.5,140.4,141.5,141.8,gpui
+ticks-s50k,rss_end_mb,RSS（結束）,MB,False,egui,142.8,142.5,145.4,142.8,gpui
+ticks-s50k,footprint_mb,實體記憶體（結束後）,MB,False,gpui,171.1,171.0,171.1,172.2,gpui
+ticks-s50k,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,193.2,192.0,193.2,193.6,gpui
+ticks-s50k,footprint_mb,實體記憶體（結束後）,MB,False,egui,195.0,195.0,188.0,195.4,gpui
+ticks-s50k,gpu_util,整機 GPU,%,False,gpui,18.9,19.6,18.9,18.4,egui-wgpu
+ticks-s50k,gpu_util,整機 GPU,%,False,egui-wgpu,11.9,12.0,11.9,11.9,egui-wgpu
+ticks-s50k,gpu_util,整機 GPU,%,False,egui,21.4,21.4,21.9,21.3,egui-wgpu
+ticks-s100k,lat_p50,延遲 p50,ms,False,gpui,33.0,33.4,33.0,32.8,tie
+ticks-s100k,lat_p50,延遲 p50,ms,False,egui-wgpu,31.4,31.4,31.2,31.6,tie
+ticks-s100k,lat_p50,延遲 p50,ms,False,egui,32.2,32.2,32.2,32.1,tie
+ticks-s100k,lat_p99,延遲 p99,ms,False,gpui,36.7,36.7,36.4,36.7,egui-wgpu
+ticks-s100k,lat_p99,延遲 p99,ms,False,egui-wgpu,33.8,33.8,34.1,33.7,egui-wgpu
+ticks-s100k,lat_p99,延遲 p99,ms,False,egui,37.0,37.0,37.0,36.6,egui-wgpu
+ticks-s100k,lat_max,延遲最大,ms,False,gpui,330.2,310.1,330.2,406.5,egui-wgpu+egui
+ticks-s100k,lat_max,延遲最大,ms,False,egui-wgpu,36.8,47.8,36.8,35.2,egui-wgpu+egui
+ticks-s100k,lat_max,延遲最大,ms,False,egui,38.7,39.1,38.7,38.6,egui-wgpu+egui
+ticks-s100k,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+ticks-s100k,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+ticks-s100k,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+ticks-s100k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,gpui,0.1,-0.1,0.1,0.1,tie
+ticks-s100k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui-wgpu,-0.2,-0.2,-0.4,0.1,tie
+ticks-s100k,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui,-0.2,-0.7,-0.0,-0.2,tie
+ticks-s100k,cpu,CPU,%,False,gpui,33.9,33.9,33.9,34.6,egui
+ticks-s100k,cpu,CPU,%,False,egui-wgpu,36.1,35.8,36.3,36.1,egui
+ticks-s100k,cpu,CPU,%,False,egui,27.3,27.3,29.2,21.0,egui
+ticks-s100k,fps,FPS 中位數,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+ticks-s100k,fps,FPS 中位數,fps,True,egui-wgpu,61.0,61.0,60.5,61.0,tie
+ticks-s100k,fps,FPS 中位數,fps,True,egui,58.0,58.0,58.0,59.0,tie
+ticks-s100k,fpsMin,FPS 最低,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+ticks-s100k,fpsMin,FPS 最低,fps,True,egui-wgpu,59.0,59.0,58.0,60.0,tie
+ticks-s100k,fpsMin,FPS 最低,fps,True,egui,57.0,58.0,57.0,57.0,tie
+ticks-s100k,rss_end_mb,RSS（結束）,MB,False,gpui,122.6,124.8,119.2,122.6,gpui
+ticks-s100k,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,140.5,141.6,139.2,140.5,gpui
+ticks-s100k,rss_end_mb,RSS（結束）,MB,False,egui,143.3,143.2,143.3,143.5,gpui
+ticks-s100k,footprint_mb,實體記憶體（結束後）,MB,False,gpui,169.4,171.5,165.8,169.4,gpui
+ticks-s100k,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,192.3,193.3,191.0,192.3,gpui
+ticks-s100k,footprint_mb,實體記憶體（結束後）,MB,False,egui,196.7,196.7,195.9,196.7,gpui
+ticks-s100k,gpu_util,整機 GPU,%,False,gpui,19.2,19.3,19.2,18.5,egui-wgpu
+ticks-s100k,gpu_util,整機 GPU,%,False,egui-wgpu,11.9,11.9,12.0,11.9,egui-wgpu
+ticks-s100k,gpu_util,整機 GPU,%,False,egui,20.2,20.2,20.2,20.5,egui-wgpu
+ticks-burst,lat_p50,延遲 p50,ms,False,gpui,31.3,31.3,31.5,31.3,tie
+ticks-burst,lat_p50,延遲 p50,ms,False,egui-wgpu,30.6,30.5,30.6,31.2,tie
+ticks-burst,lat_p50,延遲 p50,ms,False,egui,31.3,31.7,31.3,30.4,tie
+ticks-burst,lat_p99,延遲 p99,ms,False,gpui,35.5,35.5,35.6,35.4,tie
+ticks-burst,lat_p99,延遲 p99,ms,False,egui-wgpu,33.8,33.9,33.7,33.8,tie
+ticks-burst,lat_p99,延遲 p99,ms,False,egui,35.3,35.3,35.0,35.5,tie
+ticks-burst,lat_max,延遲最大,ms,False,gpui,320.5,320.5,391.2,305.7,egui-wgpu+egui
+ticks-burst,lat_max,延遲最大,ms,False,egui-wgpu,39.2,36.6,40.3,39.2,egui-wgpu+egui
+ticks-burst,lat_max,延遲最大,ms,False,egui,37.3,37.2,49.3,37.3,egui-wgpu+egui
+ticks-burst,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+ticks-burst,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+ticks-burst,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+ticks-burst,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,gpui,-1.1,-1.1,-1.2,-1.1,tie
+ticks-burst,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui-wgpu,-0.4,-0.8,-0.4,-0.3,tie
+ticks-burst,backlog_ms,積壓（後 5 秒−前 5 秒延遲）,ms,False,egui,-0.2,-0.2,-0.1,-1.6,tie
+ticks-burst,cpu,CPU,%,False,gpui,28.0,27.9,28.5,28.0,egui
+ticks-burst,cpu,CPU,%,False,egui-wgpu,26.8,26.8,27.0,26.8,egui
+ticks-burst,cpu,CPU,%,False,egui,9.4,10.0,7.4,9.4,egui
+ticks-burst,fps,FPS 中位數,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+ticks-burst,fps,FPS 中位數,fps,True,egui-wgpu,61.0,61.0,61.0,61.0,tie
+ticks-burst,fps,FPS 中位數,fps,True,egui,61.0,61.0,61.0,61.0,tie
+ticks-burst,fpsMin,FPS 最低,fps,True,gpui,60.0,60.0,60.0,60.0,tie
+ticks-burst,fpsMin,FPS 最低,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+ticks-burst,fpsMin,FPS 最低,fps,True,egui,59.0,59.0,59.0,58.0,tie
+ticks-burst,rss_end_mb,RSS（結束）,MB,False,gpui,124.9,125.2,124.9,121.1,gpui
+ticks-burst,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,140.6,140.6,140.3,142.2,gpui
+ticks-burst,rss_end_mb,RSS（結束）,MB,False,egui,145.3,143.4,145.7,145.3,gpui
+ticks-burst,footprint_mb,實體記憶體（結束後）,MB,False,gpui,171.6,171.9,171.6,165.7,gpui
+ticks-burst,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,192.3,192.3,192.0,193.9,gpui
+ticks-burst,footprint_mb,實體記憶體（結束後）,MB,False,egui,197.8,201.0,197.4,197.8,gpui
+ticks-burst,gpu_util,整機 GPU,%,False,gpui,19.4,19.7,18.6,19.4,egui-wgpu
+ticks-burst,gpu_util,整機 GPU,%,False,egui-wgpu,12.0,12.1,12.0,11.9,egui-wgpu
+ticks-burst,gpu_util,整機 GPU,%,False,egui,21.9,21.8,22.2,21.9,egui-wgpu
+multi-1w,lat_p50,延遲 p50（全部視窗）,ms,False,gpui,31.6,31.1,31.6,31.6,tie
+multi-1w,lat_p50,延遲 p50（全部視窗）,ms,False,egui-wgpu,31.2,30.6,31.2,31.2,tie
+multi-1w,lat_p50,延遲 p50（全部視窗）,ms,False,egui,31.5,31.6,31.5,31.4,tie
+multi-1w,lat_p99,延遲 p99（全部視窗）,ms,False,gpui,35.2,35.4,35.1,35.2,tie
+multi-1w,lat_p99,延遲 p99（全部視窗）,ms,False,egui-wgpu,33.6,33.6,33.4,33.6,tie
+multi-1w,lat_p99,延遲 p99（全部視窗）,ms,False,egui,34.8,35.6,34.8,33.2,tie
+multi-1w,worst_p99,最慢視窗 p99,ms,False,gpui,35.2,35.4,35.1,35.2,tie
+multi-1w,worst_p99,最慢視窗 p99,ms,False,egui-wgpu,33.6,33.6,33.4,33.6,tie
+multi-1w,worst_p99,最慢視窗 p99,ms,False,egui,34.8,35.6,34.8,33.2,tie
+multi-1w,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+multi-1w,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+multi-1w,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+multi-1w,fps_min,最慢視窗 FPS,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+multi-1w,fps_min,最慢視窗 FPS,fps,True,egui-wgpu,61.0,61.0,61.0,61.0,tie
+multi-1w,fps_min,最慢視窗 FPS,fps,True,egui,61.0,61.0,61.0,61.0,tie
+multi-1w,fps_mean,平均 FPS,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+multi-1w,fps_mean,平均 FPS,fps,True,egui-wgpu,61.0,61.0,61.0,61.0,tie
+multi-1w,fps_mean,平均 FPS,fps,True,egui,61.0,61.0,61.0,61.0,tie
+multi-1w,cpu,CPU,%,False,gpui,28.8,29.3,28.8,28.7,egui
+multi-1w,cpu,CPU,%,False,egui-wgpu,26.9,26.9,27.2,26.5,egui
+multi-1w,cpu,CPU,%,False,egui,8.4,10.4,8.4,6.4,egui
+multi-1w,rss_end_mb,RSS（結束）,MB,False,gpui,123.5,122.8,125.5,123.5,gpui
+multi-1w,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,140.4,141.8,140.3,140.4,gpui
+multi-1w,rss_end_mb,RSS（結束）,MB,False,egui,145.4,145.4,145.4,145.5,gpui
+multi-1w,footprint_mb,實體記憶體（結束後）,MB,False,gpui,192.6,191.9,194.5,192.6,gpui+egui-wgpu
+multi-1w,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,201.7,203.0,201.5,201.7,gpui+egui-wgpu
+multi-1w,footprint_mb,實體記憶體（結束後）,MB,False,egui,230.8,230.8,225.8,232.3,gpui+egui-wgpu
+multi-1w,gpu_util,整機 GPU,%,False,gpui,27.1,25.9,28.0,27.1,egui-wgpu
+multi-1w,gpu_util,整機 GPU,%,False,egui-wgpu,14.8,14.8,14.7,14.9,egui-wgpu
+multi-1w,gpu_util,整機 GPU,%,False,egui,25.5,25.5,25.4,25.7,egui-wgpu
+multi-4w,lat_p50,延遲 p50（全部視窗）,ms,False,gpui,31.1,30.8,31.1,31.1,egui
+multi-4w,lat_p50,延遲 p50（全部視窗）,ms,False,egui-wgpu,25.3,25.5,24.7,25.3,egui
+multi-4w,lat_p50,延遲 p50（全部視窗）,ms,False,egui,18.0,18.0,17.5,18.6,egui
+multi-4w,lat_p99,延遲 p99（全部視窗）,ms,False,gpui,35.4,35.5,35.4,35.3,egui-wgpu+egui
+multi-4w,lat_p99,延遲 p99（全部視窗）,ms,False,egui-wgpu,33.5,33.5,33.5,33.6,egui-wgpu+egui
+multi-4w,lat_p99,延遲 p99（全部視窗）,ms,False,egui,33.4,33.5,33.3,33.4,egui-wgpu+egui
+multi-4w,worst_p99,最慢視窗 p99,ms,False,gpui,35.8,35.8,36.0,35.8,tie
+multi-4w,worst_p99,最慢視窗 p99,ms,False,egui-wgpu,35.3,34.1,35.3,35.3,tie
+multi-4w,worst_p99,最慢視窗 p99,ms,False,egui,35.9,37.9,35.5,35.9,tie
+multi-4w,loss,遺失,筆,False,gpui,0.0,0.0,0.0,0.0,tie
+multi-4w,loss,遺失,筆,False,egui-wgpu,0.0,0.0,0.0,0.0,tie
+multi-4w,loss,遺失,筆,False,egui,0.0,0.0,0.0,0.0,tie
+multi-4w,fps_min,最慢視窗 FPS,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+multi-4w,fps_min,最慢視窗 FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+multi-4w,fps_min,最慢視窗 FPS,fps,True,egui,60.0,60.0,60.0,60.0,tie
+multi-4w,fps_mean,平均 FPS,fps,True,gpui,61.0,61.0,61.0,61.0,tie
+multi-4w,fps_mean,平均 FPS,fps,True,egui-wgpu,60.0,60.0,60.0,60.0,tie
+multi-4w,fps_mean,平均 FPS,fps,True,egui,60.0,60.0,60.0,60.0,tie
+multi-4w,cpu,CPU,%,False,gpui,32.7,32.7,32.7,32.8,egui
+multi-4w,cpu,CPU,%,False,egui-wgpu,44.8,45.6,44.8,43.5,egui
+multi-4w,cpu,CPU,%,False,egui,24.6,24.9,24.6,24.5,egui
+multi-4w,rss_end_mb,RSS（結束）,MB,False,gpui,135.8,131.3,135.8,135.8,gpui
+multi-4w,rss_end_mb,RSS（結束）,MB,False,egui-wgpu,149.4,149.7,149.4,148.0,gpui
+multi-4w,rss_end_mb,RSS（結束）,MB,False,egui,150.1,148.5,150.1,151.7,gpui
+multi-4w,footprint_mb,實體記憶體（結束後）,MB,False,gpui,211.1,206.6,213.3,211.1,tie
+multi-4w,footprint_mb,實體記憶體（結束後）,MB,False,egui-wgpu,217.2,217.9,217.2,215.8,tie
+multi-4w,footprint_mb,實體記憶體（結束後）,MB,False,egui,207.9,206.3,207.9,209.5,tie
+multi-4w,gpu_util,整機 GPU,%,False,gpui,32.4,32.4,32.4,32.4,egui-wgpu
+multi-4w,gpu_util,整機 GPU,%,False,egui-wgpu,25.6,25.6,25.5,25.6,egui-wgpu
+multi-4w,gpu_util,整機 GPU,%,False,egui,32.5,33.0,32.5,31.8,egui-wgpu
