@@ -3,10 +3,11 @@ name = "xq-mobile-gpui"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "XQ 風格看盤 demo 手機版（Android，GPUI + longbridge/gpui-mobile）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
+description = "XQ 風格看盤 demo 手機版（Android＋iOS，GPUI + longbridge/gpui-mobile）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
 
 [lib]
 name = "xq_mobile_gpui"
+# Android 用 cdylib；iOS 用 `cargo rustc --crate-type staticlib`（ios/build-rust.sh），不用在這裡多列
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
@@ -24,6 +25,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 libc = "0.2"
 log = "0.4"
+
+# iOS：app 內建合成行情（手機上沒有電腦的行情服務）
+[target.'cfg(target_os = "ios")'.dependencies]
+xq-demofeed = { path = "../crates/xq-demofeed" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = { version = "0.6", features = ["native-activity"] }

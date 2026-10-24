@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/xq-feed", "crates/xq-tape", "crates/xq-tokens", "crates/xq-ws-bridge"]
+members = [".", "crates/xq-feed", "crates/xq-tape", "crates/xq-tokens", "crates/xq-ws-bridge", "crates/xq-demofeed"]
 # 手機版（Android）是獨立的 crate／Cargo.lock（gpui-pre 0.3.9 + gpui-mobile），不進桌面版 workspace
 exclude = ["mobile"]
 

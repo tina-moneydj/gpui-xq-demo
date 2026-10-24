@@ -67,3 +67,8 @@ GPUI 就一直不畫（WindowManager 的 `mCurrentFocus` 仍是本 app）。egui
 > NotoColorEmoji.ttf fully just to look at the table directory. `add_fonts` accepts `Cow<'static, [u8]>`
 > and does not copy, so memory-mapping the files (memmap2, leaked `&'static [u8]`) makes them file-backed,
 > shared and reclaimable. Dedupe by canonical path. Optionally an env/config allow-list.
+
+## 4. iOS：關掉預設 feature 時編不過 — `src/ios/platform_view.rs`
+
+`default-features = false` 時 `packages::video_player`／`packages::camera` 不存在，但 iOS 的 platform view 直接呼叫
+`ios_get_player`／`ios_get_session`。改成 `#[cfg(feature = …)]`，沒開時當作找不到（原生 view 照建、只是不掛播放器／相機預覽）。

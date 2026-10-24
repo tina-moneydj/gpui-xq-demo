@@ -1,18 +1,22 @@
-//! XQ 風格看盤 demo 手機版（Android，GPUI + longbridge/gpui-mobile，GpuiInputActivity／NativeActivity）。
+//! XQ 風格看盤 demo 手機版（Android＋iOS，GPUI + longbridge/gpui-mobile；Android＝GpuiInputActivity，iOS＝UIKit＋Metal）。
 //!
 //! 行情、報價表、走勢圖、指標、畫線、圖層、壓測程式碼全部直接用桌面版 `../src/*.rs`（#[path]），
 //! 只有版面換成手機單一畫面：上＝狀態列＋搜尋框，中間＝報價表（5 萬列 uniform_list、手指 fling）或走勢圖（點一列進入），
 //! 下＝封包／套用計數。觸控（gpui-pre 0.3.9 的手勢）：點＝MouseDown/Up、單指拖曳＝帶 touch_phase 的捲動（含慣性）、
 //! 雙指＝PinchEvent、長按＝LongPressEvent；走勢圖的對應寫在 chart.rs（cfg android）。
-//! 設定：`adb shell setprop debug.xq.e0 KEY=VAL`（見 droid.rs），桌面版的 XQ_* 壓測開關原樣可用。
-#![cfg(target_os = "android")]
+//! 設定：Android＝`adb shell setprop debug.xq.e0 KEY=VAL`（見 droid.rs）；iOS＝Xcode Scheme 的環境變數（見 ios.rs）。桌面版的 XQ_* 壓測開關原樣可用。
+#![cfg(any(target_os = "android", target_os = "ios"))]
 #![allow(dead_code)]
 
 #[path = "../../src/bridge.rs"]
 mod bridge;
 #[path = "../../src/chart.rs"]
 mod chart;
+#[cfg(target_os = "android")]
 mod droid;
+#[cfg(target_os = "ios")]
+mod ios;
+mod mstats;
 #[path = "../../src/drawings.rs"]
 mod drawings;
 #[path = "../../src/gfx.rs"]
@@ -94,8 +98,8 @@ struct MobileRoot {
     last_rows_in: u64,
     stats: Stats,
     metrics_log: bool,
-    flog: droid::FrameLog,
-    ind: droid::IndDelta,
+    flog: mstats::FrameLog,
+    ind: mstats::IndDelta,
     bench: bool,
     bench_frame_logged: bool,
     bench_quote_logged: bool,
@@ -117,9 +121,9 @@ impl MobileRoot {
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = cx.new(|cx| {
             let mut c = ChartView::new(sym, name, period, cx);
-            if droid::ind_bench_reps() > 0 {
-                let (b, v) = c.ind_microbench(droid::ind_bench_reps());
-                droid::ind_bench_report(b, v);
+            if mstats::ind_bench_reps() > 0 {
+                let (b, v) = c.ind_microbench(mstats::ind_bench_reps());
+                mstats::ind_bench_report(b, v);
             }
             c
         });
@@ -190,8 +194,8 @@ impl MobileRoot {
             last_rows_in: 0,
             stats: Stats::default(),
             metrics_log: std::env::var_os("XQ_METRICS").is_some(),
-            flog: droid::FrameLog::default(),
-            ind: droid::IndDelta::default(),
+            flog: mstats::FrameLog::default(),
+            ind: mstats::IndDelta::default(),
             bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
             bench_frame_logged: false,
             bench_quote_logged: false,
@@ -325,7 +329,7 @@ impl MobileRoot {
 
     fn apply_feed(&mut self, cx: &mut Context<Self>) {
         let t0 = Instant::now();
-        let ib = self.bridge.take();
+        let ib = self.bridge.taker().take(); // A1 之後 FeedBridge 改成用 Taker 取件
         let changed = if ib.quotes.is_empty() { 0 } else { self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx)) };
         if let Some(c) = ib.conn {
             self.conn = c;
@@ -539,6 +543,12 @@ impl Render for MobileRoot {
     }
 }
 
+#[cfg(target_os = "ios")]
+pub fn rss_mb() -> f64 {
+    ios::rss_mb()
+}
+
+#[cfg(target_os = "android")]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -547,6 +557,7 @@ pub fn rss_mb() -> f64 {
         .unwrap_or(0.0)
 }
 
+#[cfg(target_os = "android")]
 #[no_mangle]
 fn android_main(app: android_activity::AndroidApp) {
     droid::init(app.internal_data_path());
@@ -569,4 +580,21 @@ fn android_main(app: android_activity::AndroidApp) {
         cx.activate(true);
     });
     eprintln!("[gpui] Application.run returned");
+}
+
+/// iOS 進入點：`main.m` 先呼叫這個登記根 view，再呼叫 gpui-mobile 的 `gpui_ios_run_demo()` 開始跑。
+/// 畫面由 `CADisplayLink` 每幀呼叫 `gpui_ios_request_frame()` 驅動，**不看輸入焦點**（Android 的凍結問題在 iOS 不會發生：
+/// 控制中心、通知、來電蓋住 app 時照畫；只有進背景才停）。
+#[cfg(target_os = "ios")]
+#[unsafe(no_mangle)]
+pub extern "C" fn xq_ios_register_app() {
+    std::panic::set_hook(Box::new(|info| eprintln!("[xq] PANIC: {info}")));
+    ios::init();
+    gpui_mobile::ios::ffi::set_app_callback(Box::new(|cx: &mut App| {
+        tick_tape::bind_keys(cx);
+        search::bind_keys(cx);
+        cx.open_window(WindowOptions { window_bounds: None, ..Default::default() }, |window, cx| cx.new(|cx| MobileRoot::new(window, cx)))
+            .expect("open window");
+        cx.activate(true);
+    }));
 }
