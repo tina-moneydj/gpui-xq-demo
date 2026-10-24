@@ -1,0 +1,4 @@
+// 共用設定。每台 Mac 自己的值（Bundle ID、開發團隊）寫在 Local.xcconfig（setup-mac.command 會自動產生，不進 git）。
+XQ_BUNDLE_ID = tw.moneydj.xqdemo.gpui
+DEVELOPMENT_TEAM =
+#include? "Local.xcconfig"

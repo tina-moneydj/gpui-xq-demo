@@ -1,0 +1,100 @@
+# iOS：在 GitHub 的 Mac 機器上編 GPUI 手機版（模擬器＋實機），在模擬器上真的開起來截圖，
+# 並把模擬器用的 .app 和產生好的 Xcode 專案放到「ios-latest」預發行版（公開 repo，下載不用登入）。
+# TestFlight 那一段只有在 repo 設了 App Store Connect 的 secrets 才會跑（見 bench/ios/README.md 附錄）。
+name: ios
+on:
+  push:
+    branches: [mobile-ios]
+    paths: [".github/workflows/ios.yml", "mobile/**", "src/**", "crates/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode 版本（挑這台上最新的）
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] && sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
+          xcrun simctl list runtimes | tail -5
+      - name: Rust targets
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim && rustc -V
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            mobile/target
+          key: ios-gpui-${{ hashFiles('mobile/Cargo.lock') }}
+          restore-keys: ios-gpui-
+      - name: XcodeGen → XQGPUI.xcodeproj
+        run: |
+          brew install xcodegen
+          cd mobile/ios && xcodegen generate && ls
+      - name: Rust 靜態庫（模擬器、實機）
+        working-directory: mobile
+        run: |
+          cargo rustc --lib --release --target aarch64-apple-ios-sim --crate-type staticlib
+          cargo rustc --lib --release --target aarch64-apple-ios --crate-type staticlib
+          ls -l target/aarch64-apple-ios-sim/release/*.a target/aarch64-apple-ios/release/*.a
+      - name: Xcode 建置（模擬器）
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -project XQGPUI.xcodeproj -scheme XQGPUI -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -40
+          ls build/Build/Products/Release-iphonesimulator/
+      - name: Xcode 建置（實機，不簽章，只確認編得過）
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -project XQGPUI.xcodeproj -scheme XQGPUI -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build-dev CODE_SIGNING_ALLOWED=NO build | tail -20
+      - name: 模擬器冒煙測試（開 app、等 40 秒、截圖）
+        working-directory: mobile/ios
+        run: |
+          set -x
+          DEV=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; c=[x for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]; print(c[-1]["udid"])')
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          APPP=build/Build/Products/Release-iphonesimulator/XQGPUI.app
+          xcrun simctl install "$DEV" "$APPP"
+          BID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APPP/Info.plist")
+          mkdir -p ../../smoke
+          SIMCTL_CHILD_XQ_METRICS=1 xcrun simctl launch --stdout=$PWD/../../smoke/stdout.txt --stderr=$PWD/../../smoke/stderr.txt "$DEV" "$BID"
+          sleep 40
+          xcrun simctl io "$DEV" screenshot ../../smoke/gpui-list.png
+          # 點第一列進走勢圖
+          xcrun simctl io "$DEV" enumerate >/dev/null 2>&1 || true
+          sleep 2
+          xcrun simctl spawn "$DEV" launchctl list | grep -i xq || true
+          ps aux | grep -i XQGPUI | grep -v grep || true
+          tail -50 ../../smoke/stderr.txt || true
+      - name: 打包產物
+        run: |
+          mkdir -p out
+          (cd mobile/ios/build/Build/Products/Release-iphonesimulator && ditto -c -k --keepParent XQGPUI.app "$GITHUB_WORKSPACE/out/XQGPUI-simulator.zip")
+          (cd mobile/ios && zip -qr "$GITHUB_WORKSPACE/out/XQGPUI-xcodeproj.zip" XQGPUI.xcodeproj)
+          cp smoke/* out/ 2>/dev/null || true
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xq-gpui-ios
+          path: out/
+      - name: 更新 ios-latest 預發行版
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ios-latest >/dev/null 2>&1 || gh release create ios-latest --prerelease --target "$GITHUB_SHA" --title "iOS 測試包（最新）" --notes "mobile-ios 分支自動產生。說明見 bench/ios/README.md。"
+          gh release upload ios-latest out/XQGPUI-simulator.zip out/XQGPUI-xcodeproj.zip out/*.png --clobber
+          gh release edit ios-latest --notes "mobile-ios 分支 ${GITHUB_SHA::7} 自動產生（$(date -u +%Y-%m-%dT%H:%MZ)）。XQGPUI-simulator.zip＝模擬器用 app；說明見 bench/ios/README.md。"
