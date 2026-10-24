@@ -16,7 +16,7 @@ param(
     [int]$Runs = 3,
     [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi"),
     [string[]]$Ticks = @("s1k", "s10k", "s50k", "s100k", "burst"),
-    [string[]]$Apps = @("gpui", "egui"),
+    [string[]]$Apps = @("gpui", "egui", "egui-wgpu"),
     [string[]]$Windows = @("1", "4"),
     [switch]$Quick,
     [switch]$Update,
@@ -48,7 +48,8 @@ $Addr = "127.0.0.1:47631"; $Port = 47631
 $W = 1200; $H = 720                       # 主視窗內容區（邏輯像素，乘上 DPI 縮放）
 $T_IDLE = 10.0; $T_CPU0 = 30.0; $T_END = 60.0
 $DUR = 30; $SETTLE = 3; $WARMUP = 3; $TAIL = 4
-$HEAVY_PHASES = @("ticks", "crosshair", "pan")
+# 重圖表 7 段（app 端 chart.rs／zstress.rs：每段 10 秒，zshot 3 秒，共約 67 秒＋暖機 3 秒）
+$HEAVY_PHASES = @("ticks", "crosshair", "pan", "drag", "select", "reorder", "zshot")
 $TICK_ARGS = @{ s1k = "--rate 1000"; s10k = "--rate 10000"; s50k = "--rate 50000"; s100k = "--rate 100000"; burst = "--burst 150000,3,5000" }
 # 報價表 2330／2317 兩列的點擊座標（內容區邏輯像素，同 Linux 1200×720 校正值）；可用環境變數覆寫
 function EnvInt($k, $d) { $v = [Environment]::GetEnvironmentVariable($k); if ($v) { return [int]$v } return $d }
@@ -56,6 +57,7 @@ $CLICK = @{
     gpui = @{ "2330" = @(30, (EnvInt "GPUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "GPUI_ROW1_Y" 484)) }
     egui = @{ "2330" = @(30, (EnvInt "EGUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "EGUI_ROW1_Y" 484)) }
 }
+$CLICK["egui-wgpu"] = $CLICK.egui
 $WATCH = @("2330","2317","2454","0050","2303","2881","2882","2308","2412","2382","3711","2891","2886","1301","1303",
            "2002","3008","2357","2603","2609","3231","6505","2884","2892","5880","2207","1216","2379","3034","2345",
            "AAPL","TSLA","NVDA")
@@ -65,6 +67,8 @@ $EXES = [ordered]@{
     tickgen  = @{ file = "xq-tickgen.exe";   repo = "gpui-xq-demo"; private = $false }
     egui     = @{ file = "egui-xq-demo.exe"; repo = "egui-xq-demo"; private = $true }
 }
+# 同一個 exe 用不同 renderer 跑的 app（XQ_RENDERER）：egui＝glow／OpenGL，egui-wgpu＝wgpu（Windows 上走 DX12／Vulkan）
+$APP_BIN = @{ gpui = "gpui"; egui = "egui"; "egui-wgpu" = "egui" }
 
 # ---------------------------------------------------------------- 原生輔助
 $csPath = Join-Path $PSScriptRoot "XqBench.cs"
@@ -202,7 +206,7 @@ function Get-MachineInfo {
                     dpi = $_.Dpi; scalePct = [int][math]::Round($_.Dpi / 96.0 * 100)
                     workArea = "{0},{1} {2}x{3}" -f $_.WLeft, $_.WTop, ($_.WRight - $_.WLeft), ($_.WBottom - $_.WTop) } })
     return [ordered]@{
-        computer = $env:COMPUTERNAME
+        computer = "win"   # 不記電腦名稱（匿名化）
         os = "$prod $disp (build $build.$(Get-P $nt 'UBR'))"
         cpu = ($cpu | ForEach-Object { $_.Name.Trim() }) -join " / "
         cores = ($cpu | Measure-Object NumberOfCores -Sum).Sum
@@ -225,6 +229,7 @@ function New-Env($name, $extra) {
     $e = @{ XQ_BENCH = "1"; APPDATA = $Script:AppData }
     $e["XQ_PERIOD"] = "D"
     if ($name -eq "egui") { $e["XQ_RENDERER"] = "glow"; $e["XQ_EGUI_STATE"] = (Join-Path $Script:Work "egui-bench-state.json") }
+    if ($name -eq "egui-wgpu") { $e["XQ_RENDERER"] = "wgpu"; $e["XQ_EGUI_STATE"] = (Join-Path $Script:Work "egui-bench-state.json") }
     if ($name -eq "gpui") { $e["XQ_GPUI_STATE"] = (Join-Path $Script:Work "gpui-bench-state.json") }
     foreach ($k in $extra.Keys) { $e[$k] = $extra[$k] }
     return $e
@@ -299,10 +304,18 @@ function Stop-Proc($st) {
     Start-Sleep -Milliseconds 300
     Pump $st
 }
+# 匿名化：結果檔不留電腦名稱／帳號／家目錄（結果會放進公開 repo）
+function Anon([string]$t) {
+    if (-not $t) { return $t }
+    if ($env:USERPROFILE -and $env:USERPROFILE.Length -gt 3) { $t = $t.Replace($env:USERPROFILE, "C:\Users\user").Replace($env:USERPROFILE.Replace("\", "\\"), "C:\\Users\\user").Replace($env:USERPROFILE.Replace("\", "/"), "C:/Users/user") }
+    if ($env:COMPUTERNAME -and $env:COMPUTERNAME.Length -gt 2) { $t = [regex]::Replace($t, [regex]::Escape($env:COMPUTERNAME), "win", "IgnoreCase") }
+    if ($env:USERNAME -and $env:USERNAME.Length -gt 2) { $t = [regex]::Replace($t, "(?<![A-Za-z0-9_])" + [regex]::Escape($env:USERNAME) + "(?![A-Za-z0-9_])", "user", "IgnoreCase") }
+    return $t
+}
 function Save-Log($st, $file, $header) {
     if ($null -eq $st) { return }
     $txt = "==== $header $(Get-Date -Format s)`r`n" + ($st.Log -join "`r`n") + "`r`n"
-    [IO.File]::AppendAllText((Join-Path $Script:Out $file), $txt, [Text.Encoding]::UTF8)
+    [IO.File]::AppendAllText((Join-Path $Script:Out $file), (Anon $txt), [Text.Encoding]::UTF8)
 }
 
 # 記憶體：Working Set（≈ Linux RSS）、Private Bytes（commit）、Working Set - Private（≈ 工作管理員「記憶體」欄，較接近 PSS）
@@ -407,7 +420,7 @@ function EvMs($st, $k) { if ($st.Ev.ContainsKey($k)) { return R1 ($st.Ev[$k] * 1
 # ---------------------------------------------------------------- 情境：主視窗
 function Run-Main($name, $shot) {
     Restart-Feed; Reset-State $name
-    $st = Start-Proc $Bins[$name] "" (New-Env $name @{ XQ_METRICS = "1" })
+    $st = Start-Proc $Bins[$APP_BIN[$name]] "" (New-Env $name @{ XQ_METRICS = "1" })
     try {
         $win = @(Find-Wins $st 1 20 $name)[0]; $tWin = [XqBench]::Now() - $st.T0
         $pl = Place-Main $win
@@ -431,7 +444,7 @@ function Run-Main($name, $shot) {
 function Run-Stress($name, $shot) {
     Restart-Feed; Reset-State $name
     $envs = New-Env $name @{ XQ_GROUP_STRESS = "1"; XQ_STRESS_COLS = "6"; XQ_STRESS_TICK_HZ = "3000"; XQ_STRESS_TICK_MS = "30000"; XQ_STRESS_SCROLL_MS = "10000" }
-    $st = Start-Proc $Bins[$name] "" $envs
+    $st = Start-Proc $Bins[$APP_BIN[$name]] "" $envs
     try {
         $win = @(Find-Wins $st 1 20 $name)[0]; $pl = Place-Main $win
         [void](Wait-Ev $st "gp:tick-start" 30 $name)
@@ -457,7 +470,7 @@ function Run-Heavy($name, $shot) {
     Restart-Feed; Reset-State $name
     $x = @{ XQ_CHART_STRESS = "1"; XQ_CHART_WARM_MS = "3000"; XQ_CHART_PHASE_MS = "10000"; XQ_CHART_DRAWINGS = "1000" }
     $x["XQ_TOP_FRAC"] = "0.8"
-    $st = Start-Proc $Bins[$name] "" (New-Env $name $x)
+    $st = Start-Proc $Bins[$APP_BIN[$name]] "" (New-Env $name $x)
     try {
         $win = @(Find-Wins $st 1 20 $name)[0]; $pl = Place-Main $win
         $setup = Wait-Ev $st "cp:setup" 60 $name
@@ -467,7 +480,8 @@ function Run-Heavy($name, $shot) {
         foreach ($ph in $HEAVY_PHASES) {
             [void](Wait-Ev $st "ph:${ph}:start" 30 $name)
             $p0 = [XqBench]::Tree($st.Pid); $c0 = [XqBench]::CpuSum($p0); $ta = [XqBench]::Now(); [XqBench]::GpuStart($st.Pid)
-            while ([XqBench]::Now() -lt $ta + 5) { Pump $st; Start-Sleep -Milliseconds 50 }
+            $win = 5; if ($ph -eq "zshot") { $win = 1.5 }   # zshot 只有 3 秒
+            while ([XqBench]::Now() -lt $ta + $win) { Pump $st; Start-Sleep -Milliseconds 50 }
             $m = Mem $st.Pid
             if ($shot -and $ph -eq "crosshair") { $out.screenshot = Shot (Join-Path $Script:Out "$name-heavy.png") $false }
             [void](Wait-Ev $st "ph:${ph}:end" 30 $name)
@@ -476,7 +490,8 @@ function Run-Heavy($name, $shot) {
             $perf = Wait-Ev $st "cp:$ph" 5 $name
             $out.phases[$ph] = [ordered]@{ cpu_pct = (Cpu-Pct $c0 $c1 ($tb - $ta)); gpu = $g; mem = $m; perf = $perf.J }
         }
-        [void](Wait-Ev $st "cp:done" 10 $name)
+        # 7 段都量完才收；cp:done 緊接在 zshot 結束後
+        [void](Wait-Ev $st "cp:done" 15 $name)
         return $out
     } finally { Stop-Proc $st; Save-Log $st "$name-heavy.log" "heavy" }
 }
@@ -494,7 +509,7 @@ function Run-Feedgen($name, $scen, $nwin, $shot, $tag) {
         Reset-State $name
         $x = @{ XQ_TICK_BENCH = "1"; XQ_FEED_ADDR = $Addr }
         if ($nwin -gt 0) { $x["XQ_WINDOWS"] = "$nwin" }
-        $st = Start-Proc $Bins[$name] "" (New-Env $name $x)
+        $st = Start-Proc $Bins[$APP_BIN[$name]] "" (New-Env $name $x)
         $wins = @(Find-Wins $st ([math]::Max(1, $nwin)) 40 $name)
         if ($nwin -gt 0) { $pl = Place-Multi $wins } else { $pl = Place-Main $wins[0] }
         $gs = Wait-Gen $gen "start" 60 $name
@@ -519,8 +534,9 @@ function Run-Feedgen($name, $scen, $nwin, $shot, $tag) {
             if ($plan.Count -and $el -ge $plan[0][0]) {
                 $sym = $plan[0][1]; $plan.RemoveAt(0)
                 $xy = $CLICK[$name][$sym]
-                $clicks.Add(@($sym, [double][XqBench]::UnixUs()))
-                [XqBench]::Click($wins[0].H, [int][math]::Round($xy[0] * $scale), [int][math]::Round($xy[1] * $scale))
+                # 起點＝按下滑鼠那一刻（Click 先移過去等 100 ms 才按，見 XqBench.cs）
+                $tDown = [XqBench]::Click($wins[0].H, [int][math]::Round($xy[0] * $scale), [int][math]::Round($xy[1] * $scale))
+                $clicks.Add(@($sym, [double]$tDown))
             }
             if ($el -ge $nextMem) { $s = [XqBench]::Snap($st.Pid); $mems.Add(@([math]::Round($el, 1), [ordered]@{ ws_mb = R1 $s.WsMb; private_mb = R1 $s.PrivateMb })); $nextMem += 2.0 }
             if ($shot -and -not $img -and $el -ge 15) { $img = Shot (Join-Path $Script:Out "$tag.png") ($nwin -gt 0) }
@@ -708,34 +724,46 @@ function Summarize($all) {
 }
 
 # ---------------------------------------------------------------- summary.md（中文、結論在前、標出贏家）
-$AppLabel = @{ gpui = "GPUI（DirectX 11）"; egui = "egui（glow／OpenGL）" }
+$AppLabel = @{ gpui = "GPUI（DirectX 11）"; egui = "egui（glow／OpenGL）"; "egui-wgpu" = "egui（wgpu）" }
 function Fmt($v, $unit) { if ($null -eq $v) { return "—" } return ("{0:0.#}{1}" -f [double]$v, $unit) }
-function Pick($S, $path, $lower) {
+# 勝負（2026-10-24 修正）：每個 app 都和最好的比，差距在 5%（或 1 個單位：ms／%／次 1、MB 2）以內都算贏（可以多個 🏆）；
+# 全部 app 都在範圍內才算平手（＝）；FPS 全部到螢幕更新率 95% 以上也算平手。舊版只有數字完全相同才平手。
+function Tol($unit, $a, $b) {
+    $abs = 0.0
+    switch ($unit.Trim()) { "ms" { $abs = 1.0 } "%" { $abs = 1.0 } "MB" { $abs = 2.0 } "" { $abs = 1.0 } }
+    return [math]::Max(0.05 * [math]::Max([math]::Abs($a), [math]::Abs($b)), $abs)
+}
+function Pick($S, $path, $lower, $unit = "") {
     $vals = [ordered]@{}
     foreach ($a in $Apps) { $v = Q $S[$a] $path; if ($null -ne $v) { $vals[$a] = [double]$v } }
     if ($vals.Count -lt 2) { return $null }
     $best = $null
     foreach ($a in $vals.Keys) { if ($null -eq $best -or ($lower -and $vals[$a] -lt $vals[$best]) -or (-not $lower -and $vals[$a] -gt $vals[$best])) { $best = $a } }
-    $tie = @($vals.Keys | Where-Object { $vals[$_] -eq $vals[$best] }).Count -gt 1
-    return @{ best = $best; vals = $vals; tie = $tie }
+    $bv = $vals[$best]
+    $win = @($vals.Keys | Where-Object { [math]::Abs($vals[$_] - $bv) -le (Tol $unit $vals[$_] $bv) })
+    $tie = $win.Count -eq $vals.Count
+    if ($path -match "fps" -and $Script:MaxHz -and (@($vals.Values | Where-Object { $_ -lt 0.95 * $Script:MaxHz }).Count -eq 0)) { $tie = $true }
+    if ($tie) { $win = @() }
+    return @{ best = $best; vals = $vals; tie = $tie; win = $win }
 }
 function Row($S, $label, $path, $unit, $lower) {
-    $p = Pick $S $path $lower
+    $p = Pick $S $path $lower $unit
     $cells = @(foreach ($a in $Apps) {
         $t = Fmt (Q $S[$a] $path) $unit
-        if ($p -and -not $p.tie -and $p.best -eq $a) { "**$t** 🏆" } else { $t }
+        if ($p -and ($p.win -contains $a)) { "**$t** 🏆" } elseif ($p -and $p.tie -and $p.vals.Contains($a)) { "$t ＝" } else { $t }
     })
-    if ($p -and -not $p.tie) { $Script:WinCount[$p.best]++ }
+    if ($p) { foreach ($a in $p.win) { $Script:WinCount[$a]++ }; if ($p.tie) { $Script:TieCount++ } }
     return "| $label | " + ($cells -join " | ") + " |"
 }
 function Conclude($label, $path, $unit, $lower) {
-    $p = Pick $Script:Sum $path $lower; if (-not $p) { return }
+    $p = Pick $Script:Sum $path $lower $unit; if (-not $p) { return }
     $b = $p.vals[$p.best]
-    $others = @($p.vals.Keys | Where-Object { $_ -ne $p.best } | ForEach-Object {
+    if ($p.tie) { $Script:Concl.Add("- **$label**：＝ 平手（差 5% 內）：" + ((@($p.vals.Keys) | ForEach-Object { "$_ $(Fmt $p.vals[$_] $unit)" }) -join "、")); return }
+    $others = @($p.vals.Keys | Where-Object { $p.win -notcontains $_ } | ForEach-Object {
         $v = $p.vals[$_]; $ratio = ""
         if ($b -gt 0 -and $v -gt 0) { $x = $b / $v; if ($lower) { $x = $v / $b }; if ($x -ge 1.15) { $ratio = "（{0:0.#}×）" -f $x } }
         "$_ $(Fmt $v $unit)$ratio" })
-    $Script:Concl.Add("- **$label**：🏆 $($p.best) $(Fmt $b $unit)；" + ($others -join "、"))
+    $Script:Concl.Add("- **$label**：🏆 " + ((@($p.win) | ForEach-Object { "$_ $(Fmt $p.vals[$_] $unit)" }) -join "、") + "；" + ($others -join "、"))
 }
 function Table($title, $rows) {
     $Script:Body.Add("### $title"); $Script:Body.Add("")
@@ -746,7 +774,9 @@ function Table($title, $rows) {
 }
 function Write-Summary($S, $mi, $path) {
     $Script:Sum = $S
-    $Script:WinCount = @{}; foreach ($a in $Apps) { $Script:WinCount[$a] = 0 }
+    $Script:WinCount = @{}; foreach ($a in $Apps) { $Script:WinCount[$a] = 0 }; $Script:TieCount = 0
+    $Script:MaxHz = $null
+    foreach ($g in @($mi.gpus)) { $m = [regex]::Match("$($g.mode)", "@(\d+)Hz"); if ($m.Success -and [int]$m.Groups[1].Value -gt 0) { $Script:MaxHz = [int]$m.Groups[1].Value; break } }
     $Script:Body = New-Object System.Collections.Generic.List[string]
     $Script:Concl = New-Object System.Collections.Generic.List[string]
     if ($Scenarios -contains "main") {
@@ -775,13 +805,13 @@ function Write-Summary($S, $mi, $path) {
         Conclude "重圖表＋十字線 FPS" "heavy.crosshair.fps" "" $false
         Conclude "重圖表＋平移 CPU" "heavy.pan.cpu_pct" "%" $true
         $rows = @(, @("到第一個重圖表幀", "heavy.heavy_frame_ms", " ms", $true))
-        $pn = @{ ticks = "跳價"; crosshair = "＋十字線"; pan = "＋十字線＋平移" }
+        $pn = @{ ticks = "跳價"; crosshair = "＋十字線"; pan = "＋十字線＋平移"; drag = "拖曳畫線"; select = "框選畫線"; reorder = "調整圖層順序"; zshot = "上下順序截圖" }
         foreach ($ph in $HEAVY_PHASES) {
             $rows += , @("$($pn[$ph]) FPS", "heavy.$ph.fps", "", $false); $rows += , @("$($pn[$ph]) 繪圖耗時", "heavy.$ph.paint_ms", " ms", $true)
             $rows += , @("$($pn[$ph]) CPU", "heavy.$ph.cpu_pct", "%", $true); $rows += , @("$($pn[$ph]) GPU 3D", "heavy.$ph.gpu3d", "%", $true)
             $rows += , @("$($pn[$ph]) Working Set", "heavy.$ph.ws_mb", " MB", $true)
         }
-        Table "重圖表（20 個疊加＋8 副圖＋1000 筆畫線，走勢圖佔 80% 高；每段 10 秒）" $rows
+        Table "重圖表（20 個疊加＋8 副圖＋1000 筆畫線／100 層，走勢圖佔 80% 高；7 段各 10 秒，上下順序截圖 3 秒）" $rows
     }
     if ($Scenarios -contains "ticks") {
         $sc = "s100k"; if ($Ticks -notcontains $sc) { $sc = $Ticks[-1] }
@@ -818,7 +848,7 @@ function Write-Summary($S, $mi, $path) {
     $md = New-Object System.Collections.Generic.List[string]
     $md.Add("# XQ 壓測結果（Windows）：GPUI vs egui（$($mi.computer)，$(Get-Date -Format 'yyyy-MM-dd HH:mm')）"); $md.Add("")
     $md.Add("## 結論"); $md.Add("")
-    $md.Add("表格中各列最佳的標 🏆（平手不標）；勝出次數：$tally。括號是落後倍數（≥ 1.15× 才標）。"); $md.Add("")
+    $md.Add("表格中各列最好的標 🏆；和最好的差距在 5% 以內（或 1 ms／1%／2 MB 以內）也算贏，可以多個 🏆；全部 app 都在範圍內＝平手（＝）。FPS 全部到螢幕更新率（$($Script:MaxHz) Hz）95% 以上也算平手。勝出次數：$tally；平手 $($Script:TieCount) 項。括號是落後倍數（≥ 1.15× 才標）。"); $md.Add("")
     foreach ($c in $Script:Concl) { $md.Add($c) }
     $md.Add("")
     $md.Add("- 每個數字是 $Runs 輪的中位數；CPU 100%＝一顆邏輯核心（本機 $($mi.logicalProcessors) 顆）；記憶體＝整棵程序樹。")
@@ -841,15 +871,15 @@ function Write-Summary($S, $mi, $path) {
     $md.Add("## 說明與限制"); $md.Add("")
     $md.Add("- 情境與量法同 Linux 版（gpui-xq-demo/scripts/bench-*.sh）。記憶體：Working Set（≈ Linux RSS）、Working Set - Private（≈ 工作管理員「記憶體」欄）、Private Bytes（commit）。")
     $md.Add("- GPU 使用率來自效能計數器 GPU Engine（3D 引擎、這棵程序樹、每秒取樣平均）；抓不到時顯示 —。雙顯卡筆電請確認 app 跑在哪張卡（設定 → 系統 → 顯示器 → 圖形）。")
-    $md.Add("- 點選切換：腳本在報價表 2330／2317 列上點滑鼠（座標 × DPI 縮放）。字型／版面跟 Linux 不同時可能點歪（missed），看截圖確認。")
+    $md.Add("- 點選切換：腳本先把滑鼠移到報價表 2330／2317 列上（座標 × DPI 縮放），停 0.1 秒再按；延遲從按下算起。仍有 missed 時看截圖確認是否點歪。")
     $md.Add("- 測試期間不要動滑鼠鍵盤；其他程式（瀏覽器、Teams、防毒掃描）會影響 CPU 與延遲。原始數據在 results.json，各 app 輸出在 *.log。")
-    [IO.File]::WriteAllText($path, ($md -join "`r`n") + "`r`n", (New-Object Text.UTF8Encoding $true))
+    [IO.File]::WriteAllText($path, (Anon (($md -join "`r`n") + "`r`n")), (New-Object Text.UTF8Encoding $true))
 }
 
 # ================================================================ 主程式
 $startedAt = Get-Date
 $Script:Out = $OutDir
-if (-not $Script:Out) { $Script:Out = Join-Path $PSScriptRoot ("results\{0}-{1}" -f (Get-Date -Format "yyyyMMdd-HHmm"), $env:COMPUTERNAME) }
+if (-not $Script:Out) { $Script:Out = Join-Path $PSScriptRoot ("results\{0}-win" -f (Get-Date -Format "yyyyMMdd-HHmm")) }
 New-Item -ItemType Directory -Force $Script:Out | Out-Null
 $Script:Out = (Resolve-Path $Script:Out).Path
 $Script:Work = Join-Path ([IO.Path]::GetTempPath()) "xq-bench-work"     # 狀態檔放這裡（APPDATA 也指過來），不碰測試者自己的設定
@@ -866,10 +896,13 @@ if (Port-Busy) { throw "127.0.0.1:$Port 已被其他程式佔用，請先關掉�
 $Bins = Resolve-Bins
 $missing = @(@("demofeed", "tickgen") | Where-Object { -not $Bins.ContainsKey($_) })
 if ($missing.Count) { throw "缺少 $(($missing | ForEach-Object { $EXES[$_].file }) -join '、')：請放進 $PSScriptRoot\bin 或用 -BinDir 指定" }
+$bad = @($Apps | Where-Object { -not $APP_BIN.ContainsKey($_) })
+if ($bad.Count) { throw "不認得的 app：$($bad -join '、')（可用 $(($APP_BIN.Keys | Sort-Object) -join '、')）" }
 $Apps = @($Apps | Where-Object {
-    if ($Bins.ContainsKey($_)) { $true } else {
-        $hint = ""; if ($EXES[$_].private) { $hint = "（私人 repo：先 gh auth login、或設 GITHUB_TOKEN、或把 exe 放進 bin\）" }
-        Say "⚠️ 找不到 $($EXES[$_].file)，這次不量 $_$hint" "Yellow"; $false } })
+    $k = $APP_BIN[$_]
+    if ($Bins.ContainsKey($k)) { $true } else {
+        $hint = ""; if ($EXES[$k].private) { $hint = "（私人 repo：先 gh auth login、或設 GITHUB_TOKEN、或把 exe 放進 bin\）" }
+        Say "⚠️ 找不到 $($EXES[$k].file)，這次不量 $_$hint" "Yellow"; $false } })
 if (-not $Apps.Count) { throw "一個 app 都沒有可以量" }
 $Script:BinInfo = @($Bins.Keys | Sort-Object | ForEach-Object {
     $f = Get-Item $Bins[$_]
@@ -888,7 +921,7 @@ if ((@($mi.monitors).Count -lt 2) -and ($Scenarios -contains "multi")) { Say "�
 $est = 0; $na = $Apps.Count
 if ($Scenarios -contains "main") { $est += $Runs * $na * 72 }
 if ($Scenarios -contains "stress") { $est += $Runs * $na * 62 }
-if ($Scenarios -contains "heavy") { $est += $Runs * $na * 52 }
+if ($Scenarios -contains "heavy") { $est += $Runs * $na * 85 }
 if ($Scenarios -contains "ticks") { $est += $Ticks.Count * $Runs * $na * 50 }
 if ($Scenarios -contains "multi") { $est += $Windows.Count * $Runs * $na * 54 }
 Say ("預估 {0:0} 分鐘（{1} 輪；情境 {2}；app {3}）。測試中請不要動滑鼠鍵盤，視窗會自己開關。" -f ($est / 60), $Runs, ($Scenarios -join "/"), ($Apps -join "/")) "Cyan"
@@ -957,10 +990,10 @@ $res = [ordered]@{
     params = [ordered]@{ runs = $Runs; scenarios = $Scenarios; ticks = $Ticks; apps = $Apps; windows = $Windows; quick = [bool]$Quick }
     machine = $mi; binaries = $Script:BinInfo; builds = $buildInfo; failures = @($failures); medians = $S; raw = $all
 }
-[IO.File]::WriteAllText((Join-Path $Script:Out "results.json"), ($res | ConvertTo-Json -Depth 16), (New-Object Text.UTF8Encoding $false))
+[IO.File]::WriteAllText((Join-Path $Script:Out "results.json"), (Anon ($res | ConvertTo-Json -Depth 16)), (New-Object Text.UTF8Encoding $false))
 Write-Summary $S $mi (Join-Path $Script:Out "summary.md")
 if ($failures.Count) { Say "有 $($failures.Count) 次失敗（見 results.json 的 failures 與 *.log）" "Yellow" }
-[IO.File]::WriteAllText((Join-Path $Script:Out "console.log"), ($Script:LogLines -join "`r`n"), [Text.Encoding]::UTF8)
+[IO.File]::WriteAllText((Join-Path $Script:Out "console.log"), (Anon ($Script:LogLines -join "`r`n")), [Text.Encoding]::UTF8)
 $target = Join-Path $Script:Out "summary.md"
 if (-not $NoZip) {
     $zip = "$($Script:Out).zip"

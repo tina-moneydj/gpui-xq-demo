@@ -2,11 +2,11 @@
 
 **這是什麼：** 在你的 Windows 電腦上，用同一套情境比較兩種看盤 UI 寫法的速度、記憶體、CPU 和 GPU：
 - **GPUI**：Zed 的框架，用 DirectX 11 畫
-- **egui**：用 OpenGL（glow）畫
+- **egui**：同一個 exe 跑兩次，一次用 OpenGL（glow）畫（app 名 `egui`），一次用 wgpu 畫（app 名 `egui-wgpu`，Windows 上走 DX12／Vulkan）
 
 wry 已經淘汰，不在這次的比較裡。
 
-> 目前還沒有任何 Windows 實機數字，這個工具包就是要量出第一份。跑完後 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
+> 第一份 Windows 實機數字在 2026-10-23（i7-13700＋GTX 1650，見 docs/bench/real-hw）；2026-10-24 修正了重圖表逾時、勝負判定、egui 點選漏抓（見文末）。跑完後 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
 ## 你只要做四件事（不用裝 Rust、不用編譯）
 
@@ -31,8 +31,8 @@ wry 已經淘汰，不在這次的比較裡。
 
 | 模式 | 時間 | 怎麼跑 |
 |---|---|---|
-| 完整（預設） | 約 55 分鐘 | 雙擊 `run-bench.cmd` |
-| 快速版 | 約 15 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Quick` |
+| 完整（預設） | 約 90 分鐘（GPUI、egui glow、egui wgpu 三個 app） | 雙擊 `run-bench.cmd` |
+| 快速版 | 約 25 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Quick` |
 
 開始時畫面上會顯示這次的預估時間。
 
@@ -46,7 +46,7 @@ wry 已經淘汰，不在這次的比較裡。
 |---|---|
 | 主視窗 | 1200×720 邏輯像素（會乘上螢幕縮放）。量啟動到第一幀與第一筆報價的時間、記憶體（10 秒、60 秒）、CPU／GPU／FPS（第 30–60 秒） |
 | 5 萬列 | 報價表 5 萬列 × 6 欄，每秒 3000 筆跳價 30 秒，接著邊跳價邊捲動 10 秒 |
-| 重圖表 | 20 個疊加、8 個副圖、1000 筆畫線。依序跑三段，每段 10 秒：跳價、加十字線、再加平移 |
+| 重圖表 | 20 個疊加、8 個副圖、1000 筆畫線（100 層）。依序跑 7 段：跳價、加十字線、再加平移、拖曳畫線、框選畫線、調整圖層順序（各 10 秒）、上下順序截圖（3 秒），每次約 75 秒 |
 | 高頻進價 | 每秒 1k、10k、50k、100k 筆，加上開盤爆量。量延遲 p50/p99、遺失、積壓、CPU/GPU/FPS，以及點報價列切換走勢圖的反應時間 |
 | 多視窗 | 開 1 個和 4 個看盤視窗，行情每秒 10k 筆。4 個以上螢幕時每個視窗佔滿一個螢幕；不夠時平均分到各螢幕再格狀鋪滿 |
 
@@ -86,7 +86,8 @@ run-bench.cmd -Build -SrcRoot D:\src      （D:\src 底下放 gpui-xq-demo、egu
 run-bench.cmd -Quick                          快速版
 run-bench.cmd -Runs 5                         5 輪中位數
 run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ticks,multi）
-run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI
+run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI（可選 gpui,egui,egui-wgpu）
+run-bench.cmd -Scenarios heavy                只重跑重圖表（3 個 app × 3 輪，約 13 分鐘）
 run-bench.cmd -Windows 1,2,4                  多視窗開幾個
 ```
 
@@ -96,3 +97,11 @@ run-bench.cmd -Windows 1,2,4                  多視窗開幾個
 - **SmartScreen 警告**：exe 沒有數位簽章。點「其他資訊 → 仍要執行」。腳本也會自動對 `bin\` 裡的 exe 解除封鎖。
 - **點選切換顯示「沒對到」**：滑鼠沒點在報價列上，不影響其他數字。可以看截圖，再用環境變數 `GPUI_ROW0_Y`、`GPUI_ROW1_Y`、`EGUI_ROW0_Y`、`EGUI_ROW1_Y` 校正（內容區邏輯像素，Linux 校正值 462/484）。
 - **某一項失敗**：腳本會自動重跑一次，仍失敗就跳過並記在 `results.json` 的 `failures`，其他項目照跑。
+
+## 2026-10-24 修正
+
+- 重圖表：app 已經是 7 段（多了拖曳、框選、調整順序、上下順序截圖），舊腳本只等 3 段，第 3 段後等 `cp:done` 只等 10 秒就逾時，所以 2026-10-23 那次 heavy 全部失敗。現在 7 段都量、`cp:done` 在最後一段後等。
+- 勝負：每個 app 都和最好的比，差 5%（或 1 ms／1%／2 MB）以內都算贏、可以多個 🏆；全部都在範圍內才是平手；FPS 全部到螢幕更新率 95% 以上算平手。舊版只有數字完全相同才平手。
+- 點選切換：先移滑鼠、停 0.1 秒再按，延遲從按下算起。舊版 SetCursorPos 後立刻按，egui（winit 按鍵事件不帶座標）常把這一下算在上一次點的列，8 次漏 5 次。
+- 加 `egui-wgpu`（同一個 egui exe，`XQ_RENDERER=wgpu`）。
+- 結果檔匿名化：資料夾名稱與 results.json 不記電腦名稱，家目錄／帳號換成 `C:\Users\user`／`user`。

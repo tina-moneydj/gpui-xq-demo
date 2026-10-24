@@ -181,11 +181,20 @@ public static class XqBench {
         RECT cr; GetClientRect(h, out cr); POINT o = new POINT(); ClientToScreen(h, ref o);
         return o.X + "," + o.Y + "," + (cr.R - cr.L) + "," + (cr.B - cr.T);
     }
-    /// 在視窗內容區座標 (cx,cy)（實體像素）點一下左鍵
-    public static void Click(IntPtr h, int cx, int cy) {
+    /// 在視窗內容區座標 (cx,cy)（實體像素）點一下左鍵；回傳按下那一刻的 unix µs（量切換延遲的起點）。
+    /// 先移過去、送一次真的滑鼠移動、等 80 ms 再按：winit（egui）的按鍵事件不帶座標，用的是上一個 WM_MOUSEMOVE 的位置；
+    /// 只 SetCursorPos 就立刻按，WM_MOUSEMOVE 常排在按鍵之後，egui 會把這一下算在「上一次點的那一列」（2026-10-23 Windows 實測 egui 8 次點擊漏 5 次）。
+    /// GPUI 讀 WM_LBUTTONDOWN 自帶的座標，不受影響。真人點擊前一定先移動滑鼠，所以這樣比較接近實際使用。
+    public static long Click(IntPtr h, int cx, int cy) {
         POINT p = new POINT(); p.X = cx; p.Y = cy; ClientToScreen(h, ref p);
-        SetForegroundWindow(h); SetCursorPos(p.X, p.Y);
+        SetForegroundWindow(h); SetCursorPos(p.X - 3, p.Y);
+        Thread.Sleep(20);
+        SetCursorPos(p.X, p.Y);
+        mouse_event(0x0001, 0, 0, 0, UIntPtr.Zero);   // MOUSEEVENTF_MOVE（0 位移）：確保送出 WM_MOUSEMOVE
+        Thread.Sleep(80);
+        long t = UnixUs();
         mouse_event(0x0002, 0, 0, 0, UIntPtr.Zero); Thread.Sleep(15); mouse_event(0x0004, 0, 0, 0, UIntPtr.Zero);
+        return t;
     }
     public static void Park() { SetCursorPos(0, 0); }
 
