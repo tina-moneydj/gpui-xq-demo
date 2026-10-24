@@ -292,6 +292,8 @@ struct Terminal {
     last_render: Option<Instant>,
     /// 後備計時器代為套用的次數（主視窗被蓋住／縮小時才會 > 0）
     fallback_applies: u64,
+    /// 量測用的補畫次數（TickBench::awaiting_older_than）
+    probe_kicks: u64,
     /// XQ_SYNC_CHECK=1：多視窗報價同步驗證（每幀比對畫面上的價與共用報價表）
     sync: Option<SyncCheck>,
     /// A1：共用行情匯流（主視窗建立，其他視窗共用）
@@ -385,6 +387,10 @@ impl Terminal {
                 if stale && (t.hub.taker.pending() || t.hub.has_queued(t.win)) {
                     t.fallback_applies += 1;
                     t.pump(cx);
+                } else if t.tick.as_ref().is_some_and(|tb| tb.awaiting_older_than(FALLBACK_MS * 1000)) {
+                    // 量測用：最後一批報價畫好後沒有下一幀，叫一次重畫把 present 記在真的下一幀（見 TickBench::awaiting_older_than）
+                    t.probe_kicks += 1;
+                    cx.notify();
                 }
             });
             if r.is_err() {
@@ -437,6 +443,7 @@ impl Terminal {
             render_apply,
             last_render: None,
             fallback_applies: 0,
+            probe_kicks: 0,
             sync: (crate::plat::var_os("XQ_SYNC_CHECK").is_some_and(|v| v != "0")).then(SyncCheck::default),
             hub,
             wake_at: None,
