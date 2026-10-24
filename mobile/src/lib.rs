@@ -543,6 +543,30 @@ impl Render for MobileRoot {
     }
 }
 
+
+/// heap 用量（共用的 chart.rs 在 CHARTPERF 行裡附上；桌面版在 ../src/main.rs）：
+/// iOS 用 malloc_zone_statistics（同 macOS），Android 用 bionic 的 mallinfo
+pub fn heap_kv() -> String {
+    let mb = |v: usize| v as f64 / 1048576.0;
+    #[cfg(target_os = "ios")]
+    {
+        #[repr(C)]
+        #[derive(Default)]
+        struct MallocStats { blocks_in_use: u32, size_in_use: usize, max_size_in_use: usize, size_allocated: usize }
+        extern "C" {
+            fn malloc_zone_statistics(zone: *mut std::ffi::c_void, stats: *mut MallocStats);
+        }
+        let mut st = MallocStats::default();
+        unsafe { malloc_zone_statistics(std::ptr::null_mut(), &mut st) };
+        format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1},\"heapPeakMb\":{:.1}", mb(st.size_in_use), mb(st.size_allocated), mb(st.max_size_in_use))
+    }
+    #[cfg(target_os = "android")]
+    {
+        let m = unsafe { libc::mallinfo() };
+        format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1}", mb(m.uordblks as usize), mb(m.arena as usize))
+    }
+}
+
 #[cfg(target_os = "ios")]
 pub fn rss_mb() -> f64 {
     ios::rss_mb()
