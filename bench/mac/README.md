@@ -29,7 +29,15 @@ wry 已經淘汰，不在這次的比較裡。
 
 跑完後，結果資料夾裡的 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
-> 目前還沒有任何 Mac 實機數字，這個工具包就是要量出第一份。程式已經在 GitHub 的 Mac 雲端機器上編好並實際跑過一輪，確認能開視窗、收行情、量到數字（雲端機器沒有真的顯示卡，那份數字不算數）。
+> 第一份 Mac 實機數字（2026-10-24，MacBook Air M4）在 `docs/bench/real-hw/2026-10-24-mac/`。這一版工具包換成 **GPUI 優化第 2 批（gpui-opt2：多視窗同幀、報價表一列一次畫完、畫線改 quad 開關）**，請重跑一次比較前後。
+
+### 這一版多了什麼：GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
+
+- **結論先講：** 重圖表會多出一欄「GPUI quad 畫線（XQ_DRAW_QUADS=1）」。拿它跟「GPUI」那欄比，就知道在你的 Mac 上要不要打開這個優化。
+- `XQ_DRAW_QUADS` 是什麼：圖表上水平線、垂直線、矩形框這些「橫平豎直」的畫線，改用便宜的方塊（quad）來畫，不走比較貴的路徑（path）。在我們沒有顯示卡的測試機上反而變慢約一半（因為 GPU 批次被切碎），所以**預設關**；你的 Mac 有真的 GPU，結果可能不同。
+- 工具包會自動做：「GPUI」那欄固定用 `XQ_DRAW_QUADS=0`，「GPUI quad」那欄用 `XQ_DRAW_QUADS=1`。quad 只影響畫線，所以只有重圖表會多跑這一欄（多約 4 分鐘），其他情境不跑。
+- 不想多跑：`./run-bench.command --apps gpui,egui-wgpu,egui`。
+- 自己開 GPUI 看效果：`XQ_DRAW_QUADS=1 ./bin/gpui-xq-demo`（關掉就是不設或設 0）。
 
 ### 跑之前（很重要）
 
@@ -48,7 +56,7 @@ Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列�
 
 | 模式 | 指令 | 時間 | 內容 |
 |---|---|---|---|
-| 完整（預設） | `./run-bench.command` | 約 75 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑 |
+| 完整（預設） | `./run-bench.command` | 約 80 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑；重圖表多跑一次 GPUI quad（XQ_DRAW_QUADS=1） |
 | 快速 | `./run-bench.command --quick` | 約 20 分鐘 | 1 輪；高頻只跑 10k、100k、爆量 |
 | 只比兩個 | `./run-bench.command --apps gpui,egui-wgpu` | 約 50 分鐘 | 只跑 GPUI 和 egui（Metal） |
 
@@ -197,7 +205,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   python3 xq_bench_mac.py --help
   ```
   常用的有：
-  - `--apps gpui,egui-wgpu,egui`
+  - `--apps gpui,gpui-quads,egui-wgpu,egui`（`gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表）
   - `--scenarios main,stress,heavy,ticks,multi`
   - `--ticks s1k,s10k,s50k,s100k,burst`
   - `--windows 1,4`

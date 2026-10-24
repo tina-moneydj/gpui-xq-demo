@@ -13,7 +13,7 @@
 只在量測區間外取，因為 vmmap 會暫停目標程式一下）、ioreg（整機 GPU 使用率）、osascript JXA（螢幕資訊、視窗位置）、
 sysctl／sw_vers／system_profiler（機器資訊）。不需要 sudo，也不需要「輔助使用」或「螢幕錄製」權限。
 
-用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,egui-wgpu,egui] [--scenarios main,stress,heavy,ticks,multi]
+用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,gpui-quads,egui-wgpu,egui] [--scenarios main,stress,heavy,ticks,multi]
                              [--ticks s1k,s10k,s50k,s100k,burst] [--windows 1,4] [--layers 100] [--bin-dir DIR] [--port 47631]
 在 Linux 上也能跑（開發者自測流程用；記憶體/CPU 改讀 /proc，螢幕假設單一 1920×1080）。
 """
@@ -26,7 +26,7 @@ IS_MAC = sys.platform == "darwin"
 ap = argparse.ArgumentParser(description="XQ 壓測 macOS 版（GPUI vs egui）")
 ap.add_argument("--runs", type=int, default=None)
 ap.add_argument("--quick", action="store_true", help="1 輪；高頻只跑 10k、100k、爆量")
-ap.add_argument("--apps", default="gpui,egui-wgpu,egui")
+ap.add_argument("--apps", default="gpui,gpui-quads,egui-wgpu,egui", help="gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表")
 ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi")
 ap.add_argument("--ticks", default=None)
 ap.add_argument("--windows", default="1,4")
@@ -59,12 +59,18 @@ HEAVY_ENV = {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": "0.8", "XQ_CHART_WARM_MS": "
              "XQ_CHART_DRAWINGS": "1000", "XQ_CHART_LAYERS": A.layers}
 TITLE_BAR = 28.0  # macOS 標準標題列高度（點）；視窗內容區往下讓這麼多
 APPDEF = {
-    "gpui":      {"bin": "gpui-xq-demo", "label": "GPUI（Metal）", "env": {}},
+    "gpui":      {"bin": "gpui-xq-demo", "label": "GPUI（Metal）", "env": {"XQ_DRAW_QUADS": "0"}},
+    # 同一個 GPUI 執行檔打開 XQ_DRAW_QUADS=1（畫線層橫平豎直的圖形改用 quad 畫）；只影響畫線，所以只跑重圖表
+    "gpui-quads": {"bin": "gpui-xq-demo", "label": "GPUI quad 畫線（XQ_DRAW_QUADS=1）", "env": {"XQ_DRAW_QUADS": "1"}, "only": ("heavy",)},
     "egui-wgpu": {"bin": "egui-xq-demo", "label": "egui（wgpu／Metal）", "env": {"XQ_RENDERER": "wgpu"}},
     "egui":      {"bin": "egui-xq-demo", "label": "egui（glow／OpenGL）", "env": {"XQ_RENDERER": "glow"}},
 }
 if not IS_MAC:  # Linux 自測：沒有 Metal
-    APPDEF["gpui"]["label"] = "GPUI"; APPDEF["egui-wgpu"]["label"] = "egui（wgpu）"; APPDEF["egui"]["label"] = "egui（glow）"
+    APPDEF["gpui"]["label"] = "GPUI"; APPDEF["gpui-quads"]["label"] = "GPUI quad（XQ_DRAW_QUADS=1）"; APPDEF["egui-wgpu"]["label"] = "egui（wgpu）"; APPDEF["egui"]["label"] = "egui（glow）"
+def runs_in(app, scen):
+    o = APPDEF.get(app, {}).get("only"); return o is None or scen in o
+def apps_in(gid):
+    return [a for a in APPS if runs_in(a, gid.split("-")[0])]
 for a in APPS:
     if a not in APPDEF: sys.exit("不認得的 app：%s（可用 %s）" % (a, ",".join(APPDEF)))
 
@@ -675,7 +681,7 @@ def summarize(ALL):
         S[gid] = {"title": title, "metrics": []}
         for mk, path, unit, hib, zh in mets:
             row = {"group": gid, "metric": mk, "label": zh, "unit": unit, "higher_is_better": hib, "apps": {}}
-            for app in APPS:
+            for app in apps_in(gid):
                 rs = [r for r in ALL[key] if r and r["app"] == app and (flt is None or r.get(flt[0]) == flt[1])]
                 vals = [Q(r, path) for r in rs]
                 row["apps"][app] = {"median": r1(med(vals)), "runs": [r1(v) if v is not None else None for v in vals]}
@@ -714,7 +720,7 @@ def write_outputs(ALL, rows, S, info, build, t_start):
         for gid, g in S.items():
             ws = [a for m in g["metrics"] for a in winners_of(m["winner"])]
             if ws:
-                cnt = {a: ws.count(a) for a in APPS}
+                cnt = {a: ws.count(a) for a in apps_in(gid)}
                 top = max(cnt, key=lambda a: cnt[a])
                 md.append("- **%s**：%s 較好（%d/%d 項）" % (g["title"], lab(top), cnt[top], len([m for m in g["metrics"] if m["winner"]])))
     else:
@@ -733,10 +739,11 @@ def write_outputs(ALL, rows, S, info, build, t_start):
             s["index"] + 1, s.get("name"), "%dx%d" % (s["w"], s["h"]), s.get("scale"), s.get("pixels"), s.get("maxFps"), "（主螢幕）" if s["index"] == 0 else ""))
     md.append("- 編譯：%s" % json.dumps(build, ensure_ascii=False))
     for gid, g in S.items():
-        md += ["", "## " + g["title"], "", "| 項目 | " + " | ".join(lab(a) for a in APPS) + " |", "|---|" + "---|" * len(APPS)]
+        cols = apps_in(gid)
+        md += ["", "## " + g["title"], "", "| 項目 | " + " | ".join(lab(a) for a in cols) + " |", "|---|" + "---|" * len(cols)]
         for m in g["metrics"]:
             cells = []
-            for a in APPS:
+            for a in cols:
                 v = m["apps"][a]["median"]
                 c = "—" if v is None else ("%g %s" % (v, m["unit"]))
                 if a in winners_of(m["winner"]): c += " 🏆"
@@ -771,28 +778,28 @@ def main():
     if info.get("rosetta"): say("！目前的終端機在 Rosetta（Intel 轉譯）下執行，數字會偏慢。請用原生終端機重跑。")
     per_app = (62 if "main" in SCEN else 0) + (45 if "stress" in SCEN else 0) + (70 if "heavy" in SCEN else 0) + \
               (42 * len(TICKS) if "ticks" in SCEN else 0) + (42 * len(NWIN) if "multi" in SCEN else 0)
-    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round(per_app * len(APPS) * RUNS * 1.1 / 60)))
+    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if "only" in APPDEF[x]])) * RUNS * 1.1 / 60)))
     say("螢幕：" + "；".join("%s %dx%d 點 ×%s（%s Hz）" % (s.get("name"), s["w"], s["h"], s.get("scale"), s.get("maxFps")) for s in SCR))
     say("測試期間請不要動滑鼠鍵盤、不要把終端機蓋在測試視窗上面。結果：%s" % OUT)
     ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": []}
     try:
         for run in range(1, RUNS + 1):
             for app in APPS:  # 每一輪 app 交錯跑，降低背景負載變化的影響
-                if "main" in SCEN:
+                if "main" in SCEN and runs_in(app, "main"):
                     say("第 %d/%d 輪 %s 主視窗…" % (run, RUNS, app)); r = attempt(run_main, app, SCR)
                     if r: r["run"] = run; ALL["main"].append(r); say("  第一幀 %s ms、報價 %s ms、RSS %s MB、CPU %s%%、FPS %s" % (r["first_frame_ms"], r["first_quote_ms"], r["steady60"]["rss_mb"], r["cpu_pct"], r["fps"]))
-                if "stress" in SCEN:
+                if "stress" in SCEN and runs_in(app, "stress"):
                     say("第 %d/%d 輪 %s 5 萬列…" % (run, RUNS, app)); r = attempt(run_stress, app, SCR)
                     if r: r["run"] = run; ALL["stress"].append(r); say("  CPU 跳價 %s%%／捲動 %s%%，FPS 捲動 %s" % (r["cpu_tick_pct"], r["cpu_scroll_pct"], Q(r, "done.scrollFps")))
-                if "heavy" in SCEN:
+                if "heavy" in SCEN and runs_in(app, "heavy"):
                     say("第 %d/%d 輪 %s 重圖表（%s 層）…" % (run, RUNS, app, A.layers)); r = attempt(run_heavy, app, SCR)
                     if r: r["run"] = run; ALL["heavy"].append(r); say("  " + "、".join("%s %s fps" % (p, Q(r, "phases.%s.perf.fps" % p)) for p in HEAVY_PHASES))
-                if "ticks" in SCEN:
+                if "ticks" in SCEN and runs_in(app, "ticks"):
                     for sc in TICKS:
                         say("第 %d/%d 輪 %s 高頻 %s…" % (run, RUNS, app, sc)); r = attempt(run_ticks, app, sc, SCR)
                         if r: r["run"] = run; ALL["ticks"].append(r); say("  延遲 p50 %s／p99 %s ms、遺失 %s、CPU %s%%、FPS %s" % (r["latOldest"]["p50"], r["latOldest"]["p99"], r["ticks"]["lossFinal"], r["cpu"], r["fps"]))
                         time.sleep(1)
-                if "multi" in SCEN:
+                if "multi" in SCEN and runs_in(app, "multi"):
                     for n in NWIN:
                         say("第 %d/%d 輪 %s 多視窗 ×%d…" % (run, RUNS, app, n)); r = attempt(run_multi, app, n, SCR)
                         if r: r["run"] = run; ALL["multi"].append(r); say("  延遲 p99 %s ms、最慢視窗 FPS %s、CPU %s%%" % (r["lat"]["p99"], r["fpsMin"], r["cpu"]))

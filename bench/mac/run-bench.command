@@ -24,7 +24,7 @@ if [ $need_build = 1 ]; then
   ./build-mac.sh || { echo; echo "編譯失敗，請把上面的訊息截圖傳回來。"; read -r -p "按 Enter 關閉…" _; exit 1; }
 fi
 args=(); for a in "$@"; do [ "$a" = "--rebuild" ] || args+=("$a"); done
-[ $only_gpui = 1 ] && args+=(--apps gpui)
+[ $only_gpui = 1 ] && args+=(--apps gpui,gpui-quads)
 # 測試期間不讓螢幕關閉／睡眠（caffeinate 只在這次執行期間有效，跑完自動恢復）
 caffeinate -dimsu "$PY" xq_bench_mac.py ${args[@]+"${args[@]}"}
 rc=$?
