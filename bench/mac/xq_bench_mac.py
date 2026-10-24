@@ -36,6 +36,8 @@ ap.add_argument("--out", default=None)
 ap.add_argument("--port", type=int, default=47631)
 ap.add_argument("--no-footprint", action="store_true", help="不跑 vmmap（只記 RSS）")
 ap.add_argument("--no-zip", action="store_true")
+ap.add_argument("--resummarize", default=None, metavar="results.json",
+                help="不跑測試，只用舊的 results.json 重新算勝負、重寫 summary.md／results.csv（寫到 --out，預設同資料夾）")
 A = ap.parse_args()
 RUNS = A.runs if A.runs is not None else (1 if A.quick else 3)
 APPS = [a.strip() for a in A.apps.split(",") if a.strip()]
@@ -67,11 +69,22 @@ for a in APPS:
     if a not in APPDEF: sys.exit("不認得的 app：%s（可用 %s）" % (a, ",".join(APPDEF)))
 
 STAMP = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-HOST = (platform.node() or "mac").split(".")[0]
-OUT = A.out or os.path.join(HERE, "results", "%s-%s" % (STAMP, HOST))
+# 不用電腦名稱（常含使用者名字；結果會放進公開 repo）
+HOST = "mac"
+OUT = A.out or (os.path.dirname(os.path.abspath(A.resummarize)) if A.resummarize else os.path.join(HERE, "results", "%s-%s" % (STAMP, HOST)))
 os.makedirs(OUT, exist_ok=True)
 WORK = tempfile.mkdtemp(prefix="xq-bench-")
 LOGLINES = []
+
+# 匿名化：結果檔不留家目錄路徑／電腦名稱／帳號（會放進公開 repo）
+_HOME = os.path.expanduser("~"); _NODE = (platform.node() or "").split(".")[0]
+try: _USER = os.path.basename(_HOME)
+except Exception: _USER = ""
+def anon(text):
+    if _HOME and len(_HOME) > 1: text = text.replace(_HOME, "~")
+    if _NODE and len(_NODE) > 2: text = text.replace(_NODE, "mac")
+    if _USER and len(_USER) > 2: text = re.sub(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(_USER), "user", text)
+    return text
 
 def say(msg):
     line = "[%s] %s" % (time.strftime("%H:%M:%S"), msg)
@@ -316,7 +329,7 @@ class Proc:
         self.th.join(2)
         if logname:
             with open(os.path.join(OUT, logname), "a", encoding="utf-8") as f:
-                f.write("==== %s %s\n%s\n" % (header, datetime.datetime.now().isoformat(timespec="seconds"), "\n".join(self.lines)))
+                f.write(anon("==== %s %s\n%s\n" % (header, datetime.datetime.now().isoformat(timespec="seconds"), "\n".join(self.lines))))
 
 def bin_path(name):
     p = os.path.join(A.bin_dir, name)
@@ -635,6 +648,27 @@ def groups():
         for n in NWIN: g.append(("multi-%dw" % n, "多視窗 ×%d（每秒 1 萬筆）" % n, "multi", ("windows", n), MULTI_METRICS))
     return g
 
+# 勝負判定（2026-10-24 修正）：舊版只拿第一名和第二名比，3 個 app 時
+# egui-wgpu 與 egui-glow 差 5% 內就整列標「平手」，GPUI 差很多也看不出來。
+# 新版：每個 app 都和最好的那個比，差距在容許範圍內的都算贏（可以多個）；
+# 全部都在範圍內才是「平手」。FPS 全部到螢幕更新率 95% 以上也算平手。
+SCREEN_MAX_FPS = None
+TOL_ABS = {"fps": 1.0, "%": 1.0, "筆": 1.0, "次": 1.0, "ms": 1.0, "MB": 2.0}
+def _num(v):
+    try: return float(v)
+    except (TypeError, ValueError): return None
+def judge(meds, hib, unit):
+    """meds: {app: 中位數}。回傳 None（不到 2 個 app 有值）、"tie"、或贏家 app 名稱以 "+" 連接（可多個）"""
+    if len(meds) < 2: return None
+    if unit == "fps" and SCREEN_MAX_FPS and min(meds.values()) >= 0.95 * SCREEN_MAX_FPS: return "tie"
+    best_v = (max if hib else min)(meds.values())
+    tol = lambda v: max(0.05 * max(abs(v), abs(best_v)), TOL_ABS.get(unit, 0.0))
+    winners = [a for a in APPS if a in meds and abs(meds[a] - best_v) <= tol(meds[a])]
+    if len(winners) == len(meds): return "tie"
+    return "+".join(winners)
+def winners_of(w):
+    return [] if w in (None, "tie") else w.split("+")
+
 def summarize(ALL):
     rows = []; S = {}
     for gid, title, key, flt, mets in groups():
@@ -646,25 +680,14 @@ def summarize(ALL):
                 vals = [Q(r, path) for r in rs]
                 row["apps"][app] = {"median": r1(med(vals)), "runs": [r1(v) if v is not None else None for v in vals]}
             meds = {a: v["median"] for a, v in row["apps"].items() if v["median"] is not None}
-            row["winner"] = None
-            if len(meds) >= 2:
-                best = (max if hib else min)(meds, key=lambda a: meds[a])
-                others = [v for a, v in meds.items() if a != best]
-                ref = max(others) if hib else min(others)  # 第二名
-                b = meds[best]
-                # 差距 5% 以內（或 1 個單位以內）算平手
-                tol_abs = {"fps": 1.0, "%": 1.0, "筆": 1.0, "次": 1.0, "ms": 1.0, "MB": 2.0}.get(unit, 0.0)
-                if abs(b - ref) <= max(0.05 * max(abs(b), abs(ref)), tol_abs):
-                    row["winner"] = "tie"
-                else:
-                    row["winner"] = best
+            row["winner"] = judge(meds, hib, unit)
             rows.append(row); S[gid]["metrics"].append(row)
     return rows, S
 
 def write_outputs(ALL, rows, S, info, build, t_start):
     res = {"tool": "gpui-xq-demo/bench/mac/xq_bench_mac.py", "version": 1, "started": t_start, "finished": datetime.datetime.now().isoformat(timespec="seconds"),
            "args": vars(A), "runs": RUNS, "apps": APPS, "machine": info, "build": build, "summary": S, "raw": ALL, "failures": FAILS}
-    json.dump(res, open(os.path.join(OUT, "results.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+    open(os.path.join(OUT, "results.json"), "w", encoding="utf-8").write(anon(json.dumps(res, ensure_ascii=False, indent=1, default=str)))
     import csv
     with open(os.path.join(OUT, "results.csv"), "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
@@ -680,15 +703,16 @@ def write_outputs(ALL, rows, S, info, build, t_start):
         if r["winner"] is None: continue
         total += 1
         if r["winner"] == "tie": ties += 1
-        else: wins[r["winner"]] += 1
+        else:
+            for a in winners_of(r["winner"]): wins[a] += 1
     md = ["# XQ 壓測結果（macOS）：GPUI vs egui", "",
-          "> 這份是**在這台 Mac 上實際量到的數字**（%d 輪取中位數）。🏆＝該項較好；差距 5%% 以內算平手（＝）。" % RUNS, "",
+          "> 這份是**在這台 Mac 上實際量到的數字**（%d 輪取中位數）。🏆＝該項最好，或和最好的差距在 5%% 以內（可以多個 🏆）；全部 app 都在 5%% 內才算平手（＝）。勝負項數：每個 🏆 各算一項。" % RUNS, "",
           "## 結論", ""]
     if total:
         order = sorted(APPS, key=lambda a: -wins[a])
         md.append("- 共比較 %d 項：" % total + "、".join("%s 勝 %d 項" % (lab(a), wins[a]) for a in order) + "、平手 %d 項。" % ties)
         for gid, g in S.items():
-            ws = [m["winner"] for m in g["metrics"] if m["winner"] not in (None, "tie")]
+            ws = [a for m in g["metrics"] for a in winners_of(m["winner"])]
             if ws:
                 cnt = {a: ws.count(a) for a in APPS}
                 top = max(cnt, key=lambda a: cnt[a])
@@ -715,7 +739,7 @@ def write_outputs(ALL, rows, S, info, build, t_start):
             for a in APPS:
                 v = m["apps"][a]["median"]
                 c = "—" if v is None else ("%g %s" % (v, m["unit"]))
-                if m["winner"] == a: c += " 🏆"
+                if a in winners_of(m["winner"]): c += " 🏆"
                 elif m["winner"] == "tie" and v is not None: c += " ＝"
                 cells.append(c)
             md.append("| %s%s | %s |" % (m["label"], "（越高越好）" if m["higher_is_better"] else "", " | ".join(cells)))
@@ -725,8 +749,8 @@ def write_outputs(ALL, rows, S, info, build, t_start):
            "- GPU＝ioreg 的整機 GPU 使用率（含其他程式），只當參考。FPS 是程式自己回報的每秒畫面數。",
            "- 高頻情境沒有做「點報價列切換」的反應時間（Mac 上要自動點擊得開「輔助使用」權限，這版先不做）。",
            "- 視窗位置由程式自己依 XQ_WIN_RECTS 開在指定螢幕，不需要任何權限；多視窗 ×4：螢幕夠就一個螢幕一個，不夠就平均分配後格狀鋪滿。"]
-    open(os.path.join(OUT, "summary.md"), "w", encoding="utf-8").write("\n".join(md) + "\n")
-    open(os.path.join(OUT, "bench.log"), "w", encoding="utf-8").write("\n".join(LOGLINES) + "\n")
+    open(os.path.join(OUT, "summary.md"), "w", encoding="utf-8").write(anon("\n".join(md) + "\n"))
+    if LOGLINES: open(os.path.join(OUT, "bench.log"), "w", encoding="utf-8").write(anon("\n".join(LOGLINES) + "\n"))
 
 # ---------------------------------------------------------------- 主流程
 FAILS = []
@@ -738,6 +762,8 @@ def main():
     running = [l for l in sh(["ps", "-A", "-o", "pid=,comm="]).splitlines() if os.path.basename(l.split(None, 1)[-1].strip()) in mine]
     if running and IS_MAC: sys.exit("這些程式正在執行，請先關掉：\n" + "\n".join(running))
     SCR = screens()
+    global SCREEN_MAX_FPS
+    SCREEN_MAX_FPS = _num(SCR[0].get("maxFps")) if SCR else None
     info = machine_info(SCR)
     build = {}
     try: build = json.load(open(os.path.join(A.bin_dir, "build-info.json")))
@@ -790,5 +816,27 @@ def main():
     else:
         say("完成：%s" % OUT)
 
+def resummarize(path):
+    """用舊的 results.json 重新算勝負（例如 2026-10-23 那份 summary.md 的平手判定有錯）"""
+    global APPS, RUNS, SCEN, TICKS, NWIN, SCREEN_MAX_FPS, FAILS
+    res = json.load(open(path, encoding="utf-8"))
+    a = res.get("args") or {}
+    APPS = list(res["apps"]); RUNS = res["runs"]
+    SCEN = [x for x in (a.get("scenarios") or "main,stress,heavy,ticks,multi").split(",") if x]
+    TICKS = sorted({r.get("scenario") for r in res["raw"].get("ticks", []) if r}, key=lambda x: (len(x), x)) or TICKS
+    NWIN = sorted({r.get("windows") for r in res["raw"].get("multi", []) if r}) or NWIN
+    A.layers = a.get("layers", A.layers)
+    scr = (res.get("machine") or {}).get("screens") or []
+    SCREEN_MAX_FPS = _num(scr[0].get("maxFps")) if scr else None
+    FAILS = res.get("failures") or []
+    rows, S = summarize(res["raw"])
+    write_outputs(res["raw"], rows, S, res.get("machine") or {}, res.get("build") or {}, res.get("started"))
+    shutil.rmtree(WORK, ignore_errors=True)
+    say("重新計算完成：%s" % OUT)
+
 if __name__ == "__main__":
-    main()
+    if A.resummarize:
+        if not A.out: OUT = os.path.dirname(os.path.abspath(A.resummarize))
+        resummarize(A.resummarize)
+    else:
+        main()
