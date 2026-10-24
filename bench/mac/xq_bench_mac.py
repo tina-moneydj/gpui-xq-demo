@@ -26,7 +26,9 @@ IS_MAC = sys.platform == "darwin"
 ap = argparse.ArgumentParser(description="XQ 壓測 macOS 版（GPUI vs egui）")
 ap.add_argument("--runs", type=int, default=None)
 ap.add_argument("--quick", action="store_true", help="1 輪；高頻只跑 10k、100k、爆量")
-ap.add_argument("--apps", default="gpui,gpui-quads,egui-wgpu,egui", help="gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表")
+ap.add_argument("--apps", default="gpui,gpui-nofix,egui-wgpu,egui",
+                help="gpui-nofix＝同一個 GPUI 執行檔關掉 10/25 的兩個修補（XQ_INACTIVE_THROTTLE=1、XQ_MAC_ACTIVITY=0），只跑高頻 s10k 與 4 視窗，A/B 對照用；"
+                     "gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表（10/24 實測沒有比較快、CPU 還多 6–9 點，預設不跑）")
 ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi")
 ap.add_argument("--ticks", default=None)
 ap.add_argument("--windows", default="1,4")
@@ -62,6 +64,9 @@ APPDEF = {
     "gpui":      {"bin": "gpui-xq-demo", "label": "GPUI（Metal）", "env": {"XQ_DRAW_QUADS": "0"}},
     # 同一個 GPUI 執行檔打開 XQ_DRAW_QUADS=1（畫線層橫平豎直的圖形改用 quad 畫）；只影響畫線，所以只跑重圖表
     "gpui-quads": {"bin": "gpui-xq-demo", "label": "GPUI quad 畫線（XQ_DRAW_QUADS=1）", "env": {"XQ_DRAW_QUADS": "1"}, "only": ("heavy",)},
+    # 2026-10-25：同一個 GPUI 執行檔，關掉「全部視窗不節流」與「macOS latency-critical（關 App Nap）」兩個修補，A/B 看停頓有沒有變
+    "gpui-nofix": {"bin": "gpui-xq-demo", "label": "GPUI 未修補（對照）", "env": {"XQ_DRAW_QUADS": "0", "XQ_INACTIVE_THROTTLE": "1", "XQ_MAC_ACTIVITY": "0"},
+                   "only": ("ticks", "multi"), "ticks": ("s10k",), "windows": (4,)},
     "egui-wgpu": {"bin": "egui-xq-demo", "label": "egui（wgpu／Metal）", "env": {"XQ_RENDERER": "wgpu"}},
     "egui":      {"bin": "egui-xq-demo", "label": "egui（glow／OpenGL）", "env": {"XQ_RENDERER": "glow"}},
 }
@@ -69,8 +74,19 @@ if not IS_MAC:  # Linux 自測：沒有 Metal
     APPDEF["gpui"]["label"] = "GPUI"; APPDEF["gpui-quads"]["label"] = "GPUI quad（XQ_DRAW_QUADS=1）"; APPDEF["egui-wgpu"]["label"] = "egui（wgpu）"; APPDEF["egui"]["label"] = "egui（glow）"
 def runs_in(app, scen):
     o = APPDEF.get(app, {}).get("only"); return o is None or scen in o
+def runs_sub(app, sub):
+    """高頻情境（s10k…）／視窗數（4）的限制；只有 gpui-nofix 有"""
+    d = APPDEF.get(app, {})
+    if isinstance(sub, int): return sub in d.get("windows", (sub,))
+    return sub in d.get("ticks", (sub,))
 def apps_in(gid):
-    return [a for a in APPS if runs_in(a, gid.split("-")[0])]
+    out = []
+    for a in APPS:
+        if not runs_in(a, gid.split("-")[0]): continue
+        if gid.startswith("ticks-") and not runs_sub(a, gid[6:]): continue
+        if gid.startswith("multi-") and not runs_sub(a, int(gid[6:-1])): continue
+        out.append(a)
+    return out
 for a in APPS:
     if a not in APPDEF: sys.exit("不認得的 app：%s（可用 %s）" % (a, ",".join(APPDEF)))
 
@@ -226,9 +242,24 @@ def rss_mb(pids):
     return round(tot / 1024.0, 1)
 
 def footprint_mb(pid):
-    """vmmap --summary 的 Physical footprint（≈ 活動監視器「記憶體」欄）；會短暫暫停目標，只在量測區間外呼叫"""
+    """vmmap --summary 的 Physical footprint（≈ 活動監視器「記憶體」欄）；會短暫暫停目標，只在量測區間外呼叫。
+    2026-10-25：前後在程式的 log 記 MARK vmmap-begin／end（10/24 實測：GPUI 每輪那一次約 0.5 秒的停頓就是這裡造成的，
+    egui 同一秒也掉了一半的幀，只是 egui 沒有停頓偵測；都在量測區間外，不影響表格裡的數字）"""
     if not IS_MAC or A.no_footprint: return None
+    pr = PROCS.get(pid)
+    if pr: pr.mark("vmmap-begin")
     out = sh(["vmmap", "--summary", str(pid)], 30)
+    if pr: pr.mark("vmmap-end")
+    # 2026-10-25：記憶體拆解——把 vmmap 的分區表（REGION TYPE：MALLOC_*、IOAccelerator／IOSurface＝GPU、__TEXT＝程式碼、
+    # mapped file＝字型等）存到 OUT/vmmap/，看 GPUI 重圖表多出來的 ~200 MB 是哪一類。只存表格（已去掉使用者名稱／路徑）。
+    try:
+        i = out.find("REGION TYPE")
+        if i >= 0 and pr:
+            d = os.path.join(OUT, "vmmap"); os.makedirs(d, exist_ok=True)
+            fn = re.sub(r"[^A-Za-z0-9_.-]+", "_", "%s-%s-%.0fs" % (pr.tag, pr.scen or "x", time.monotonic() - pr.t0))
+            open(os.path.join(d, fn + ".txt"), "w", encoding="utf-8").write(anon(out[i:]))
+    except Exception as ex:
+        say("vmmap 分區表存檔失敗：%s" % ex)
     m = re.search(r"Physical footprint:\s+([0-9.]+)([KMG])", out)
     if not m: return None
     v = float(m.group(1)); u = m.group(2)
@@ -275,13 +306,25 @@ def window_bounds(pid):
     except Exception: return None
 
 # ---------------------------------------------------------------- 程式啟動／輸出解析
+PROCS = {}       # pid → Proc（footprint_mb 用來記 MARK）
+LAST_DIAG = [None]  # 最近一次 app 程序的卡頓診斷（Proc.stop 時算好，主流程接到結果上）
+STALL_TMP = None    # XQ_STALL_SAMPLE_DIR（GPUI 卡住時自動 sample 的輸出），main() 裡設定
+def _dict_json(l, tag):
+    i = l.find(tag)
+    if i < 0: return None
+    try: return json.loads(l[i + len(tag):])
+    except Exception: return None
+
 class Proc:
     def __init__(self, cmd, env, tag):
         self.tag = tag; self.t0 = time.monotonic(); self.lines = []; self.ev = {}; self.fps = []; self.tb = []; self.gen = []
+        self.stalls = []; self.longf = []; self.gpulog = []; self.marks = []; self.scen = ""
         self.p = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   text=True, bufsize=1, errors="replace", cwd=WORK)
-        self.pid = self.p.pid
+        self.pid = self.p.pid; PROCS[self.pid] = self
         self.th = threading.Thread(target=self._read, daemon=True); self.th.start()
+    def mark(self, name):
+        t = time.monotonic() - self.t0; self.marks.append((round(t, 3), name)); self.lines.append("%8.3f MARK %s" % (t, name))
     def _read(self):
         for line in self.p.stdout:
             now = time.monotonic(); t = now - self.t0; l = line.rstrip("\n")
@@ -291,6 +334,11 @@ class Proc:
                 except Exception: self.lines.append("%8.3f BAD %s" % (t, l))
                 continue
             self.lines.append("%8.3f %s" % (t, l))
+            j = _dict_json(l, "STALL|")
+            if j is not None: j["tBench"] = round(t, 3); self.stalls.append(j)
+            j = _dict_json(l, "LONGFRAME|")
+            if j is not None: j["tBench"] = round(t, 3); self.longf.append(j)
+            if l.startswith("GPUILOG|") and len(self.gpulog) < 40: self.gpulog.append(l[8:300])
             if l.startswith("{"):
                 try: self.gen.append((now, json.loads(l))); continue
                 except Exception: pass
@@ -333,9 +381,35 @@ class Proc:
             try: self.p.wait(8)
             except subprocess.TimeoutExpired: self.p.kill(); self.p.wait()
         self.th.join(2)
+        PROCS.pop(self.pid, None)
+        if self.tag in APPDEF: LAST_DIAG[0] = self.diag(header)
         if logname:
             with open(os.path.join(OUT, logname), "a", encoding="utf-8") as f:
                 f.write(anon("==== %s %s\n%s\n" % (header, datetime.datetime.now().isoformat(timespec="seconds"), "\n".join(self.lines))))
+
+    def diag(self, header):
+        """卡頓診斷：STALL／LONGFRAME 行、vmmap 時間、GPUI log、自動 sample 的檔案（搬進結果資料夾、匿名化）"""
+        vm = []; b = None
+        for t, n in self.marks:
+            if n == "vmmap-begin": b = t
+            elif n == "vmmap-end" and b is not None: vm.append([b, t]); b = None
+        for st in self.stalls:
+            # STALL 的 t 是程式自己的時鐘（程式啟動起算），tBench 是壓測腳本收到那一行的時間（Proc 啟動起算），差不到 0.2 秒
+            tb = st.get("tBench", 0) - st.get("ms", 0) / 1000.0
+            st["duringVmmap"] = any(x - 0.3 <= tb <= y + 0.3 for x, y in vm)
+        files = []
+        if STALL_TMP and os.path.isdir(STALL_TMP):
+            dst = os.path.join(OUT, "stalls"); os.makedirs(dst, exist_ok=True)
+            for f in sorted(os.listdir(STALL_TMP)):
+                if not f.endswith(".txt"): continue
+                name = "%s-%s" % (re.sub(r"[^A-Za-z0-9_.-]+", "_", header or self.tag), f)
+                try:
+                    txt = open(os.path.join(STALL_TMP, f), encoding="utf-8", errors="replace").read()
+                    open(os.path.join(dst, name), "w", encoding="utf-8").write(anon(txt)); files.append("stalls/" + name)
+                except Exception: pass
+                try: os.remove(os.path.join(STALL_TMP, f))
+                except Exception: pass
+        return {"stalls": self.stalls, "longframes": self.longf, "vmmap": vm, "gpuilog": self.gpulog, "samples": files}
 
 def bin_path(name):
     p = os.path.join(A.bin_dir, name)
@@ -350,6 +424,7 @@ def app_env(app, extra, rects=None):
               "XQ_GPUI_STATE": os.path.join(WORK, "gpui-state.json"), "XQ_EGUI_STATE": os.path.join(WORK, "egui-state.json"),
               "XQ_TAPE_STATE": os.path.join(WORK, "tape-state.json")})
     e.update(APPDEF[app]["env"]); e.update(extra)
+    if STALL_TMP and APPDEF[app]["bin"].startswith("gpui"): e["XQ_STALL_SAMPLE_DIR"] = STALL_TMP
     if rects: e["XQ_WIN_RECTS"] = ";".join(rects)
     return e
 
@@ -546,6 +621,7 @@ def run_ticks(app, scen, SCR):
     gaps = [(b - a) / 1000 for a, b in zip(pres, pres[1:])]
     fps = [float(j.get("fps", 0)) for t, j in tb if r["tStart"] + 1 <= t <= r["tEnd"]]
     f5, l5 = pct(first5, 50), pct(last5, 50)
+    mx = max(samples, key=lambda s: s[6] - s[1]) if samples else None
     return {"app": app, "scenario": scen, "secs": r1(r["secs"]),
             "gen": {"sent": sent, "target": r["jEnd"].get("target"), "maxDue": r["jEnd"].get("maxDue"),
                     "behindFrames": r["jEnd"].get("behindFrames"), "cpu": r["genCpu"]},
@@ -555,6 +631,10 @@ def run_ticks(app, scen, SCR):
                               "applyToPresent": r1(pct([(s[6] - s[5]) / 1000 for s in samples], 50))},
             "trend": {"first5_p50": r1(f5), "last5_p50": r1(l5), "backlog_ms": r1(l5 - f5) if f5 is not None and l5 is not None else None},
             "maxSampleGapMs": r1(max(gaps) if gaps else None),
+            # 2026-10-25：最慢那一筆在第幾秒、卡在哪一段（transport＝送出→背景收到；recvToApply＝收到→主執行緒套用；applyToPresent＝套用→下一幀開始）
+            "maxLat": ({"atS": r1((mx[1] - r["startUs"]) / 1e6), "transport": r1((mx[4] - mx[3]) / 1000), "recvToApply": r1((mx[5] - mx[4]) / 1000),
+                        "applyToPresent": r1((mx[6] - mx[5]) / 1000)} if mx else None),
+            "maxGapAtS": (r1((pres[gaps.index(max(gaps))] - r["startUs"]) / 1e6) if gaps else None),
             "ticks": {"sent": sent, "recvFinal": c_fin["recv"] - c0["recv"], "applied": c_fin["applied"] - c0["applied"],
                       "lossFinal": sent - (c_fin["recv"] - c0["recv"]), "backlogAtEnd": sent - (c_end["recv"] - c0["recv"])},
             "cpu": r["cpu"], "gpu_util": r["gpu"], "rss": r["rss"], "mem_end": r["mEnd"], "mem_tail": r["mTail"],
@@ -569,19 +649,22 @@ def run_multi(app, n, SCR):
     base = [j for t, j in by[0] if t < r["tStart"]]
     if not base: raise RuntimeError("%s/%dw：沒有開始前的 TICKBENCH 行" % (app, n))
     recv = counters(by[0][-1][1])["recv"] - counters(base[-1])["recv"]
-    per = {}; pooled = []
+    per = {}; pooled = []; worst = None
     for k in range(n):
         lines = by.get(k, []); old = []
         for t, j in lines:
             for s in (j.get("lat") or []):
                 if s and s[1] >= r["startUs"] and s[3] <= end_us:
                     v = (s[6] - s[1]) / 1000; old.append(v); pooled.append(v)
+                    if worst is None or v > worst[0]: worst = (v, k, s)
         fps = [float(j.get("fps", 0)) for t, j in lines if r["tStart"] + 1 <= t <= r["tEnd"]]
         per[str(k)] = {"fps": r1(med(fps)), "fpsMin": r1(min(fps) if fps else None), "p50": r1(pct(old, 50)),
                        "p99": r1(pct(old, 99)), "n": len(old)}
     fv = [p["fps"] for p in per.values() if p["fps"] is not None]
     return {"app": app, "windows": n, "secs": r1(r["secs"]), "ticks": {"sent": sent, "recv": recv, "loss": sent - recv},
             "lat": stats(pooled), "perWindow": per, "fpsMin": r1(min(fv) if fv else None),
+            "maxLat": ({"win": worst[1], "atS": r1((worst[2][1] - r["startUs"]) / 1e6), "transport": r1((worst[2][4] - worst[2][3]) / 1000),
+                        "recvToApply": r1((worst[2][5] - worst[2][4]) / 1000), "applyToPresent": r1((worst[2][6] - worst[2][5]) / 1000)} if worst else None),
             "fpsMean": r1(statistics.mean(fv) if fv else None),
             "worstP99": r1(max([p["p99"] for p in per.values() if p["p99"] is not None] or [0]) if per else None),
             "cpu": r["cpu"], "gpu_util": r["gpu"], "mem_end": r["mEnd"], "mem_tail": r["mTail"],
@@ -750,6 +833,7 @@ def write_outputs(ALL, rows, S, info, build, t_start):
                 elif m["winner"] == "tie" and v is not None: c += " ＝"
                 cells.append(c)
             md.append("| %s%s | %s |" % (m["label"], "（越高越好）" if m["higher_is_better"] else "", " | ".join(cells)))
+    md += stall_md(ALL, lab)
     md += ["", "## 量法", "",
            "- 情境同 Linux／Windows 版（scripts/bench-*.sh、bench/windows）。主視窗／5 萬列／重圖表的行情來自 xq-demofeed（WryFeedHost --demo-ticks 的 Rust 移植，合成資料）；高頻與多視窗來自 xq-tickgen。",
            "- RSS＝ps 的常駐記憶體；實體記憶體＝vmmap 的 Physical footprint（≈ 活動監視器「記憶體」欄，只在量測區間外取）。CPU：100%＝一顆核心。",
@@ -759,10 +843,52 @@ def write_outputs(ALL, rows, S, info, build, t_start):
     open(os.path.join(OUT, "summary.md"), "w", encoding="utf-8").write(anon("\n".join(md) + "\n"))
     if LOGLINES: open(os.path.join(OUT, "bench.log"), "w", encoding="utf-8").write(anon("\n".join(LOGLINES) + "\n"))
 
+def stall_md(ALL, lab):
+    """2026-10-25：停頓診斷（GPUI 才有 STALL 行；egui 沒有偵測，不代表沒停）"""
+    md = ["", "## 停頓診斷（GPUI；2026-10-25 新增）", "",
+          "- GPUI 版有一個背景看門狗：主執行緒超過 120 ms 沒動就記一筆 STALL。**整個程序被暫停**＝看門狗自己也停了（通常是壓測包自己的 vmmap 量記憶體，"
+          "在量測區間外、不影響表格數字）；**只有主執行緒卡住**＝背景收行情照常、畫面停住（這才是要找的問題）。",
+          "- 只有主執行緒卡住時，會自動用 macOS 內建的 sample 記下卡住當下的呼叫堆疊（stalls 資料夾），請一起傳回。", "",
+          "| 情境 | app | 停頓次數（3 輪合計） | 壓測包 vmmap 造成 | 只有主執行緒卡住 | 最長 | 卡住前的階段 |", "|---|---|---|---|---|---|---|"]
+    names = {"main": "主視窗", "stress": "5 萬列", "heavy": "重圖表", "ticks": "高頻", "multi": "多視窗"}
+    any_row = False
+    for key in ("main", "stress", "heavy", "ticks", "multi"):
+        for app in APPS:
+            rs = [r for r in ALL.get(key, []) if r and r.get("app") == app and r.get("diag")]
+            if not rs or not APPDEF[app]["bin"].startswith("gpui"): continue
+            subs = sorted({(r.get("scenario") or (("%d 視窗" % r["windows"]) if r.get("windows") else "")) for r in rs})
+            for sub in subs:
+                rr = [r for r in rs if (r.get("scenario") or (("%d 視窗" % r["windows"]) if r.get("windows") else "")) == sub]
+                st = [x for r in rr for x in r["diag"].get("stalls", [])]
+                susp = [x for x in st if x.get("procSuspended") or x.get("duringVmmap")]
+                main_only = [x for x in st if x not in susp]
+                ph = {}
+                for x in main_only: ph[x.get("phase")] = ph.get(x.get("phase"), 0) + 1
+                md.append("| %s%s | %s | %d | %d | %d | %s | %s |" % (names[key], (" " + sub) if sub else "", lab(app), len(st), len(susp), len(main_only),
+                          ("%g ms" % max(x.get("ms", 0) for x in st)) if st else "—", "、".join("%s×%d" % kv for kv in ph.items()) or "—"))
+                any_row = True
+    if not any_row: md.append("| — | — | — | — | — | — | — |")
+    rows = []
+    for key in ("ticks", "multi"):
+        for r in ALL.get(key, []):
+            if r and r.get("maxLat"):
+                m = r["maxLat"]
+                rows.append("| %s | %s | %s | %s ms | 第 %s 秒 | %s | %s | %s |" % (
+                    r.get("scenario") or ("%d 視窗" % r.get("windows", 0)), lab(r["app"]), r.get("run"),
+                    (r.get("latOldest") or r.get("lat") or {}).get("max"), m.get("atS"), m.get("transport"), m.get("recvToApply"), m.get("applyToPresent")))
+    if rows:
+        md += ["", "**高頻／多視窗：最慢那一筆卡在哪一段**（ms；送出→收到＝網路與背景執行緒，收到→套用＝等主執行緒，套用→畫面＝畫這一幀到下一幀開始）", "",
+               "| 情境 | app | 輪 | 最慢一筆 | 在開始後 | 送出→收到 | 收到→套用 | 套用→畫面 |", "|---|---|---|---|---|---|---|---|"] + rows
+    files = [f for k in ALL for r in ALL[k] if r and r.get("diag") for f in r["diag"].get("samples", [])]
+    if files: md += ["", "自動記下的呼叫堆疊：" + "、".join(files)]
+    return md
+
 # ---------------------------------------------------------------- 主流程
 FAILS = []
 def main():
+    global STALL_TMP
     t_start = datetime.datetime.now().isoformat(timespec="seconds")
+    STALL_TMP = os.path.join(WORK, "stalls"); os.makedirs(STALL_TMP, exist_ok=True)
     for b in ["xq-demofeed", "xq-tickgen"] + sorted(set(APPDEF[a]["bin"] for a in APPS)): bin_path(b)
     if port_busy(): sys.exit("%s 已被佔用：請先關掉 XQ／上次沒結束的測試程式（或用 --port 換埠）" % ADDR)
     mine = set(os.path.basename(APPDEF[a]["bin"]) for a in APPS) | {"xq-demofeed", "xq-tickgen"}
@@ -778,7 +904,7 @@ def main():
     if info.get("rosetta"): say("！目前的終端機在 Rosetta（Intel 轉譯）下執行，數字會偏慢。請用原生終端機重跑。")
     per_app = (62 if "main" in SCEN else 0) + (45 if "stress" in SCEN else 0) + (70 if "heavy" in SCEN else 0) + \
               (42 * len(TICKS) if "ticks" in SCEN else 0) + (42 * len(NWIN) if "multi" in SCEN else 0)
-    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if "only" in APPDEF[x]])) * RUNS * 1.1 / 60)))
+    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if x == "gpui-quads"]) + 85 * len([x for x in APPS if x == "gpui-nofix"])) * RUNS * 1.1 / 60)))
     say("螢幕：" + "；".join("%s %dx%d 點 ×%s（%s Hz）" % (s.get("name"), s["w"], s["h"], s.get("scale"), s.get("maxFps")) for s in SCR))
     say("測試期間請不要動滑鼠鍵盤、不要把終端機蓋在測試視窗上面。結果：%s" % OUT)
     ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": []}
@@ -787,21 +913,28 @@ def main():
             for app in APPS:  # 每一輪 app 交錯跑，降低背景負載變化的影響
                 if "main" in SCEN and runs_in(app, "main"):
                     say("第 %d/%d 輪 %s 主視窗…" % (run, RUNS, app)); r = attempt(run_main, app, SCR)
+                    if r: r["diag"] = LAST_DIAG[0]
                     if r: r["run"] = run; ALL["main"].append(r); say("  第一幀 %s ms、報價 %s ms、RSS %s MB、CPU %s%%、FPS %s" % (r["first_frame_ms"], r["first_quote_ms"], r["steady60"]["rss_mb"], r["cpu_pct"], r["fps"]))
                 if "stress" in SCEN and runs_in(app, "stress"):
                     say("第 %d/%d 輪 %s 5 萬列…" % (run, RUNS, app)); r = attempt(run_stress, app, SCR)
+                    if r: r["diag"] = LAST_DIAG[0]
                     if r: r["run"] = run; ALL["stress"].append(r); say("  CPU 跳價 %s%%／捲動 %s%%，FPS 捲動 %s" % (r["cpu_tick_pct"], r["cpu_scroll_pct"], Q(r, "done.scrollFps")))
                 if "heavy" in SCEN and runs_in(app, "heavy"):
                     say("第 %d/%d 輪 %s 重圖表（%s 層）…" % (run, RUNS, app, A.layers)); r = attempt(run_heavy, app, SCR)
+                    if r: r["diag"] = LAST_DIAG[0]
                     if r: r["run"] = run; ALL["heavy"].append(r); say("  " + "、".join("%s %s fps" % (p, Q(r, "phases.%s.perf.fps" % p)) for p in HEAVY_PHASES))
                 if "ticks" in SCEN and runs_in(app, "ticks"):
                     for sc in TICKS:
+                        if not runs_sub(app, sc): continue
                         say("第 %d/%d 輪 %s 高頻 %s…" % (run, RUNS, app, sc)); r = attempt(run_ticks, app, sc, SCR)
+                        if r: r["diag"] = LAST_DIAG[0]
                         if r: r["run"] = run; ALL["ticks"].append(r); say("  延遲 p50 %s／p99 %s ms、遺失 %s、CPU %s%%、FPS %s" % (r["latOldest"]["p50"], r["latOldest"]["p99"], r["ticks"]["lossFinal"], r["cpu"], r["fps"]))
                         time.sleep(1)
                 if "multi" in SCEN and runs_in(app, "multi"):
                     for n in NWIN:
+                        if not runs_sub(app, n): continue
                         say("第 %d/%d 輪 %s 多視窗 ×%d…" % (run, RUNS, app, n)); r = attempt(run_multi, app, n, SCR)
+                        if r: r["diag"] = LAST_DIAG[0]
                         if r: r["run"] = run; ALL["multi"].append(r); say("  延遲 p99 %s ms、最慢視窗 FPS %s、CPU %s%%" % (r["lat"]["p99"], r["fpsMin"], r["cpu"]))
                         time.sleep(1)
             stop_feed()

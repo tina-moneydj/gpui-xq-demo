@@ -29,16 +29,19 @@ wry 已經淘汰，不在這次的比較裡。
 
 跑完後，結果資料夾裡的 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
-> 第一份 Mac 實機數字（2026-10-24，MacBook Air M4）在 `docs/bench/real-hw/2026-10-24-mac/`。這一版工具包換成 **GPUI 優化第 2 批（gpui-opt2：多視窗同幀、報價表一列一次畫完、畫線改 quad 開關）**，請重跑一次比較前後。
+> Mac 實機數字：第一份（2026-10-24 上午）在 `docs/bench/real-hw/2026-10-24-mac/`，第二份（2026-10-24 晚上，優化第 2 批）在 `docs/bench/real-hw/2026-10-25-mac/`。這一版工具包換成 **GPUI 優化第 3 批（gpui-opt3）**，請再重跑一次。
 
-### 這一版多了什麼：GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
+### 這一版（2026-10-25，gpui-opt3）多了什麼
 
-- **結論先講：** 重圖表會多出一欄「GPUI quad 畫線（XQ_DRAW_QUADS=1）」。拿它跟「GPUI」那欄比，就知道在你的 Mac 上要不要打開這個優化。
-- `XQ_DRAW_QUADS` 是什麼：圖表上水平線、垂直線、矩形框這些「橫平豎直」的畫線，改用便宜的方塊（quad）來畫，不走比較貴的路徑（path）。在我們沒有顯示卡的測試機上反而變慢約一半（因為 GPU 批次被切碎），所以**預設關**；你的 Mac 有真的 GPU，結果可能不同。
-- 現在 `XQ_DRAW_QUADS=1` 是 **A3 v2「分組」畫法**：照畫線的上下順序分組，盡量少切批次，也修好舊畫法「文字永遠蓋在線上面」的順序問題。沒有顯示卡的測試機上 v2 重圖表 FPS 20.8→10.3（跟 v1 差不多），截圖上下順序正確、只在半透明線重疊的邊緣差幾個點。細節：gpui-xq-demo 的 `docs/bench/2026-10-24-a3v2/`。想比舊版 A3 可設 `XQ_DRAW_QUADS=v1`。
-- 工具包會自動做：「GPUI」那欄固定用 `XQ_DRAW_QUADS=0`，「GPUI quad」那欄用 `XQ_DRAW_QUADS=1`。quad 只影響畫線，所以只有重圖表會多跑這一欄（多約 4 分鐘），其他情境不跑。
+- **結論先講：** 這一版主要是「抓出 GPUI 偶爾卡 0.3–0.5 秒的原因」和「多視窗不限速」。跑法跟上次一樣，**跑完把結果 zip 傳回來**（裡面多了 `stalls/` 和 `vmmap/` 兩個資料夾，請一起傳）。
+- **停頓偵測**：GPUI 程式裡多了一個看門狗。主執行緒超過 0.12 秒沒動靜，就記下卡在哪一步，並自動用 macOS 內建的 `sample` 抓一次呼叫堆疊（每次最多 2 份，存在 `stalls/`，已去掉使用者名稱）。`summary.md` 多一節「停頓診斷」。
+  - 已查明的一種：工具包自己量記憶體用的 `vmmap` 會讓被量的程式暫停約 0.5 秒（GPUI、egui 都會）。它只在量測區間外執行，表格數字不受影響；現在 log 裡會標出 vmmap 的起訖時間，摘要會註明「這次停頓是 vmmap 造成的」。
+  - 另一種（高頻報價和多視窗時 GPUI 每輪一次 0.3–0.5 秒）已查明是 GPUI 版量測程式的假象：報價停了之後，最後一包要等每秒取樣才補記時間。這一版已修好量法，`summary.md` 也會列出最慢那一筆在第幾秒；如果還有真的停頓，看門狗會抓到堆疊。
+- **多視窗不限速**：GPUI 預設會把「沒有焦點的視窗」限速到約 30 fps（`inactive_frame_interval`）。現在所有視窗都關掉這個限速。另外啟動時向 macOS 申請「延遲敏感」模式（避免 App Nap 讓背景視窗睡著）。
+- **新的對照欄「GPUI 舊設定（gpui-nofix）」**：恢復限速、不申請延遲敏感模式，只跑「10k 高頻」和「4 視窗」，用來跟「GPUI」那欄比前後（多約 6 分鐘）。
+- **記憶體拆解**：重圖表的記錄多了 `heapUseMb`（程式自己用的記憶體），工具包也把 vmmap 的分區表存到 `vmmap/`，用來看 GPUI 重圖表多出來的約 200 MB 是程式本身還是 GPU 緩衝區。
+- `gpui-quads`（XQ_DRAW_QUADS=1）上次在 M4 上沒有比較快、CPU 還多 6–9 個百分點，這次**預設不跑**，想跑加 `--apps gpui,gpui-quads,egui-wgpu,egui`。
 - 不想多跑：`./run-bench.command --apps gpui,egui-wgpu,egui`。
-- 自己開 GPUI 看效果：`XQ_DRAW_QUADS=1 ./bin/gpui-xq-demo`（關掉就是不設或設 0）。
 
 ### 跑之前（很重要）
 
@@ -57,7 +60,7 @@ Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列�
 
 | 模式 | 指令 | 時間 | 內容 |
 |---|---|---|---|
-| 完整（預設） | `./run-bench.command` | 約 80 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑；重圖表多跑一次 GPUI quad（XQ_DRAW_QUADS=1） |
+| 完整（預設） | `./run-bench.command` | 約 80 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑；10k 高頻和 4 視窗多跑一次 GPUI 舊設定（gpui-nofix） |
 | 快速 | `./run-bench.command --quick` | 約 20 分鐘 | 1 輪；高頻只跑 10k、100k、爆量 |
 | 只比兩個 | `./run-bench.command --apps gpui,egui-wgpu` | 約 50 分鐘 | 只跑 GPUI 和 egui（Metal） |
 
@@ -204,7 +207,8 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   python3 xq_bench_mac.py --help
   ```
   常用的有：
-  - `--apps gpui,gpui-quads,egui-wgpu,egui`（`gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表）
+  - `--apps gpui,gpui-nofix,egui-wgpu,egui`（預設）；另有 `gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表；`gpui-nofix`＝恢復 GPUI 預設的背景視窗限速（`XQ_INACTIVE_THROTTLE=1`）＋不申請延遲敏感模式（`XQ_MAC_ACTIVITY=0`），只跑 10k 高頻和 4 視窗
+  - 停頓偵測門檻 `XQ_STALL_MS`（預設 120 毫秒，0＝關）；GPUI 內部 log 等級 `XQ_GPUI_LOG=off|warn|info|debug`
   - `--scenarios main,stress,heavy,ticks,multi`
   - `--ticks s1k,s10k,s50k,s100k,burst`
   - `--windows 1,4`
