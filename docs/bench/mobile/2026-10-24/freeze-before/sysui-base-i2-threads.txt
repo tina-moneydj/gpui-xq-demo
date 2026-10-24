@@ -1,0 +1,31 @@
+/proc/7717/task/7717 sysjust.xq.gpui S do_epoll_wait
+/proc/7717/task/7722 Signal Catcher Catcher) do_sigtimedwait
+/proc/7717/task/7723 perfetto_hprof_ S pipe_read
+/proc/7717/task/7724 ADB-JDWP Connec Connec) do_sys_poll
+/proc/7717/task/7725 Jit thread pool thread 0
+/proc/7717/task/7726 HeapTaskDaemon S futex_wait_queue
+/proc/7717/task/7728 ReferenceQueueD S futex_wait_queue
+/proc/7717/task/7729 FinalizerDaemon S futex_wait_queue
+/proc/7717/task/7730 FinalizerWatchd S futex_wait_queue
+/proc/7717/task/7731 binder:7717_1 S binder_ioctl_write_read
+/proc/7717/task/7732 binder:7717_2 S binder_ioctl_write_read
+/proc/7717/task/7747 binder:7717_3 S binder_ioctl_write_read
+/proc/7717/task/7753 Profile Saver Saver) futex_wait_queue
+/proc/7717/task/7761 RenderThread S do_epoll_wait
+/proc/7717/task/7769 stdio-to-logcat S pipe_read
+/proc/7717/task/7770 android_main R 0
+/proc/7717/task/7771 stderr-logcat S pipe_read
+/proc/7717/task/7772 gpui-bg-0 R 0
+/proc/7717/task/7773 gpui-bg-1 S futex_wait_queue
+/proc/7717/task/7774 gpui-bg-2 R futex_wait_queue
+/proc/7717/task/7775 gpui-bg-3 R futex_wait_queue
+/proc/7717/task/7778 gpui-pacer-log S hrtimer_nanosleep
+/proc/7717/task/7779 gpui-vsync S do_epoll_wait
+/proc/7717/task/7783 SurfaceSyncGrou S do_epoll_wait
+/proc/7717/task/7784 android_main S futex_wait_queue
+/proc/7717/task/7785 android_main S futex_wait_queue
+/proc/7717/task/7786 android_main S futex_wait_queue
+/proc/7717/task/7787 android_main S futex_wait_queue
+/proc/7717/task/7798 xq-feed S wait_woken
+/proc/7717/task/7813 binder:7717_1 S futex_wait_queue
+/proc/7717/task/7932

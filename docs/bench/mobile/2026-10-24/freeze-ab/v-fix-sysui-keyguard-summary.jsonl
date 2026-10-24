@@ -1,0 +1,3 @@
+{"iter": 1, "tag": "fix-sysui", "result": "stall", "secs": 216, "lastPhase": "crosshair", "frames": 17}
+{"iter": 2, "tag": "fix-sysui", "result": "stall", "secs": 236, "lastPhase": "crosshair", "frames": 11}
+{"iter": 3, "tag": "fix-sysui", "result": "stall", "secs": 161, "lastPhase": "drag", "frames": 0}

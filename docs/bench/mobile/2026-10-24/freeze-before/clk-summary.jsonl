@@ -1,0 +1,2 @@
+{"iter": 1, "tag": "back600", "result": "done", "secs": 207, "lastPhase": "zshot", "frames": 44}
+{"iter": 1, "tag": "fwd2800", "result": "stall", "secs": 197, "lastPhase": "crosshair", "frames": 24}
