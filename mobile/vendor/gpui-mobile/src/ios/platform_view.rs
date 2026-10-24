@@ -149,7 +149,12 @@ impl IosPlatformView {
         if let Some(player_id_str) = params.creation_params.get("player_id") {
             if let Ok(player_id) = player_id_str.parse::<u32>() {
                 // Get AVPlayer from the video_player package's PLAYERS map
-                if let Some(player_ptr) = crate::packages::video_player::ios_get_player(player_id) {
+                // 修補（xq）：沒開 video_player feature 時這個 package 不存在（default-features = false 編不過）
+                #[cfg(feature = "video_player")]
+                let player = crate::packages::video_player::ios_get_player(player_id);
+                #[cfg(not(feature = "video_player"))]
+                let player: Option<*mut AnyObject> = { let _ = player_id; None };
+                if let Some(player_ptr) = player {
                     let player_layer: *mut AnyObject =
                         msg_send![class!(AVPlayerLayer), playerLayerWithPlayer: player_ptr];
                     if !player_layer.is_null() {
@@ -242,7 +247,12 @@ impl IosPlatformView {
         // If a session_id is provided, try to get the AVCaptureSession and create preview layer
         if let Some(session_id_str) = params.creation_params.get("session_id") {
             if let Ok(session_id) = session_id_str.parse::<usize>() {
-                if let Some(session_ptr) = crate::packages::camera::ios_get_session(session_id) {
+                // 修補（xq）：同上，camera feature
+                #[cfg(feature = "camera")]
+                let session = crate::packages::camera::ios_get_session(session_id);
+                #[cfg(not(feature = "camera"))]
+                let session: Option<*mut AnyObject> = { let _ = session_id; None };
+                if let Some(session_ptr) = session {
                     let layer: *mut AnyObject =
                         msg_send![class!(AVCaptureVideoPreviewLayer), alloc];
                     let layer: *mut AnyObject = msg_send![layer, initWithSession: session_ptr];

@@ -67,3 +67,21 @@ GPUI 就一直不畫（WindowManager 的 `mCurrentFocus` 仍是本 app）。egui
 > NotoColorEmoji.ttf fully just to look at the table directory. `add_fonts` accepts `Cow<'static, [u8]>`
 > and does not copy, so memory-mapping the files (memmap2, leaked `&'static [u8]`) makes them file-backed,
 > shared and reclaimable. Dedupe by canonical path. Optionally an env/config allow-list.
+
+## 4. iOS：關掉預設 feature 時編不過 — `src/ios/platform_view.rs`
+
+`default-features = false` 時 `packages::video_player`／`packages::camera` 不存在，但 iOS 的 platform view 直接呼叫
+`ios_get_player`／`ios_get_session`。改成 `#[cfg(feature = …)]`，沒開時當作找不到（原生 view 照建、只是不掛播放器／相機預覽）。
+
+## 5. iOS 26：所有字型都「Failed to read traits」→ 找不到字型而 panic — `src/ios/text_system.rs`
+
+**現象**（GitHub macOS runner、Xcode 26.6、iOS 26.2 模擬器）：啟動後立刻
+`failed to resolve font 'PingFang TC' or any of the fallbacks: … Helvetica … Arial` panic，app 閃退。
+log 顯示 PingFang TC、Helvetica、Arial 的每個字面都 `Failed to read traits`。
+
+**原因**：`load_family` 為了避免 font-kit `Font::properties()` 的 unwrap panic，先檢查
+`CTFontCopyTraits` 有沒有 symbolic／width／weight／slant 四個數字；iOS 26 的字典少了其中某些鍵，
+所以每個字型都被跳過。
+
+**修補**：不再跳過；`font_id` 改用 `lenient_properties()`（缺的鍵用預設值：一般粗細、正常寬度、不斜體；
+粗細換算跟 font-kit 同一張表）。缺哪些鍵用 `log::debug!` 記下。

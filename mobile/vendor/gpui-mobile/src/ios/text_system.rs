@@ -139,7 +139,7 @@ impl PlatformTextSystem for IosTextSystem {
 
             let candidate_properties: SmallVec<[font_kit::properties::Properties; 4]> = candidates
                 .iter()
-                .map(|font_id| lock.fonts[font_id.0].properties())
+                .map(|font_id| lenient_properties(&lock.fonts[font_id.0]))
                 .collect();
 
             let ix = font_kit::matching::find_best_match(
@@ -267,31 +267,24 @@ impl IosTextSystemState {
                 }
             }
 
-            // Validate font traits to avoid panics from malformed fonts
-            let traits = font.native_font().all_traits();
-            if unsafe {
-                !(traits
-                    .get(kCTFontSymbolicTrait)
-                    .downcast::<CFNumber>()
-                    .is_some()
-                    && traits
-                        .get(kCTFontWidthTrait)
-                        .downcast::<CFNumber>()
-                        .is_some()
-                    && traits
-                        .get(kCTFontWeightTrait)
-                        .downcast::<CFNumber>()
-                        .is_some()
-                    && traits
-                        .get(kCTFontSlantTrait)
-                        .downcast::<CFNumber>()
-                        .is_some())
-            } {
-                log::error!(
-                    "Failed to read traits for font {:?}",
-                    font.postscript_name().unwrap()
-                );
-                continue;
+            // 修補（xq）：iOS 26 上 CTFontCopyTraits 的字典少了某些鍵（實測 PingFang、Helvetica、Arial 全部「Failed to read traits」），
+            // 原本整個字型就跳過，結果所有字型都載不到、resolve_font panic。改成照常載入，
+            // 讀 properties 時用 lenient_properties（缺的鍵用預設值），不會 panic。
+            {
+                let traits = font.native_font().all_traits();
+                let missing: Vec<&str> = [
+                    (unsafe { kCTFontSymbolicTrait }, "symbolic"),
+                    (unsafe { kCTFontWidthTrait }, "width"),
+                    (unsafe { kCTFontWeightTrait }, "weight"),
+                    (unsafe { kCTFontSlantTrait }, "slant"),
+                ]
+                .into_iter()
+                .filter(|(k, _)| traits.find(*k).and_then(|v| v.downcast::<CFNumber>()).is_none())
+                .map(|(_, n)| n)
+                .collect();
+                if !missing.is_empty() {
+                    log::debug!("font {:?}: traits missing {:?}（用預設值）", font.postscript_name(), missing);
+                }
             }
 
             let font_id = FontId(self.fonts.len());
@@ -774,4 +767,29 @@ mod lenient_font_attributes {
             TCFType::wrap_under_create_rule(reference)
         }
     }
+}
+
+/// 修補（xq）：font-kit 的 `Font::properties()` 遇到缺少的 trait 鍵會 unwrap panic；這裡缺的用預設值（一般粗細、正常寬度、不斜）。
+fn lenient_properties(font: &FontKitFont) -> font_kit::properties::Properties {
+    use font_kit::properties::{Properties, Stretch, Style, Weight};
+    let traits = font.native_font().all_traits();
+    let num = |k| traits.find(k).and_then(|v| v.downcast::<CFNumber>()).and_then(|n| n.to_f64());
+    let symbolic = num(unsafe { kCTFontSymbolicTrait }).unwrap_or(0.0) as u32;
+    let slant = num(unsafe { kCTFontSlantTrait }).unwrap_or(0.0);
+    let weight = num(unsafe { kCTFontWeightTrait }).unwrap_or(0.0) as f32;
+    let width = num(unsafe { kCTFontWidthTrait }).unwrap_or(0.0) as f32;
+    // kCTFontItalicTrait = 1 << 0
+    let style = if symbolic & 1 != 0 { Style::Italic } else if slant > 0.0 { Style::Oblique } else { Style::Normal };
+    // CoreText 粗細（-1..1）→ CSS 100..900：與 font-kit 同一張對照表，線性內插
+    const MAP: [f32; 9] = [-0.7, -0.5, -0.23, 0.0, 0.2, 0.3, 0.4, 0.6, 0.8];
+    let idx = if weight <= MAP[0] {
+        0.0
+    } else if weight >= MAP[8] {
+        8.0
+    } else {
+        let i = MAP.windows(2).position(|w| weight >= w[0] && weight <= w[1]).unwrap_or(3);
+        i as f32 + (weight - MAP[i]) / (MAP[i + 1] - MAP[i])
+    };
+    let stretch = Stretch((1.0 + width * 0.5).clamp(0.5, 2.0));
+    Properties { style, weight: Weight(idx * 100.0 + 100.0), stretch }
 }
