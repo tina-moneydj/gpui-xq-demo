@@ -431,8 +431,8 @@ impl GeomCache {
 /// 畫線層一段（下面或上面）的已建好圖元（重建後，平移只位移）
 #[derive(Default)]
 pub struct PaintCache {
-    /// 依 z 順序的幾何（填色＋線），相鄰同色合併
-    paths: Vec<(Path<Pixels>, Hsla)>,
+    /// 依 z 順序的幾何（填色＋線），相鄰同色合併；每段＝軸向矩形（quad）＋其餘三角形（path）
+    paths: Vec<Run>,
     /// 字（fib 標籤、文字註記）：畫在這一段的幾何之上
     labels: Vec<(ShapedLine, f32, f32, f32)>,
     /// 水平線的價格標籤（右側價格軸上，不位移）
@@ -444,12 +444,30 @@ fn fmt_p(v: f64) -> String {
     if v.is_finite() { format!("{v:.2}") } else { "--".into() }
 }
 
+/// 畫好的一段：同一個顏色的軸向矩形（paint_quad）＋斜線／曲線（path）
+pub struct Run {
+    quads: Vec<[f32; 4]>,
+    path: Option<Path<Pixels>>,
+    color: Hsla,
+}
+
+/// A3（2026-10-24，實驗、預設關）：水平線、費波納契各價位線、矩形邊框／填色、文字框這些軸向的東西改用 paint_quad，
+/// 只有斜線與多邊形才走 path。XQ_DRAW_QUADS=1 開啟。
+///
+/// 為什麼預設關：path 數從 313 降到 61，但 GPUI 依「重疊」給每個圖元排序，quad 夾在 path 中間會把原本「整段一批」的
+/// path 切成很多批，每一批都要清一次整窗 MSAA 中介貼圖再合成。這台（軟體 Vulkan）交錯實測重圖表 FPS 反而掉一半
+/// （跳價段 path 版 13.5–20.7、quad 版 6.9–10.4）。走勢圖本身的格線、K 棒、量、柱早就是 quad，不受影響。
+fn quads_on() -> bool {
+    static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *V.get_or_init(|| crate::plat::var_os("XQ_DRAW_QUADS").is_some_and(|v| v != "0"))
+}
+
 /// 依 z 順序收集圖元：每條畫線的填色、線依序加入，顏色和上一段相同就併進同一條 Path
 /// （GPUI 一批 path 內的頂點依序光柵化＋混色，所以順序就是畫面上的上下關係）。
 #[derive(Default)]
 pub struct ZEmit {
-    /// (三角形, 顏色, 這段的外框)
-    runs: Vec<(Tris, Hsla, [f32; 4])>,
+    /// (三角形, 顏色, 這段的外框, 軸向矩形)
+    runs: Vec<(Tris, Hsla, [f32; 4], Vec<[f32; 4]>)>,
     pub labels: Vec<(String, f32, f32, f32, Hsla)>,
     /// 目前這條畫線的外框（t() 合併用）
     cur_bb: [f32; 4],
@@ -468,10 +486,67 @@ impl ZEmit {
     /// path 數從「每條畫線好幾段」降到接近「每種顏色幾段」，GPUI 每個 path 的固定成本跟著少。
     #[inline]
     fn t(&mut self, c: Hsla) -> &mut Tris {
+        let i = self.run_ix(c);
+        &mut self.runs[i].0
+    }
+
+    /// 軸向矩形（x, y, w, h）：和三角形同一套合併規則（同色段、外框不重疊才往回併）
+    #[inline]
+    fn rect(&mut self, x: f32, y: f32, w: f32, h: f32, c: Hsla) {
+        if !(w > 0.0 && h > 0.0) {
+            return;
+        }
+        if !quads_on() {
+            self.t(c).poly(&[p(x, y), p(x + w, y), p(x + w, y + h), p(x, y + h)]);
+            return;
+        }
+        let i = self.run_ix(c);
+        self.runs[i].3.push([x, y, w, h]);
+    }
+
+    /// 線段：水平／垂直就用矩形（和 Tris::seg 同樣的範圍：線寬 w、兩端各外推 w/4），其他走三角形
+    #[inline]
+    fn seg(&mut self, a: P, b: P, w: f32, c: Hsla) {
+        if quads_on() && (a.y == b.y || a.x == b.x) && (a.x != b.x || a.y != b.y) {
+            let e = w * 0.25;
+            if a.y == b.y {
+                let (x0, x1) = (a.x.min(b.x), a.x.max(b.x));
+                self.rect(x0 - e, a.y - w * 0.5, x1 - x0 + 2.0 * e, w, c);
+            } else {
+                let (y0, y1) = (a.y.min(b.y), a.y.max(b.y));
+                self.rect(a.x - w * 0.5, y0 - e, w, y1 - y0 + 2.0 * e, c);
+            }
+            return;
+        }
+        self.t(c).seg(a, b, w);
+    }
+
+    /// 填色多邊形：四點軸向矩形就用 quad
+    fn fill(&mut self, f: &[P], c: Hsla) {
+        if quads_on() && f.len() == 4 {
+            let (xs, ys) = ([f[0].x, f[1].x, f[2].x, f[3].x], [f[0].y, f[1].y, f[2].y, f[3].y]);
+            let axis = (0..4).all(|k| {
+                let (q, r) = (f[k], f[(k + 1) % 4]);
+                q.x == r.x || q.y == r.y
+            });
+            if axis {
+                let x0 = xs.iter().cloned().fold(f32::INFINITY, f32::min);
+                let x1 = xs.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+                let y0 = ys.iter().cloned().fold(f32::INFINITY, f32::min);
+                let y1 = ys.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+                self.rect(x0, y0, x1 - x0, y1 - y0, c);
+                return;
+            }
+        }
+        self.t(c).poly(f);
+    }
+
+    #[inline]
+    fn run_ix(&mut self, c: Hsla) -> usize {
         let bb = self.cur_bb;
         let mut hit = None;
         for i in (0..self.runs.len()).rev().take(MERGE_LOOKBACK) {
-            let (_, rc, rb) = &self.runs[i];
+            let (_, rc, rb, _) = &self.runs[i];
             if *rc == c {
                 hit = Some(i);
                 break;
@@ -483,19 +558,17 @@ impl ZEmit {
         let i = match hit {
             Some(i) => i,
             None => {
-                self.runs.push((Tris::default(), c, bb));
+                self.runs.push((Tris::default(), c, bb, Vec::new()));
                 self.runs.len() - 1
             }
         };
         let r = &mut self.runs[i];
         r.2 = [r.2[0].min(bb[0]), r.2[1].min(bb[1]), r.2[2].max(bb[2]), r.2[3].max(bb[3])];
-        &mut r.0
+        i
     }
 
     fn quad(&mut self, x: f32, y: f32, w: f32, h: f32, c: Hsla) {
-        if w > 0.0 && h > 0.0 {
-            self.t(c).poly(&[p(x, y), p(x + w, y), p(x + w, y + h), p(x, y + h)]);
-        }
+        self.rect(x, y, w, h, c);
     }
 
     /// 一條畫線。hline_ext：水平線往左右各多畫一個寬度（快取平移時不會斷）
@@ -507,7 +580,7 @@ impl ZEmit {
         self.cur_bb = [g.bbox[0] - ext - 4.0, g.bbox[1] - 4.0, g.bbox[2] + ext + 4.0, g.bbox[3] + 4.0];
         if let Some(f) = &g.fill {
             let c = gfx::hexa(draw_color(), if d.kind == Tool::Rect { 0.10 } else { 0.07 });
-            self.t(c).poly(f);
+            self.fill(f, c);
         }
         match d.kind {
             Tool::Fib => {
@@ -518,7 +591,7 @@ impl ZEmit {
                 }
                 for lv in &g.levels {
                     let c = if sel { main } else { gfx::hex(fib_color(lv.k)) };
-                    self.t(c).seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4));
+                    self.seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4), c);
                     self.labels.push((format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, xq_tokens::t().font.sm, gfx::hex(fib_color(lv.k))));
                 }
                 if let Some([a, b]) = g.diag {
@@ -528,23 +601,21 @@ impl ZEmit {
             Tool::Text => {
                 if let Some([x, y, bw, bh]) = g.text_box {
                     self.quad(x, y, bw, bh, gfx::hexa(xq_tokens::t().drawing.text_bg.rgb, xq_tokens::t().drawing.text_bg.a));
-                    let t = self.t(main);
                     let bwid = if sel { 2.0 } else { 1.0 };
-                    t.poly(&[p(x, y), p(x + bw, y), p(x + bw, y + bwid), p(x, y + bwid)]);
-                    t.poly(&[p(x, y + bh - bwid), p(x + bw, y + bh - bwid), p(x + bw, y + bh), p(x, y + bh)]);
-                    t.poly(&[p(x, y), p(x + bwid, y), p(x + bwid, y + bh), p(x, y + bh)]);
-                    t.poly(&[p(x + bw - bwid, y), p(x + bw, y), p(x + bw, y + bh), p(x + bw - bwid, y + bh)]);
+                    self.rect(x, y, bw, bwid, main);
+                    self.rect(x, y + bh - bwid, bw, bwid, main);
+                    self.rect(x, y, bwid, bh, main);
+                    self.rect(x + bw - bwid, y, bwid, bh, main);
                     self.labels.push((d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, xq_tokens::t().font.lg, gfx::hex(draw_color())));
                 }
             }
             Tool::Hline if hline_ext > 0.0 => {
                 let [a, b] = g.segs[0];
-                self.t(main).seg(p(a.x - hline_ext, a.y), p(b.x + hline_ext, b.y), w);
+                self.seg(p(a.x - hline_ext, a.y), p(b.x + hline_ext, b.y), w, main);
             }
             _ => {
-                let t = self.t(main);
                 for s in &g.segs {
-                    t.seg(s[0], s[1], w);
+                    self.seg(s[0], s[1], w, main);
                 }
                 if let Some([a, b]) = g.mid {
                     self.t(gfx::hex(draw_color())).dashed(a, b, 1.0, 4.0, 4.0);
@@ -553,14 +624,20 @@ impl ZEmit {
         }
     }
 
-    pub fn paths(&mut self) -> Vec<(Path<Pixels>, Hsla)> {
-        self.runs.drain(..).filter_map(|(mut t, c, _)| t.take().map(|p| (p, c))).collect()
+    pub fn paths(&mut self) -> Vec<Run> {
+        self.runs
+            .drain(..)
+            .filter_map(|(mut t, color, _, quads)| {
+                let path = t.take();
+                (path.is_some() || !quads.is_empty()).then_some(Run { quads, path, color })
+            })
+            .collect()
     }
 
     /// 即時畫（選取段／繪製中）：幾何 → 字（字包一個整窗格的 layer，順序一定在這段幾何之上）
     pub fn paint(mut self, window: &mut Window, cx: &mut App, lb: Bounds<Pixels>) {
-        for (t, c) in self.paths() {
-            window.paint_path(t, c);
+        for r in self.paths() {
+            r.paint(window, 0.0);
         }
         if !self.labels.is_empty() {
             window.paint_layer(lb, |window| {
@@ -628,8 +705,8 @@ impl PaintCache {
             window.paint_layer(b, |_| {});
         }
         window.with_content_mask(Some(ContentMask { bounds: lb }), |window| {
-            for (path, c) in &self.paths {
-                window.paint_path(gfx::shifted(path, dx), *c);
+            for r in &self.paths {
+                r.paint(window, dx);
             }
             if !self.labels.is_empty() {
                 window.paint_layer(lb, |window| {
@@ -646,10 +723,26 @@ impl PaintCache {
     }
 
     pub fn vertex_count(&self) -> usize {
-        self.paths.iter().map(|(p, _)| p.vertices.len()).sum::<usize>()
+        self.paths.iter().map(|r| r.path.as_ref().map_or(0, |p| p.vertices.len()) + r.quads.len() * 4).sum::<usize>()
     }
     pub fn path_count(&self) -> usize {
-        self.paths.len()
+        self.paths.iter().filter(|r| r.path.is_some()).count()
+    }
+}
+
+impl Run {
+    /// 先 quad 再 path（同色、同一段，彼此順序不影響畫面；跟其他段的上下關係由 GPUI 依重疊排序）
+    fn paint(&self, window: &mut Window, dx: f32) {
+        for q in &self.quads {
+            gfx::rect(window, q[0] + dx, q[1], q[2], q[3], self.color);
+        }
+        if let Some(path) = &self.path {
+            if dx == 0.0 {
+                window.paint_path(path.clone(), self.color);
+            } else {
+                window.paint_path(gfx::shifted(path, dx), self.color);
+            }
+        }
     }
 }
 
