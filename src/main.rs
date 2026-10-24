@@ -39,7 +39,9 @@ use gpui::{
 
 use std::sync::Arc;
 
-use bridge::{Conn, Counters, FeedBridge, Inbox};
+use bridge::{Conn, Counters, FeedBridge, Inbox, Taker};
+use std::cell::RefCell;
+use std::rc::Rc;
 use chart::{ChartEvent, ChartView};
 use series::Period;
 use table::{QuoteTable, TableEvent};
@@ -52,6 +54,34 @@ pub static FRAMES: AtomicU64 = AtomicU64::new(0);
 fn title_h() -> f32 { xq_tokens::t().layout.title_bar }
 /// 主視窗超過這麼久沒畫（被蓋住／縮小），後備計時器直接套用行情
 const FALLBACK_MS: u64 = 25;
+
+/// A1（2026-10-24）：多視窗共用的行情匯流。
+/// 舊做法：只有主視窗在自己的 root render 開頭取件、再把同一份 Inbox 推給其他視窗——其他視窗要等「主視窗畫了、
+/// 自己再被 notify、等到自己的下一個 vsync」，實機上第 2–4 個視窗固定晚一幀（Mac／Windows 4 視窗 p99 約 64 ms vs egui 34 ms）。
+/// 新做法：行情一到就 notify 全部視窗；哪個視窗先 render 就由它取件、合併進共用報價表，並把套用結果（Rc）放進每個視窗
+/// 自己的佇列；每個視窗在自己的 render 開頭把佇列套到自己的走勢圖／資訊格。每個視窗都在自己這一幀就看到新價。
+struct Applied {
+    ib: Inbox,
+    changed: usize,
+    us: u64,
+}
+struct Hub {
+    taker: Taker,
+    tape: Option<Entity<TickTape>>,
+    /// (視窗編號, 還沒套到這個視窗的批次)
+    queues: RefCell<Vec<(usize, Vec<Rc<Applied>>)>>,
+}
+impl Hub {
+    fn register(&self, win: usize) {
+        self.queues.borrow_mut().push((win, Vec::new()));
+    }
+    fn has_queued(&self, win: usize) -> bool {
+        self.queues.borrow().iter().any(|(w, q)| *w == win && !q.is_empty())
+    }
+    fn drain(&self, win: usize) -> Vec<Rc<Applied>> {
+        self.queues.borrow_mut().iter_mut().find(|(w, _)| *w == win).map(|(_, q)| std::mem::take(q)).unwrap_or_default()
+    }
+}
 fn status_h() -> f32 { xq_tokens::t().layout.status_bar }
 fn split() -> f32 { xq_tokens::t().layout.splitter }
 
@@ -223,32 +253,36 @@ struct Terminal {
     fallback_applies: u64,
     /// XQ_SYNC_CHECK=1：多視窗報價同步驗證（每幀比對畫面上的價與共用報價表）
     sync: Option<SyncCheck>,
+    /// A1：共用行情匯流（主視窗建立，其他視窗共用）
+    hub: Rc<Hub>,
     _tasks: Vec<Task<()>>,
     _subs: Vec<Subscription>,
 }
 
 impl Terminal {
     /// `shared`＝None：主視窗（開行情連線、建報價表）；Some：XQ_WINDOWS 的其他視窗，共用主視窗的報價表 entity
-    fn new(win: usize, shared: Option<(Entity<QuoteTable>, Arc<Counters>)>, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    fn new(win: usize, shared: Option<(Entity<QuoteTable>, Arc<Counters>, Rc<Hub>)>, window: &mut Window, cx: &mut Context<Self>) -> Self {
         let primary = shared.is_none();
         let (sym, name) = names::WATCH[win % names::WATCH.len()];
         let tape_feed =
             (primary && crate::plat::var_os("XQ_TAPE").is_some_and(|v| v != "0")).then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| cx.new(|cx| TickTape::new(f, sym, cx)));
-        let (bridge, wake_rx, table, counters) = match shared {
+        let (bridge, wake_rx, table, counters, hub) = match shared {
             None => {
                 let (bridge, wake_rx) = FeedBridge::start(tape_feed);
                 let counters = bridge.counters.clone();
+                let hub = Rc::new(Hub { taker: bridge.taker(), tape: tape.clone(), queues: RefCell::new(Vec::new()) });
                 (Some(bridge), Some(wake_rx), cx.new(|cx| {
                     let mut t = QuoteTable::new(names::WATCH);
                     if crate::plat::search_enabled() {
                         t.attach_search(cx);
                     }
                     t
-                }), counters)
+                }), counters, hub)
             }
-            Some((table, counters)) => (None, None, table, counters),
+            Some((table, counters, hub)) => (None, None, table, counters, hub),
         };
+        hub.register(win);
         let window_id = window.window_handle().window_id();
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = crate::plat::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
@@ -287,7 +321,8 @@ impl Terminal {
         let render_apply = crate::plat::var("XQ_APPLY").as_deref() != Ok("timer");
         let feed_task = wake_rx.map(|mut wake_rx| cx.spawn(async move |this, cx| {
             while wake_rx.next().await.is_some() {
-                let r = this.update(cx, |t, cx| if t.render_apply { cx.notify() } else { t.apply_feed(cx) });
+                // A1：一到就叫全部視窗畫（不是只叫主視窗、等它畫完再轉手）
+                let r = this.update(cx, |t, cx| if t.render_apply { t.notify_all(cx) } else { t.apply_feed(cx) });
                 if r.is_err() {
                     break;
                 }
@@ -296,13 +331,14 @@ impl Terminal {
                 }
             }
         }));
-        let fallback_task = (primary && render_apply).then(|| cx.spawn(async move |this, cx| loop {
+        // 後備：這個視窗被蓋住／縮小（GPUI 停掉它的刷新）時，由計時器代為取件／套用自己的佇列（每個視窗各一個）
+        let fallback_task = render_apply.then(|| cx.spawn(async move |this, cx| loop {
             cx.background_executor().timer(Duration::from_millis(FALLBACK_MS)).await;
             let r = this.update(cx, |t, cx| {
                 let stale = t.last_render.is_none_or(|r| r.elapsed() >= Duration::from_millis(FALLBACK_MS));
-                if stale && t.bridge.as_ref().is_some_and(|b| b.pending()) {
+                if stale && (t.hub.taker.pending() || t.hub.has_queued(t.win)) {
                     t.fallback_applies += 1;
-                    t.apply_feed(cx);
+                    t.pump(cx);
                 }
             });
             if r.is_err() {
@@ -355,6 +391,7 @@ impl Terminal {
             last_render: None,
             fallback_applies: 0,
             sync: (crate::plat::var_os("XQ_SYNC_CHECK").is_some_and(|v| v != "0")).then(SyncCheck::default),
+            hub,
             _tasks: feed_task.into_iter().chain(fallback_task).chain([stats_task]).collect(),
             _subs: subs,
         };
@@ -491,32 +528,57 @@ impl Terminal {
         self.resubscribe(cx);
     }
 
-    fn apply_feed(&mut self, cx: &mut Context<Self>) {
-        let t0 = Instant::now();
-        let Some(bridge) = self.bridge.as_mut() else { return };
-        let ib = bridge.take();
-        // 報價表只合併一次（多視窗共用同一個 entity，notify 後每個畫它的視窗各自重畫可見列）
-        let changed = if ib.quotes.is_empty() {
-            0
-        } else {
-            self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx))
-        };
-        self.apply_local(&ib, cx);
-        if let Some(tape) = &self.tape {
-            // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
-            tape.update(cx, |t, cx| t.apply(cx));
-        }
-        let us = t0.elapsed().as_micros() as u64;
-        self.finish_apply(&ib, changed, us, cx);
+    /// 行情一到：叫全部視窗畫（每個視窗在自己的 render 開頭 pump）
+    fn notify_all(&mut self, cx: &mut Context<Self>) {
+        cx.notify();
         if !self.peers.is_empty() {
             self.peers.retain(|p| p.upgrade().is_some());
             for p in self.peers.clone() {
-                let _ = p.update(cx, |p, cx| {
-                    let t1 = Instant::now();
-                    p.apply_local(&ib, cx);
-                    let us = us + t1.elapsed().as_micros() as u64;
-                    p.finish_apply(&ib, changed, us, cx);
-                });
+                let _ = p.update(cx, |_, cx| cx.notify());
+            }
+        }
+    }
+
+    /// 有新行情就取件（只會有一個視窗取到）：合併進共用報價表＋成交明細，套用結果放進每個視窗的佇列；
+    /// 再把這個視窗自己的佇列套用完。
+    fn pump(&mut self, cx: &mut Context<Self>) {
+        if self.hub.taker.pending() {
+            let t0 = Instant::now();
+            let ib = self.hub.taker.take();
+            // 報價表只合併一次（多視窗共用同一個 entity，notify 後每個畫它的視窗各自重畫可見列）
+            let changed = if ib.quotes.is_empty() {
+                0
+            } else {
+                self.table.update(cx, |t, cx| t.apply(&ib.order, &ib.quotes, cx))
+            };
+            if let Some(tape) = &self.hub.tape {
+                // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
+                tape.update(cx, |t, cx| t.apply(cx));
+            }
+            let a = Rc::new(Applied { ib, changed, us: t0.elapsed().as_micros() as u64 });
+            for (_, q) in self.hub.queues.borrow_mut().iter_mut() {
+                q.push(a.clone());
+            }
+        }
+        self.drain(cx);
+    }
+
+    fn drain(&mut self, cx: &mut Context<Self>) {
+        for a in self.hub.drain(self.win) {
+            let t1 = Instant::now();
+            self.apply_local(&a.ib, cx);
+            let us = a.us + t1.elapsed().as_micros() as u64;
+            self.finish_apply(&a.ib, a.changed, us, cx);
+        }
+    }
+
+    /// XQ_APPLY=timer（舊做法對照）：喚醒就套用，主視窗取件後直接套到全部視窗
+    fn apply_feed(&mut self, cx: &mut Context<Self>) {
+        self.pump(cx);
+        if !self.peers.is_empty() {
+            self.peers.retain(|p| p.upgrade().is_some());
+            for p in self.peers.clone() {
+                let _ = p.update(cx, |p, cx| p.drain(cx));
             }
         }
     }
@@ -722,8 +784,8 @@ impl Render for Terminal {
         }
         self.last_render = Some(Instant::now());
         // 行情在這一幀開頭套用：子 view 在這之後才 prepaint，被 notify 的會在同一幀重畫
-        if self.render_apply && self.bridge.as_ref().is_some_and(|b| b.pending()) {
-            self.apply_feed(cx);
+        if self.render_apply && (self.hub.taker.pending() || self.hub.has_queued(self.win)) {
+            self.pump(cx);
         }
         if let Some(tb) = self.tick.as_mut() {
             tb.on_render(window);
@@ -916,12 +978,12 @@ fn run(app: gpui::Application) {
         let n = window_count();
         if n > 1 {
             let primary = main.entity(cx).expect("main view");
-            let (table, counters) = {
+            let (table, counters, hub) = {
                 let p = primary.read(cx);
-                (p.table.clone(), p.counters.clone())
+                (p.table.clone(), p.counters.clone(), p.hub.clone())
             };
             for k in 1..n {
-                let shared = (table.clone(), counters.clone());
+                let shared = (table.clone(), counters.clone(), hub.clone());
                 let opts = window_options(k, cx);
                 let w = cx
                     .open_window(opts, move |window, cx| {
