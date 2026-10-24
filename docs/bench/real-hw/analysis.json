@@ -1,0 +1,4794 @@
+{
+ "mac": [
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "first_frame_ms",
+   "label": "啟動到第一幀",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 190.5,
+   "egui_glow": 213.2,
+   "egui_wgpu": 214.5,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     678.2,
+     187.1,
+     190.5
+    ],
+    "egui-wgpu": [
+     1212.7,
+     214.5,
+     214.1
+    ],
+    "egui": [
+     260.6,
+     213.2,
+     199.5
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "first_quote_ms",
+   "label": "啟動到第一筆報價",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 190.5,
+   "egui_glow": 247.6,
+   "egui_wgpu": 246.4,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     761.4,
+     187.1,
+     190.5
+    ],
+    "egui-wgpu": [
+     1218.0,
+     246.2,
+     246.4
+    ],
+    "egui": [
+     288.4,
+     247.6,
+     233.7
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "rss10_mb",
+   "label": "RSS 第 10 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 101.0,
+   "egui_glow": 120.9,
+   "egui_wgpu": 116.2,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     101.0,
+     100.8,
+     101.2
+    ],
+    "egui-wgpu": [
+     116.6,
+     116.1,
+     116.2
+    ],
+    "egui": [
+     120.9,
+     120.8,
+     120.9
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "rss60_mb",
+   "label": "RSS 第 60 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 101.3,
+   "egui_glow": 121.0,
+   "egui_wgpu": 116.3,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     101.3,
+     101.0,
+     101.3
+    ],
+    "egui-wgpu": [
+     116.7,
+     116.3,
+     116.3
+    ],
+    "egui": [
+     121.1,
+     120.9,
+     121.0
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "footprint60_mb",
+   "label": "實體記憶體（活動監視器）第 60 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 148.5,
+   "egui_glow": 173.8,
+   "egui_wgpu": 168.3,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     148.5,
+     148.2,
+     148.5
+    ],
+    "egui-wgpu": [
+     169.5,
+     168.3,
+     168.3
+    ],
+    "egui": [
+     174.9,
+     173.7,
+     173.8
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "cpu_pct",
+   "label": "CPU（第 30–60 秒）",
+   "unit": "%",
+   "hib": false,
+   "gpui": 13.9,
+   "egui_glow": 11.1,
+   "egui_wgpu": 12.8,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     16.8,
+     13.8,
+     13.9
+    ],
+    "egui-wgpu": [
+     12.8,
+     12.7,
+     12.8
+    ],
+    "egui": [
+     10.8,
+     11.1,
+     11.1
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "fps",
+   "label": "FPS（第 30–60 秒）",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 31.7,
+   "egui_glow": 31.3,
+   "egui_wgpu": 31.3,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     35.4,
+     31.5,
+     31.7
+    ],
+    "egui-wgpu": [
+     31.3,
+     31.1,
+     31.3
+    ],
+    "egui": [
+     31.3,
+     31.4,
+     31.3
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "main",
+   "title": "主視窗（1200×720 點、xq-demofeed 約 40Hz）",
+   "metric": "gpu_util",
+   "label": "整機 GPU 使用率",
+   "unit": "%",
+   "hib": false,
+   "gpui": 9.8,
+   "egui_glow": 12.0,
+   "egui_wgpu": 9.0,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     8.7,
+     10.0,
+     9.8
+    ],
+    "egui-wgpu": [
+     6.7,
+     9.0,
+     9.2
+    ],
+    "egui": [
+     10.0,
+     12.0,
+     12.1
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "cpu_tick_pct",
+   "label": "CPU（跳價）",
+   "unit": "%",
+   "hib": false,
+   "gpui": 19.0,
+   "egui_glow": 15.9,
+   "egui_wgpu": 20.2,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     20.1,
+     18.8,
+     19.0
+    ],
+    "egui-wgpu": [
+     20.1,
+     20.7,
+     20.2
+    ],
+    "egui": [
+     15.9,
+     15.7,
+     16.1
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "cpu_scroll_pct",
+   "label": "CPU（跳價＋捲動）",
+   "unit": "%",
+   "hib": false,
+   "gpui": 25.5,
+   "egui_glow": 7.6,
+   "egui_wgpu": 22.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     26.0,
+     25.1,
+     25.5
+    ],
+    "egui-wgpu": [
+     22.5,
+     21.9,
+     22.5
+    ],
+    "egui": [
+     16.5,
+     6.1,
+     7.6
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "tick_fps",
+   "label": "FPS（跳價）",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 44.9,
+   "egui_glow": 54.7,
+   "egui_wgpu": 54.7,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     46.5,
+     44.9,
+     44.6
+    ],
+    "egui-wgpu": [
+     54.7,
+     55.4,
+     54.0
+    ],
+    "egui": [
+     54.7,
+     54.5,
+     54.8
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "scroll_fps",
+   "label": "FPS（捲動）",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 59.8,
+   "egui_glow": 83.2,
+   "egui_wgpu": 60.1,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.1,
+     59.7,
+     59.8
+    ],
+    "egui-wgpu": [
+     60.2,
+     60.1,
+     60.1
+    ],
+    "egui": [
+     82.1,
+     83.3,
+     83.2
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "tick_paint_ms",
+   "label": "每次重畫表格耗時（跳價）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 0.1,
+   "egui_glow": 0.3,
+   "egui_wgpu": 0.4,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "egui-wgpu": [
+     0.4,
+     0.4,
+     0.4
+    ],
+    "egui": [
+     0.4,
+     0.3,
+     0.3
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "scroll_paint_ms",
+   "label": "每次重畫表格耗時（捲動）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 0.1,
+   "egui_glow": 0.2,
+   "egui_wgpu": 0.5,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.1,
+     0.1,
+     0.1
+    ],
+    "egui-wgpu": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "egui": [
+     0.3,
+     0.1,
+     0.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "scroll_jank",
+   "label": "捲動卡頓次數",
+   "unit": "次",
+   "hib": false,
+   "gpui": 2.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     0.0,
+     3.0,
+     2.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "rss_tick_mb",
+   "label": "RSS（跳價末）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 105.4,
+   "egui_glow": 126.3,
+   "egui_wgpu": 122.0,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     105.4,
+     105.5,
+     104.9
+    ],
+    "egui-wgpu": [
+     122.0,
+     122.4,
+     122.0
+    ],
+    "egui": [
+     125.7,
+     126.3,
+     126.4
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束時）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 152.6,
+   "egui_glow": 186.4,
+   "egui_wgpu": 174.2,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     152.6,
+     152.7,
+     152.1
+    ],
+    "egui-wgpu": [
+     174.2,
+     175.3,
+     174.2
+    ],
+    "egui": [
+     184.8,
+     186.4,
+     186.5
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表（每秒 3000 筆跳價＋捲動）",
+   "metric": "gpu_tick",
+   "label": "整機 GPU（跳價）",
+   "unit": "%",
+   "hib": false,
+   "gpui": 17.8,
+   "egui_glow": 21.1,
+   "egui_wgpu": 16.7,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     13.7,
+     17.8,
+     17.9
+    ],
+    "egui-wgpu": [
+     11.8,
+     16.9,
+     16.7
+    ],
+    "egui": [
+     18.3,
+     21.1,
+     21.1
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "heavy_frame_ms",
+   "label": "啟動到第一個重圖表幀",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 607.6,
+   "egui_glow": 592.6,
+   "egui_wgpu": 613.6,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     618.5,
+     607.6,
+     599.1
+    ],
+    "egui-wgpu": [
+     581.9,
+     622.9,
+     613.6
+    ],
+    "egui": [
+     593.3,
+     583.7,
+     592.6
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "ticks_fps",
+   "label": "ticks：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 62.1,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     62.1,
+     61.9,
+     62.5
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "ticks_paint_ms",
+   "label": "ticks：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.9,
+   "egui_glow": 1.4,
+   "egui_wgpu": 1.8,
+   "vs_glow": "B",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     1.9,
+     1.9,
+     1.9
+    ],
+    "egui-wgpu": [
+     1.8,
+     1.7,
+     1.9
+    ],
+    "egui": [
+     1.6,
+     1.4,
+     1.3
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "ticks_cpu",
+   "label": "ticks：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 29.7,
+   "egui_glow": 25.6,
+   "egui_wgpu": 36.9,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     28.9,
+     29.9,
+     29.7
+    ],
+    "egui-wgpu": [
+     36.9,
+     36.1,
+     38.4
+    ],
+    "egui": [
+     28.7,
+     25.6,
+     23.0
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "ticks_rss_mb",
+   "label": "ticks：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 321.3,
+   "egui_glow": 131.0,
+   "egui_wgpu": 130.8,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     321.3,
+     322.1,
+     320.4
+    ],
+    "egui-wgpu": [
+     130.6,
+     130.8,
+     133.4
+    ],
+    "egui": [
+     131.0,
+     130.9,
+     134.1
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "crosshair_fps",
+   "label": "crosshair：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 59.9,
+   "egui_glow": 62.3,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     59.9,
+     59.9,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     62.3,
+     62.3,
+     62.5
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "crosshair_paint_ms",
+   "label": "crosshair：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.8,
+   "egui_glow": 1.4,
+   "egui_wgpu": 1.8,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     1.9,
+     1.8,
+     1.8
+    ],
+    "egui-wgpu": [
+     1.7,
+     1.9,
+     1.8
+    ],
+    "egui": [
+     1.5,
+     1.3,
+     1.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "crosshair_cpu",
+   "label": "crosshair：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 28.3,
+   "egui_glow": 23.8,
+   "egui_wgpu": 35.1,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     34.0,
+     28.3,
+     27.8
+    ],
+    "egui-wgpu": [
+     34.7,
+     35.1,
+     35.1
+    ],
+    "egui": [
+     26.5,
+     21.8,
+     23.8
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "crosshair_rss_mb",
+   "label": "crosshair：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 321.6,
+   "egui_glow": 133.8,
+   "egui_wgpu": 133.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     321.6,
+     322.4,
+     321.6
+    ],
+    "egui-wgpu": [
+     133.5,
+     131.2,
+     133.6
+    ],
+    "egui": [
+     133.8,
+     131.0,
+     136.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "pan_fps",
+   "label": "pan：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 63.2,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     63.2,
+     63.5,
+     62.4
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "pan_paint_ms",
+   "label": "pan：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.3,
+   "egui_glow": 1.0,
+   "egui_wgpu": 1.3,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     1.5,
+     1.3,
+     1.3
+    ],
+    "egui-wgpu": [
+     1.5,
+     1.2,
+     1.3
+    ],
+    "egui": [
+     1.1,
+     1.0,
+     1.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "pan_cpu",
+   "label": "pan：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 27.1,
+   "egui_glow": 21.3,
+   "egui_wgpu": 30.4,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     33.8,
+     26.6,
+     27.1
+    ],
+    "egui-wgpu": [
+     30.4,
+     29.3,
+     30.8
+    ],
+    "egui": [
+     22.8,
+     21.3,
+     20.8
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "pan_rss_mb",
+   "label": "pan：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 328.7,
+   "egui_glow": 137.0,
+   "egui_wgpu": 133.7,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     328.7,
+     329.2,
+     328.4
+    ],
+    "egui-wgpu": [
+     133.7,
+     131.8,
+     133.8
+    ],
+    "egui": [
+     137.0,
+     133.1,
+     137.5
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "drag_fps",
+   "label": "drag：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 62.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     62.0,
+     62.7,
+     61.8
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "drag_paint_ms",
+   "label": "drag：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.3,
+   "egui_glow": 0.8,
+   "egui_wgpu": 1.0,
+   "vs_glow": "B",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     1.3,
+     1.3,
+     1.4
+    ],
+    "egui-wgpu": [
+     1.1,
+     0.9,
+     1.0
+    ],
+    "egui": [
+     0.9,
+     0.8,
+     0.8
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "drag_cpu",
+   "label": "drag：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 30.2,
+   "egui_glow": 18.5,
+   "egui_wgpu": 26.6,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     31.4,
+     26.8,
+     30.2
+    ],
+    "egui-wgpu": [
+     26.6,
+     26.4,
+     27.4
+    ],
+    "egui": [
+     20.0,
+     18.5,
+     17.9
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "drag_rss_mb",
+   "label": "drag：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 325.1,
+   "egui_glow": 138.0,
+   "egui_wgpu": 133.9,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     325.1,
+     325.9,
+     325.1
+    ],
+    "egui-wgpu": [
+     133.9,
+     132.0,
+     136.9
+    ],
+    "egui": [
+     138.0,
+     134.2,
+     138.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "select_fps",
+   "label": "select：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 62.7,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     62.7,
+     62.7,
+     61.3
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "select_paint_ms",
+   "label": "select：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.9,
+   "egui_glow": 0.9,
+   "egui_wgpu": 1.1,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     1.9,
+     1.8,
+     2.0
+    ],
+    "egui-wgpu": [
+     1.1,
+     1.2,
+     1.1
+    ],
+    "egui": [
+     0.9,
+     0.9,
+     0.9
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "select_cpu",
+   "label": "select：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 31.7,
+   "egui_glow": 18.7,
+   "egui_wgpu": 26.7,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     31.7,
+     26.7,
+     33.7
+    ],
+    "egui-wgpu": [
+     26.2,
+     28.6,
+     26.7
+    ],
+    "egui": [
+     18.7,
+     18.7,
+     18.2
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "select_rss_mb",
+   "label": "select：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 325.7,
+   "egui_glow": 140.5,
+   "egui_wgpu": 133.9,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     325.6,
+     326.5,
+     325.7
+    ],
+    "egui-wgpu": [
+     133.9,
+     132.3,
+     136.9
+    ],
+    "egui": [
+     140.5,
+     136.7,
+     141.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "reorder_fps",
+   "label": "reorder：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 61.9,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     61.9,
+     61.7,
+     62.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "reorder_paint_ms",
+   "label": "reorder：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 1.8,
+   "egui_glow": 0.9,
+   "egui_wgpu": 1.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     1.8,
+     1.8,
+     1.9
+    ],
+    "egui-wgpu": [
+     1.1,
+     1.2,
+     1.2
+    ],
+    "egui": [
+     0.9,
+     0.7,
+     0.9
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "reorder_cpu",
+   "label": "reorder：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 31.1,
+   "egui_glow": 17.8,
+   "egui_wgpu": 28.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     31.1,
+     26.8,
+     32.7
+    ],
+    "egui-wgpu": [
+     25.7,
+     28.2,
+     28.9
+    ],
+    "egui": [
+     19.1,
+     15.2,
+     17.8
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "reorder_rss_mb",
+   "label": "reorder：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 325.8,
+   "egui_glow": 140.7,
+   "egui_wgpu": 134.8,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     325.6,
+     326.7,
+     325.8
+    ],
+    "egui-wgpu": [
+     134.0,
+     134.8,
+     137.0
+    ],
+    "egui": [
+     140.7,
+     137.7,
+     141.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "zshot_fps",
+   "label": "zshot：FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 64.4,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     64.7,
+     64.4,
+     61.9
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "zshot_paint_ms",
+   "label": "zshot：每幀圖表繪製",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 0.2,
+   "egui_glow": 0.1,
+   "egui_wgpu": 0.2,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.2,
+     0.2,
+     0.2
+    ],
+    "egui-wgpu": [
+     0.2,
+     0.2,
+     0.2
+    ],
+    "egui": [
+     0.2,
+     0.1,
+     0.1
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "zshot_cpu",
+   "label": "zshot：CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 17.1,
+   "egui_glow": 9.2,
+   "egui_wgpu": 15.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     17.1,
+     18.1,
+     17.0
+    ],
+    "egui-wgpu": [
+     14.7,
+     15.2,
+     16.1
+    ],
+    "egui": [
+     11.3,
+     8.7,
+     9.2
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "zshot_rss_mb",
+   "label": "zshot：RSS",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 325.8,
+   "egui_glow": 140.7,
+   "egui_wgpu": 131.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     325.6,
+     326.7,
+     325.8
+    ],
+    "egui-wgpu": [
+     130.8,
+     131.5,
+     133.7
+    ],
+    "egui": [
+     140.7,
+     138.1,
+     141.0
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "heavy",
+   "title": "重圖表（20 疊加＋8 副圖＋1000 筆畫線／100 層）",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束時）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 366.2,
+   "egui_glow": 198.1,
+   "egui_wgpu": 187.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     367.7,
+     366.2,
+     266.1
+    ],
+    "egui-wgpu": [
+     186.4,
+     187.2,
+     189.3
+    ],
+    "egui": [
+     200.9,
+     197.4,
+     198.1
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 30.6,
+   "egui_glow": 30.4,
+   "egui_wgpu": 30.8,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     30.6,
+     30.6,
+     31.6
+    ],
+    "egui-wgpu": [
+     30.3,
+     30.8,
+     31.5
+    ],
+    "egui": [
+     30.7,
+     30.4,
+     30.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.3,
+   "egui_glow": 33.8,
+   "egui_wgpu": 33.5,
+   "vs_glow": "tie",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     34.0,
+     35.3,
+     35.3
+    ],
+    "egui-wgpu": [
+     33.6,
+     33.5,
+     33.5
+    ],
+    "egui": [
+     35.8,
+     33.8,
+     33.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 319.1,
+   "egui_glow": 39.8,
+   "egui_wgpu": 35.9,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     319.1,
+     329.8,
+     306.6
+    ],
+    "egui-wgpu": [
+     36.7,
+     34.3,
+     35.9
+    ],
+    "egui": [
+     39.8,
+     37.0,
+     48.9
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "backlog_ms",
+   "label": "積壓（後 5 秒−前 5 秒延遲）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": -0.1,
+   "egui_glow": -0.2,
+   "egui_wgpu": 0.2,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     -0.2,
+     -0.0,
+     -0.1
+    ],
+    "egui-wgpu": [
+     -0.1,
+     0.4,
+     0.2
+    ],
+    "egui": [
+     -0.2,
+     -0.2,
+     -0.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 29.8,
+   "egui_glow": 6.1,
+   "egui_wgpu": 22.8,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     29.7,
+     29.8,
+     29.8
+    ],
+    "egui-wgpu": [
+     22.8,
+     22.2,
+     23.5
+    ],
+    "egui": [
+     16.4,
+     6.1,
+     4.8
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "fps",
+   "label": "FPS 中位數",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui": [
+     60.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "fpsMin",
+   "label": "FPS 最低",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 60.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     59.0,
+     60.0,
+     60.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 124.8,
+   "egui_glow": 141.9,
+   "egui_wgpu": 140.4,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     124.8,
+     122.2,
+     125.1
+    ],
+    "egui-wgpu": [
+     140.6,
+     139.1,
+     140.4
+    ],
+    "egui": [
+     144.3,
+     141.9,
+     141.9
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 172.0,
+   "egui_glow": 197.2,
+   "egui_wgpu": 190.4,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     172.0,
+     167.4,
+     172.3
+    ],
+    "egui-wgpu": [
+     192.7,
+     189.2,
+     190.4
+    ],
+    "egui": [
+     197.2,
+     198.8,
+     195.7
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 23.8,
+   "egui_glow": 26.5,
+   "egui_wgpu": 18.4,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     19.8,
+     23.8,
+     23.8
+    ],
+    "egui-wgpu": [
+     12.2,
+     18.4,
+     18.6
+    ],
+    "egui": [
+     20.9,
+     26.5,
+     26.8
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.6,
+   "egui_glow": 31.2,
+   "egui_wgpu": 30.9,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     31.6,
+     31.8,
+     31.3
+    ],
+    "egui-wgpu": [
+     30.7,
+     31.4,
+     30.9
+    ],
+    "egui": [
+     31.2,
+     31.5,
+     30.3
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.2,
+   "egui_glow": 33.5,
+   "egui_wgpu": 33.8,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     33.7,
+     35.4,
+     35.2
+    ],
+    "egui-wgpu": [
+     33.6,
+     35.9,
+     33.8
+    ],
+    "egui": [
+     36.1,
+     33.4,
+     33.5
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 356.2,
+   "egui_glow": 36.1,
+   "egui_wgpu": 36.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     373.5,
+     350.1,
+     356.2
+    ],
+    "egui-wgpu": [
+     35.8,
+     36.6,
+     36.2
+    ],
+    "egui": [
+     37.1,
+     35.8,
+     36.1
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "backlog_ms",
+   "label": "積壓（後 5 秒−前 5 秒延遲）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": -0.1,
+   "egui_glow": -0.2,
+   "egui_wgpu": -0.0,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     -0.1,
+     -0.1,
+     -0.1
+    ],
+    "egui-wgpu": [
+     1.0,
+     -0.0,
+     -0.0
+    ],
+    "egui": [
+     0.0,
+     -0.2,
+     -0.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 31.3,
+   "egui_glow": 6.1,
+   "egui_wgpu": 26.1,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     31.1,
+     31.3,
+     31.4
+    ],
+    "egui-wgpu": [
+     25.5,
+     26.3,
+     26.1
+    ],
+    "egui": [
+     14.3,
+     5.3,
+     6.1
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "fps",
+   "label": "FPS 中位數",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     60.0,
+     61.0
+    ],
+    "egui": [
+     60.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "fpsMin",
+   "label": "FPS 最低",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 60.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     59.0,
+     60.0
+    ],
+    "egui": [
+     59.0,
+     61.0,
+     60.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 122.9,
+   "egui_glow": 142.1,
+   "egui_wgpu": 140.6,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     123.6,
+     122.9,
+     122.1
+    ],
+    "egui-wgpu": [
+     138.1,
+     140.8,
+     140.6
+    ],
+    "egui": [
+     142.1,
+     142.1,
+     142.3
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 170.1,
+   "egui_glow": 195.0,
+   "egui_wgpu": 190.6,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     170.8,
+     170.1,
+     169.3
+    ],
+    "egui-wgpu": [
+     188.2,
+     192.8,
+     190.6
+    ],
+    "egui": [
+     194.8,
+     195.0,
+     196.0
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 23.8,
+   "egui_glow": 26.5,
+   "egui_wgpu": 16.5,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     19.6,
+     23.9,
+     23.8
+    ],
+    "egui-wgpu": [
+     12.1,
+     16.5,
+     18.4
+    ],
+    "egui": [
+     20.9,
+     26.5,
+     26.5
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 32.1,
+   "egui_glow": 31.3,
+   "egui_wgpu": 30.7,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     32.1,
+     32.5,
+     31.7
+    ],
+    "egui-wgpu": [
+     30.5,
+     30.7,
+     31.4
+    ],
+    "egui": [
+     31.3,
+     31.3,
+     31.1
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.9,
+   "egui_glow": 33.4,
+   "egui_wgpu": 33.7,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     34.6,
+     35.9,
+     35.9
+    ],
+    "egui-wgpu": [
+     33.7,
+     33.7,
+     33.7
+    ],
+    "egui": [
+     36.3,
+     33.4,
+     33.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 401.4,
+   "egui_glow": 36.5,
+   "egui_wgpu": 36.1,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     406.8,
+     401.4,
+     351.9
+    ],
+    "egui-wgpu": [
+     35.7,
+     36.1,
+     36.3
+    ],
+    "egui": [
+     37.2,
+     36.0,
+     36.5
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "backlog_ms",
+   "label": "積壓（後 5 秒−前 5 秒延遲）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": -0.1,
+   "egui_glow": -0.2,
+   "egui_wgpu": -0.2,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     0.6,
+     -0.1,
+     -0.3
+    ],
+    "egui-wgpu": [
+     0.4,
+     -0.2,
+     -0.2
+    ],
+    "egui": [
+     -0.2,
+     -0.2,
+     -0.2
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 33.6,
+   "egui_glow": 7.4,
+   "egui_wgpu": 30.6,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     33.8,
+     33.6,
+     33.5
+    ],
+    "egui-wgpu": [
+     30.9,
+     30.6,
+     29.1
+    ],
+    "egui": [
+     22.8,
+     7.4,
+     7.0
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "fps",
+   "label": "FPS 中位數",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui": [
+     60.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "fpsMin",
+   "label": "FPS 最低",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 60.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     58.0,
+     60.0,
+     60.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 122.6,
+   "egui_glow": 142.5,
+   "egui_wgpu": 140.9,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     97.2,
+     124.3,
+     122.6
+    ],
+    "egui-wgpu": [
+     140.9,
+     141.1,
+     140.7
+    ],
+    "egui": [
+     142.5,
+     143.2,
+     142.0
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 171.5,
+   "egui_glow": 195.3,
+   "egui_wgpu": 192.9,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     172.3,
+     171.5,
+     169.8
+    ],
+    "egui-wgpu": [
+     192.9,
+     193.1,
+     192.8
+    ],
+    "egui": [
+     195.3,
+     200.1,
+     194.9
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 23.8,
+   "egui_glow": 26.6,
+   "egui_wgpu": 18.4,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     19.1,
+     23.8,
+     23.8
+    ],
+    "egui-wgpu": [
+     12.4,
+     18.4,
+     18.6
+    ],
+    "egui": [
+     20.2,
+     26.6,
+     26.6
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 32.7,
+   "egui_glow": 32.1,
+   "egui_wgpu": 31.2,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     32.7,
+     33.2,
+     32.7
+    ],
+    "egui-wgpu": [
+     31.0,
+     31.2,
+     31.4
+    ],
+    "egui": [
+     32.4,
+     32.1,
+     31.7
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 36.2,
+   "egui_glow": 36.7,
+   "egui_wgpu": 35.4,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     36.2,
+     36.5,
+     36.0
+    ],
+    "egui-wgpu": [
+     35.4,
+     35.7,
+     34.5
+    ],
+    "egui": [
+     37.0,
+     36.7,
+     35.7
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 369.0,
+   "egui_glow": 39.4,
+   "egui_wgpu": 37.1,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     466.3,
+     346.1,
+     369.0
+    ],
+    "egui-wgpu": [
+     37.3,
+     37.1,
+     36.7
+    ],
+    "egui": [
+     39.4,
+     37.5,
+     48.0
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "backlog_ms",
+   "label": "積壓（後 5 秒−前 5 秒延遲）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": -0.0,
+   "egui_glow": -0.2,
+   "egui_wgpu": -1.4,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     0.2,
+     -0.4,
+     -0.0
+    ],
+    "egui-wgpu": [
+     -1.4,
+     -1.5,
+     -0.2
+    ],
+    "egui": [
+     0.7,
+     -0.2,
+     -0.2
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 35.1,
+   "egui_glow": 28.4,
+   "egui_wgpu": 35.2,
+   "vs_glow": "B",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     35.3,
+     35.0,
+     35.1
+    ],
+    "egui-wgpu": [
+     35.2,
+     35.2,
+     35.5
+    ],
+    "egui": [
+     30.3,
+     28.4,
+     10.1
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "fps",
+   "label": "FPS 中位數",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 59.0,
+   "egui_wgpu": 60.5,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     60.5,
+     60.5
+    ],
+    "egui": [
+     59.0,
+     59.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "fpsMin",
+   "label": "FPS 最低",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 58.0,
+   "egui_wgpu": 59.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     59.0,
+     58.0,
+     59.0
+    ],
+    "egui": [
+     57.0,
+     58.0,
+     59.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 122.4,
+   "egui_glow": 144.5,
+   "egui_wgpu": 140.9,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     122.4,
+     125.0,
+     122.1
+    ],
+    "egui-wgpu": [
+     140.9,
+     141.2,
+     140.1
+    ],
+    "egui": [
+     142.8,
+     144.7,
+     144.5
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 169.6,
+   "egui_glow": 196.5,
+   "egui_wgpu": 192.9,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     169.6,
+     172.2,
+     169.2
+    ],
+    "egui-wgpu": [
+     192.9,
+     193.2,
+     192.0
+    ],
+    "egui": [
+     196.4,
+     198.5,
+     196.5
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 23.8,
+   "egui_glow": 24.5,
+   "egui_wgpu": 18.3,
+   "vs_glow": "tie",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     19.6,
+     23.8,
+     23.8
+    ],
+    "egui-wgpu": [
+     12.3,
+     18.3,
+     18.6
+    ],
+    "egui": [
+     20.5,
+     24.5,
+     26.4
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.3,
+   "egui_glow": 30.7,
+   "egui_wgpu": 31.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     31.3,
+     31.0,
+     31.9
+    ],
+    "egui-wgpu": [
+     31.0,
+     31.5,
+     31.0
+    ],
+    "egui": [
+     31.0,
+     30.1,
+     30.7
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.6,
+   "egui_glow": 35.0,
+   "egui_wgpu": 33.8,
+   "vs_glow": "tie",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     35.4,
+     35.6,
+     35.7
+    ],
+    "egui-wgpu": [
+     33.8,
+     34.9,
+     33.3
+    ],
+    "egui": [
+     36.3,
+     35.0,
+     34.8
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 367.8,
+   "egui_glow": 44.8,
+   "egui_wgpu": 36.9,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     436.8,
+     367.8,
+     307.9
+    ],
+    "egui-wgpu": [
+     37.2,
+     36.9,
+     34.6
+    ],
+    "egui": [
+     37.3,
+     44.8,
+     45.3
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "backlog_ms",
+   "label": "積壓（後 5 秒−前 5 秒延遲）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": -1.4,
+   "egui_glow": -0.2,
+   "egui_wgpu": -0.1,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     -1.2,
+     -1.6,
+     -1.4
+    ],
+    "egui-wgpu": [
+     -0.1,
+     -0.1,
+     -0.1
+    ],
+    "egui": [
+     -0.4,
+     1.5,
+     -0.2
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 31.6,
+   "egui_glow": 7.1,
+   "egui_wgpu": 26.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     32.5,
+     31.6,
+     31.3
+    ],
+    "egui-wgpu": [
+     26.5,
+     26.1,
+     26.6
+    ],
+    "egui": [
+     16.3,
+     7.1,
+     6.6
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "fps",
+   "label": "FPS 中位數",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui": [
+     60.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "fpsMin",
+   "label": "FPS 最低",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.0,
+   "egui_glow": 59.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     59.0,
+     60.0
+    ],
+    "egui": [
+     58.0,
+     59.0,
+     59.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 123.8,
+   "egui_glow": 142.9,
+   "egui_wgpu": 140.8,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     123.1,
+     123.8,
+     126.9
+    ],
+    "egui-wgpu": [
+     141.6,
+     140.7,
+     140.8
+    ],
+    "egui": [
+     142.5,
+     142.9,
+     142.9
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 171.0,
+   "egui_glow": 196.3,
+   "egui_wgpu": 192.8,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     170.4,
+     171.0,
+     174.1
+    ],
+    "egui-wgpu": [
+     193.5,
+     192.7,
+     192.8
+    ],
+    "egui": [
+     196.3,
+     196.5,
+     195.8
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 23.8,
+   "egui_glow": 26.4,
+   "egui_wgpu": 18.3,
+   "vs_glow": "A",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     18.2,
+     23.8,
+     23.8
+    ],
+    "egui-wgpu": [
+     12.4,
+     18.3,
+     18.6
+    ],
+    "egui": [
+     20.9,
+     26.4,
+     26.5
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "lat_p50",
+   "label": "延遲 p50（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.4,
+   "egui_glow": 31.0,
+   "egui_wgpu": 31.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     31.4,
+     30.9,
+     31.7
+    ],
+    "egui-wgpu": [
+     31.0,
+     30.7,
+     31.1
+    ],
+    "egui": [
+     31.0,
+     31.5,
+     30.6
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "lat_p99",
+   "label": "延遲 p99（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.3,
+   "egui_glow": 33.1,
+   "egui_wgpu": 33.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     35.0,
+     35.5,
+     35.3
+    ],
+    "egui-wgpu": [
+     33.8,
+     33.5,
+     33.5
+    ],
+    "egui": [
+     33.1,
+     33.5,
+     32.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "worst_p99",
+   "label": "最慢視窗 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35.3,
+   "egui_glow": 33.1,
+   "egui_wgpu": 33.5,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     35.0,
+     35.5,
+     35.3
+    ],
+    "egui-wgpu": [
+     33.8,
+     33.5,
+     33.5
+    ],
+    "egui": [
+     33.1,
+     33.5,
+     32.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "fps_min",
+   "label": "最慢視窗 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui": [
+     61.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "fps_mean",
+   "label": "平均 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 61.0,
+   "egui_wgpu": 61.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui": [
+     61.0,
+     61.0,
+     61.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 31.8,
+   "egui_glow": 5.5,
+   "egui_wgpu": 26.0,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     31.8,
+     31.7,
+     32.0
+    ],
+    "egui-wgpu": [
+     26.0,
+     26.0,
+     25.8
+    ],
+    "egui": [
+     5.5,
+     6.6,
+     5.2
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 122.5,
+   "egui_glow": 142.4,
+   "egui_wgpu": 141.1,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     122.5,
+     122.3,
+     123.6
+    ],
+    "egui-wgpu": [
+     141.1,
+     140.8,
+     141.1
+    ],
+    "egui": [
+     142.4,
+     144.5,
+     141.9
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 192.1,
+   "egui_glow": 223.0,
+   "egui_wgpu": 202.7,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     192.1,
+     191.9,
+     193.3
+    ],
+    "egui-wgpu": [
+     202.7,
+     202.4,
+     202.8
+    ],
+    "egui": [
+     223.0,
+     223.9,
+     222.6
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "multi-1w",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 34.4,
+   "egui_glow": 30.1,
+   "egui_wgpu": 20.7,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     29.6,
+     34.4,
+     34.4
+    ],
+    "egui-wgpu": [
+     16.0,
+     20.8,
+     20.7
+    ],
+    "egui": [
+     29.8,
+     30.1,
+     30.2
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "lat_p50",
+   "label": "延遲 p50（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 44.8,
+   "egui_glow": 17.6,
+   "egui_wgpu": 24.4,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     44.9,
+     44.8,
+     44.6
+    ],
+    "egui-wgpu": [
+     26.0,
+     22.6,
+     24.4
+    ],
+    "egui": [
+     17.6,
+     17.3,
+     17.7
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "lat_p99",
+   "label": "延遲 p99（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 49.6,
+   "egui_glow": 33.4,
+   "egui_wgpu": 33.6,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     49.5,
+     49.6,
+     49.6
+    ],
+    "egui-wgpu": [
+     33.6,
+     33.5,
+     33.6
+    ],
+    "egui": [
+     33.4,
+     33.5,
+     33.4
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "worst_p99",
+   "label": "最慢視窗 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 50.1,
+   "egui_glow": 38.2,
+   "egui_wgpu": 34.8,
+   "vs_glow": "B",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     50.1,
+     50.0,
+     50.5
+    ],
+    "egui-wgpu": [
+     34.8,
+     34.4,
+     35.4
+    ],
+    "egui": [
+     38.7,
+     37.7,
+     38.2
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0.0,
+   "egui_glow": 0.0,
+   "egui_wgpu": 0.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui-wgpu": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "egui": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "fps_min",
+   "label": "最慢視窗 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 60.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     60.0,
+     60.0,
+     60.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "fps_mean",
+   "label": "平均 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61.0,
+   "egui_glow": 60.0,
+   "egui_wgpu": 60.0,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     61.0,
+     61.0,
+     61.0
+    ],
+    "egui-wgpu": [
+     60.0,
+     60.0,
+     60.0
+    ],
+    "egui": [
+     60.0,
+     60.0,
+     60.0
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 33.2,
+   "egui_glow": 26.0,
+   "egui_wgpu": 44.1,
+   "vs_glow": "B",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     33.1,
+     33.2,
+     33.3
+    ],
+    "egui-wgpu": [
+     44.6,
+     42.7,
+     44.1
+    ],
+    "egui": [
+     26.0,
+     25.9,
+     26.0
+    ]
+   },
+   "kit_winner": "egui"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "rss_end_mb",
+   "label": "RSS（結束）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 137.5,
+   "egui_glow": 150.0,
+   "egui_wgpu": 147.5,
+   "vs_glow": "A",
+   "vs_wgpu": "A",
+   "runs": {
+    "gpui": [
+     137.6,
+     137.5,
+     136.7
+    ],
+    "egui-wgpu": [
+     149.9,
+     147.5,
+     147.4
+    ],
+    "egui": [
+     150.2,
+     150.0,
+     149.8
+    ]
+   },
+   "kit_winner": "gpui"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "footprint_mb",
+   "label": "實體記憶體（結束後）",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 211.0,
+   "egui_glow": 208.0,
+   "egui_wgpu": 215.9,
+   "vs_glow": "tie",
+   "vs_wgpu": "tie",
+   "runs": {
+    "gpui": [
+     215.6,
+     211.0,
+     210.2
+    ],
+    "egui-wgpu": [
+     217.6,
+     215.6,
+     215.9
+    ],
+    "egui": [
+     208.1,
+     208.0,
+     207.6
+    ]
+   },
+   "kit_winner": "tie"
+  },
+  {
+   "group": "multi-4w",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "gpu_util",
+   "label": "整機 GPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 37.8,
+   "egui_glow": 38.3,
+   "egui_wgpu": 32.3,
+   "vs_glow": "tie",
+   "vs_wgpu": "B",
+   "runs": {
+    "gpui": [
+     34.1,
+     37.8,
+     38.0
+    ],
+    "egui-wgpu": [
+     26.7,
+     32.3,
+     32.4
+    ],
+    "egui": [
+     38.3,
+     38.5,
+     38.3
+    ]
+   },
+   "kit_winner": "egui-wgpu"
+  }
+ ],
+ "windows": [
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "first_quote_ms",
+   "label": "啟動到第一筆報價",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 315.6,
+   "egui_glow": 191.9,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "first_frame_ms",
+   "label": "啟動到第一幀",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 295.2,
+   "egui_glow": 190.5,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "ws60_mb",
+   "label": "Working Set 60 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 74.1,
+   "egui_glow": 77.5,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "wsPrivate60_mb",
+   "label": "Working Set-Private 60 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 24.9,
+   "egui_glow": 38.4,
+   "vs_glow": "A"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "private60_mb",
+   "label": "Private Bytes 60 秒",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 93.4,
+   "egui_glow": 66.4,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "cpu_pct",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 13.3,
+   "egui_glow": 8,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 11.2,
+   "egui_glow": 2.2,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "gpuDedicated_mb",
+   "label": "GPU 專用記憶體",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 40.5,
+   "egui_glow": 17.7,
+   "vs_glow": "B"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 39.7,
+   "egui_glow": 40.1,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "main",
+   "title": "主視窗",
+   "metric": "threads",
+   "label": "執行緒",
+   "unit": "個",
+   "hib": false,
+   "gpui": 55,
+   "egui_glow": 12,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "cpu_tick_pct",
+   "label": "CPU 跳價",
+   "unit": "%",
+   "hib": false,
+   "gpui": 19.3,
+   "egui_glow": 10.5,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "cpu_scroll_pct",
+   "label": "CPU 捲動",
+   "unit": "%",
+   "hib": false,
+   "gpui": 20.3,
+   "egui_glow": 8.9,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "gpu3d_tick",
+   "label": "GPU 3D 跳價",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.6,
+   "egui_glow": 2.8,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "tick_fps",
+   "label": "FPS 跳價",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 45,
+   "egui_glow": 60,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "scroll_fps",
+   "label": "FPS 捲動",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 51.7,
+   "egui_glow": 60,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "scroll_jank",
+   "label": "捲動卡頓次數",
+   "unit": "次",
+   "hib": false,
+   "gpui": 70,
+   "egui_glow": 0,
+   "vs_glow": "B"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "ws_tick_mb",
+   "label": "Working Set 跳價末",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 78.4,
+   "egui_glow": 83.6,
+   "vs_glow": "A"
+  },
+  {
+   "group": "stress",
+   "title": "5 萬列報價表",
+   "metric": "tick_paint_ms",
+   "label": "表格重畫耗時 跳價",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 0.1,
+   "egui_glow": 0.2,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31,
+   "egui_glow": 31.1,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.9,
+   "egui_glow": 33.9,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 46.6,
+   "egui_glow": 46.4,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 20.8,
+   "egui_glow": 8.9,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.4,
+   "egui_glow": 3,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 80.4,
+   "egui_glow": 87.6,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s1k",
+   "title": "高頻進價 s1k",
+   "metric": "switch_p50",
+   "label": "點選切換 p50（egui 多數點擊沒對到，僅參考）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 29.8,
+   "egui_glow": 39.6,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31,
+   "egui_glow": 31.2,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.9,
+   "egui_glow": 33.9,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 47.9,
+   "egui_glow": 48.8,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 22.4,
+   "egui_glow": 10.8,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.3,
+   "egui_glow": 3.2,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.5,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 80.8,
+   "egui_glow": 87.6,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s10k",
+   "title": "高頻進價 s10k",
+   "metric": "switch_p50",
+   "label": "點選切換 p50（egui 多數點擊沒對到，僅參考）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 29.8,
+   "egui_glow": 38,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.3,
+   "egui_glow": 31.3,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 34,
+   "egui_glow": 33.9,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 45.9,
+   "egui_glow": 48.1,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 24.5,
+   "egui_glow": 12.4,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.3,
+   "egui_glow": 2.9,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 80.8,
+   "egui_glow": 87,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s50k",
+   "title": "高頻進價 s50k",
+   "metric": "switch_p50",
+   "label": "點選切換 p50（egui 多數點擊沒對到，僅參考）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.4,
+   "egui_glow": 38,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.5,
+   "egui_glow": 31.5,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 34.1,
+   "egui_glow": 33.9,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35,
+   "egui_glow": 48.4,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 25.2,
+   "egui_glow": 13.6,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.4,
+   "egui_glow": 3.1,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 60.5,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 80.6,
+   "egui_glow": 88,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-s100k",
+   "title": "高頻進價 s100k",
+   "metric": "switch_p50",
+   "label": "點選切換 p50（egui 多數點擊沒對到，僅參考）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 32,
+   "egui_glow": 33.1,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_p50",
+   "label": "延遲 p50",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31.1,
+   "egui_glow": 31.1,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_p99",
+   "label": "延遲 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.9,
+   "egui_glow": 33.9,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "lat_max",
+   "label": "延遲最大",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 35,
+   "egui_glow": 49.2,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 21.9,
+   "egui_glow": 10.4,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 7.2,
+   "egui_glow": 3,
+   "vs_glow": "B"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "fps",
+   "label": "FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 80.5,
+   "egui_glow": 87.5,
+   "vs_glow": "A"
+  },
+  {
+   "group": "ticks-burst",
+   "title": "高頻進價 burst",
+   "metric": "switch_p50",
+   "label": "點選切換 p50（egui 多數點擊沒對到，僅參考）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.1,
+   "egui_glow": 35.9,
+   "vs_glow": "A"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "lat_p50",
+   "label": "延遲 p50（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 31,
+   "egui_glow": 31,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "lat_p99",
+   "label": "延遲 p99（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.9,
+   "egui_glow": 33.8,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "worst_window_p99",
+   "label": "最慢視窗 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 33.9,
+   "egui_glow": 33.8,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "fps_min_window",
+   "label": "最慢視窗 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 61,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 25.4,
+   "egui_glow": 15.2,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 13.1,
+   "egui_glow": 2.6,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "gpuDedicated_mb",
+   "label": "GPU 專用記憶體",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 79.2,
+   "egui_glow": 32.2,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w1",
+   "title": "多視窗 ×1（每秒 1 萬筆）",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 86,
+   "egui_glow": 88.4,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "lat_p50",
+   "label": "延遲 p50（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 43,
+   "egui_glow": 21.8,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "lat_p99",
+   "label": "延遲 p99（全部視窗）",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 64.3,
+   "egui_glow": 33.7,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "worst_window_p99",
+   "label": "最慢視窗 p99",
+   "unit": "ms",
+   "hib": false,
+   "gpui": 67.1,
+   "egui_glow": 35.1,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "fps_min_window",
+   "label": "最慢視窗 FPS",
+   "unit": "fps",
+   "hib": true,
+   "gpui": 57,
+   "egui_glow": 60,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "loss",
+   "label": "遺失",
+   "unit": "筆",
+   "hib": false,
+   "gpui": 0,
+   "egui_glow": 0,
+   "vs_glow": "tie"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "cpu",
+   "label": "CPU",
+   "unit": "%",
+   "hib": false,
+   "gpui": 54.2,
+   "egui_glow": 25.3,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "gpu3d",
+   "label": "GPU 3D",
+   "unit": "%",
+   "hib": false,
+   "gpui": 19.6,
+   "egui_glow": 5.1,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "gpuDedicated_mb",
+   "label": "GPU 專用記憶體",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 161.1,
+   "egui_glow": 57.6,
+   "vs_glow": "B"
+  },
+  {
+   "group": "multi-w4",
+   "title": "多視窗 ×4（每秒 1 萬筆）",
+   "metric": "wsEnd",
+   "label": "Working Set 結束",
+   "unit": "MB",
+   "hib": false,
+   "gpui": 112.9,
+   "egui_glow": 90.4,
+   "vs_glow": "B"
+  }
+ ],
+ "windows_heavy_partial": {
+  "gpui": {
+   "setup": {
+    "rssMb": 83.75
+   },
+   "ticks": {
+    "fps": 59.95,
+    "avgPaintMs": 2.24,
+    "rssMb": 100.45
+   },
+   "crosshair": {
+    "fps": 59.9,
+    "avgPaintMs": 2.3,
+    "rssMb": 100.5
+   },
+   "pan": {
+    "fps": 60.0,
+    "avgPaintMs": 1.8,
+    "rssMb": 101.15
+   },
+   "drag": {
+    "fps": 59.95,
+    "avgPaintMs": 1.59,
+    "rssMb": 115.45
+   },
+   "_attempts": 6,
+   "_chart_css": [
+    [
+     750,
+     378
+    ],
+    [
+     1166,
+     505
+    ]
+   ]
+  },
+  "egui": {
+   "setup": {
+    "rssMb": 72.1
+   },
+   "ticks": {
+    "fps": 59.95,
+    "avgPaintMs": 1.63,
+    "rssMb": 78.0
+   },
+   "crosshair": {
+    "fps": 60.0,
+    "avgPaintMs": 1.71,
+    "rssMb": 78.7
+   },
+   "pan": {
+    "fps": 60.0,
+    "avgPaintMs": 1.32,
+    "rssMb": 79.3
+   },
+   "drag": {
+    "fps": 60.0,
+    "avgPaintMs": 1.08,
+    "rssMb": 78.05
+   },
+   "_attempts": 6,
+   "_chart_css": [
+    [
+     750,
+     378
+    ]
+   ]
+  }
+ },
+ "windows_failures": [
+  "heavy/gpui 第 1 次失敗：gpui: 等不到 cp:done",
+  "heavy/gpui 第 2 次失敗：gpui: 等不到 cp:done",
+  "heavy/egui 第 1 次失敗：egui: 等不到 cp:done",
+  "heavy/egui 第 2 次失敗：egui: 等不到 cp:done",
+  "heavy/gpui 第 1 次失敗：gpui: 等不到 cp:done",
+  "heavy/gpui 第 2 次失敗：gpui: 等不到 cp:done",
+  "heavy/egui 第 1 次失敗：egui: 等不到 cp:done",
+  "heavy/egui 第 2 次失敗：egui: 等不到 cp:done",
+  "heavy/gpui 第 1 次失敗：gpui: 等不到 cp:done",
+  "heavy/gpui 第 2 次失敗：gpui: 等不到 cp:done",
+  "heavy/egui 第 1 次失敗：egui: 等不到 cp:done",
+  "heavy/egui 第 2 次失敗：egui: 等不到 cp:done"
+ ]
+}

@@ -103,6 +103,30 @@ src/main.rs         ← Terminal 根 view：版面、分隔線、狀態列、資
    新分鐘才 append。換代號／週期／指標設定才 O(n) 重建一次。tick 只通知主圖層與即時層，
    畫線層只有在可見價格範圍改變時才重建（平移只位移）。每層包成一個 scene layer，讓 GPUI 每層只做一次 path 光柵批次。
 
+## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
+
+> Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；偵測到 Intel UHD 770 內顯和 GTX 1650 入門顯卡，實際由哪張繪圖待確認；2 個 1920×1200 螢幕、59 Hz）。
+> 每項 3 輪取中位數；差距 5% 以內算平手；FPS 兩邊都到螢幕上限算平手。完整數字與診斷：[docs/bench/real-hw/](docs/bench/real-hw/README.md)。
+
+### 結論先看
+
+| 項目 | Mac M4 | Windows i7-13700 |
+|---|---|---|
+| 單視窗報價延遲 p50／p99 | **平手**：GPUI 30.6–32.7／35.2–36.2 ms；egui 30.4–32.1／33.4–36.7 ms | **平手**：兩邊約 31／34 ms |
+| 重圖表 1000 條畫線、100 層 FPS | **平手**：三版都 60 | 壓測包逾時沒有正式數字；log 裡兩邊都約 60 |
+| 開啟到第一筆報價 | 🏆 **GPUI** 190.5 ms（egui 246–248） | 🏆 **egui** 192 ms（GPUI 316） |
+| 一般畫面記憶體 | 🏆 **GPUI** RSS 101 MB（egui 116–121） | 大致平手（Working Set 74 vs 77.5 MB） |
+| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
+| CPU（高頻報價） | 🏆 **egui OpenGL** 6–7%（GPUI 30–35%；egui wgpu 23–35%） | 🏆 **egui** 8.9–13.6%（GPUI 20.8–25.2%） |
+| GPU 使用率／GPU 記憶體 | 整機數字，只當參考 | 🏆 **egui**：GPUI 是 2.3–5 倍／2.3–2.8 倍 |
+| 4 個視窗 延遲 p50／p99 | 🏆 **egui** 17.6／33.4 ms（GPUI 44.8／49.6） | 🏆 **egui** 21.8／33.7 ms（GPUI 43／64.3，57–58 FPS） |
+| 5 萬列捲動 | 都到 60 FPS；卡頓 GPUI 2 次、egui 0 | 🏆 **egui** 60 FPS、0 次（GPUI 51.7 FPS、70 次） |
+
+- **和 Linux 沒顯卡的結果比**：GPUI 的 FPS 和單視窗延遲差距**在一般電腦上消失了**（Linux GPUI 延遲中位數 74–75 ms、重圖表約 21 FPS → 這裡約 31 ms、60 FPS）。但 **CPU／GPU 用量和多視窗**，egui 仍然明顯較好，Windows 上最明顯。
+- **選型建議改成「GPUI 有條件」**：GPUI 沒有做不到的事（60 FPS、0 掉筆、延遲一樣），但效率約差 2 倍、多視窗落後。先修我們自己程式的三項（多視窗晚一幀、報價表改自己畫、水平垂直線改矩形），再請 Tina 在同兩台重跑；如果多視窗和 Windows CPU 還是明顯落後，看盤核心就改用 egui。
+- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有），原因還在查。
+- 細節、框架限制 vs 可修項目、測試包本身的錯（Windows 重圖表逾時、Mac 摘要勝負標錯）：見 [docs/bench/real-hw/README.md](docs/bench/real-hw/README.md)。
+
 ## 效能數字（本機 box：8 核、無 GPU、Mesa lavapipe 軟體 Vulkan、Xvfb 1280×800，demo-ticks 行情；初版量測，完整對照見下一節）
 
 | 項目 | GPUI 版 | wry 版（同時段量測） |
