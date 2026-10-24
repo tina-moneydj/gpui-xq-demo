@@ -93,6 +93,10 @@ impl Tris {
     pub fn take(&mut self) -> Option<Path<Pixels>> {
         self.path.take()
     }
+
+    pub fn from_path(path: Path<Pixels>) -> Tris {
+        Tris { path: Some(path) }
+    }
 }
 
 /// 折線：NaN 斷開

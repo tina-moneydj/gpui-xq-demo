@@ -783,6 +783,16 @@ enum Stage {
     Warm(Instant),
     Run { mode: Mode, s0: Snap, steps: u64, base_right: f64 },
     Done,
+    /// XQ_ZTEST：第 case 個情境（seed＝case/4，模式＝Grouped／Seq／Paths／Seq 輪流），t＝開始時間，shown＝已印 READY
+    ZTest { case: u64, t: Instant, shown: bool },
+}
+
+/// 第 4 個再畫一次 Seq：同一模式畫兩次的差異＝這台的雜訊底線（應該是 0）
+const ZTEST_MODES: [drawings::DrawMode; 4] = [drawings::DrawMode::Grouped, drawings::DrawMode::Seq, drawings::DrawMode::Paths, drawings::DrawMode::Seq];
+const ZN: u64 = ZTEST_MODES.len() as u64;
+
+fn ztest_n() -> Option<u64> {
+    crate::plat::var("XQ_ZTEST").ok().and_then(|v| v.parse().ok())
 }
 
 struct StressCfg {
@@ -1082,6 +1092,44 @@ impl ChartView {
                     Stage::WaitQuote(t)
                 }
             }
+            Stage::Delay(t) if now.duration_since(t) >= Duration::from_millis(300) && ztest_n().is_some() => {
+                self.ztest_case(0, cx);
+                Stage::ZTest { case: 0, t: now, shown: false }
+            }
+            Stage::ZTest { case, t, shown } => {
+                let n = ztest_n().unwrap_or(0);
+                let el = now.duration_since(t);
+                if !shown && el >= Duration::from_millis(900) {
+                    let m = self.m.borrow();
+                    let (b, a) = m.pc.as_ref().map_or((Default::default(), Default::default()), |c| (c.below.stats, c.above.stats));
+                    eprintln!(
+                        "ZTEST|{{\"case\":{case},\"seed\":{},\"mode\":\"{}\",\"drawings\":{},\"layers\":{},\"selected\":{},\"elems\":{},\"groups\":{},\"paths\":{},\"pathBatches\":{},\"rebuildMs\":{:.2}}}",
+                        case / ZN,
+                        drawings::draw_mode().name(),
+                        m.drawings.len(),
+                        m.layers.len(),
+                        m.selected.map_or(-1, |k| k as i64),
+                        b.elems + a.elems,
+                        b.groups + a.groups,
+                        b.paths + a.paths,
+                        b.path_batches + a.path_batches,
+                        m.pc.as_ref().map_or(0.0, |c| (c.below.built_us + c.above.built_us) as f64 / 1000.0),
+                    );
+                    Stage::ZTest { case, t, shown: true }
+                } else if shown && el >= Duration::from_millis(2400) {
+                    let next = case + 1;
+                    if next >= n * ZN {
+                        eprintln!("ZTEST|done");
+                        drawings::set_draw_mode(ZTEST_MODES[0]);
+                        Stage::Done
+                    } else {
+                        self.ztest_case(next, cx);
+                        Stage::ZTest { case: next, t: now, shown: false }
+                    }
+                } else {
+                    Stage::ZTest { case, t, shown }
+                }
+            }
             Stage::Delay(t) if now.duration_since(t) >= Duration::from_millis(300) => {
                 let t_setup = Instant::now();
                 {
@@ -1209,6 +1257,7 @@ impl ChartView {
                     Stage::Run { mode, s0, steps: steps + 1, base_right }
                 }
             }
+            Stage::Done if ztest_n().is_some() => Stage::Done,
             Stage::Done => {
                 // 結束後繼續跳價（量 CPU 的腳本可以晚一點收），不再回報
                 let f = self.stress_step(Mode::Ticks, self.total_steps, 0.0);
@@ -1218,6 +1267,19 @@ impl ChartView {
         };
         self.stress = Some((cfg, next));
         cx.on_next_frame(window, |this, window, cx| this.stress_frame(window, cx));
+    }
+
+    fn ztest_case(&mut self, case: u64, cx: &mut Context<Self>) {
+        drawings::set_draw_mode(ZTEST_MODES[(case % ZN) as usize]);
+        {
+            let mut m = self.m.borrow_mut();
+            if case % ZN == 0 {
+                let (n, nl, sel) = crate::zstress::ztest_scene(&mut m, case / ZN);
+                eprintln!("ZTEST|{{\"scene\":{},\"drawings\":{n},\"layers\":{nl},\"selected\":{}}}", case / ZN, sel.map_or(-1, |k| k as i64));
+            }
+            m.drawings_changed();
+        }
+        self.refresh(ALL, cx);
     }
 
     fn begin_phase(&mut self, mode: Mode, cx: &mut Context<Self>) -> Stage {
