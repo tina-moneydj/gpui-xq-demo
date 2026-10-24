@@ -10,7 +10,7 @@
 | CPU | Intel Core i7-13700，16 核／24 執行緒 |
 | 記憶體 | 15.7 GB |
 | 系統 | Windows 11 Home 25H2（build 26200.9711） |
-| 顯示 | 偵測到 Intel UHD Graphics 770（內顯）和 NVIDIA GeForce GTX 1650（入門獨顯）；**螢幕模式 1920×1200@59Hz 掛在 GTX 1650**，Intel 那張沒有顯示模式。Tina 說是內顯，實際由哪張卡繪圖**待確認** |
+| 顯示 | **NVIDIA GeForce GTX 1650（入門獨立顯卡）負責繪圖**，螢幕 1920×1200@59Hz 接在它上面（Tina 已確認）；另有 Intel UHD Graphics 770 內顯，沒有使用 |
 | 螢幕 | 2 個 1920×1200，縮放 100%，59 Hz |
 | 電源 | 插電，「平衡」電源計畫 |
 | 版本 | GPUI 958bc22（windows-bench-ci，含 10-23 優化 4ec0a12）；egui edf20a9（windows-bench-ci）；CI 編譯 |
