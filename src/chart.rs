@@ -8,7 +8,8 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use gpui::{
     canvas, div, point, prelude::*, px, App, Bounds, ContentMask, Context, DispatchPhase, Entity, EventEmitter,
@@ -135,7 +136,7 @@ layer_render!(AboveLayer, paint_above, 4, false);
 /// - single（預設）：整層包一個 layer（同 order → 一批，但每條 path 各自合成一次）
 pub fn split_layers() -> bool {
     static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *V.get_or_init(|| std::env::var("XQ_LAYER_MODE").as_deref() == Ok("split"))
+    *V.get_or_init(|| crate::plat::var("XQ_LAYER_MODE").as_deref() == Ok("split"))
 }
 
 pub fn maybe_layer<R>(window: &mut Window, b: Bounds<Pixels>, f: impl FnOnce(&mut Window) -> R) -> R {
@@ -794,7 +795,7 @@ struct StressCfg {
 }
 
 fn env_ms(k: &str, d: u64) -> Duration {
-    Duration::from_millis(std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d))
+    Duration::from_millis(crate::plat::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d))
 }
 
 // ───────────────────────── ChartView ─────────────────────────
@@ -834,8 +835,8 @@ impl EventEmitter<ChartEvent> for ChartView {}
 
 impl ChartView {
     pub fn new(symbol: &str, name: &str, period: Period, cx: &mut Context<Self>) -> Self {
-        let stress_on = std::env::var_os("XQ_CHART_STRESS").is_some_and(|v| v != "0");
-        let persist = !stress_on && !std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0");
+        let stress_on = crate::plat::var_os("XQ_CHART_STRESS").is_some_and(|v| v != "0");
+        let persist = !stress_on && !crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0");
         let store = if persist { Store::load() } else { Store::default() };
         let m: M = Rc::new(RefCell::new(Model::new(symbol, name, period)));
         let plot = cx.new(|_| PlotLayer { m: m.clone() });
@@ -859,7 +860,7 @@ impl ChartView {
             let now = Instant::now();
             (
                 StressCfg {
-                    drawings: std::env::var("XQ_CHART_DRAWINGS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000),
+                    drawings: crate::plat::var("XQ_CHART_DRAWINGS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000),
                     layers: crate::zstress::env_layers(),
                     warm: env_ms("XQ_CHART_WARM_MS", 3000),
                     phase: env_ms("XQ_CHART_PHASE_MS", 10_000),

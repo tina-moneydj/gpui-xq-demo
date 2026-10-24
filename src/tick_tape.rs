@@ -75,7 +75,7 @@ impl TapeFeed {
     /// **在行情執行緒上**被 `bridge::merge` 呼叫，每個報價封包一次。
     /// 規則：只做 O(1)／筆的事、不配置記憶體、不碰任何 UI 物件、不做 I/O、不 log。
     pub fn on_quotes(&self, quotes: &[Quote]) {
-        let now = xq_feed::unix_us() / 1000;
+        let now = crate::plat::unix_us() / 1000;
         let mut s = self.0.lock(); // 鎖一次處理整包，不要每筆鎖一次
         let TapeShared { core, pending } = &mut *s; // 解構成兩個可變借用（不同欄位可同時借）
         for q in quotes {
@@ -141,12 +141,12 @@ impl TapeSettings {
 }
 
 fn settings_path() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("XQ_TAPE_STATE") {
+    if let Some(p) = crate::plat::var_os("XQ_TAPE_STATE") {
         return Some(PathBuf::from(p));
     }
-    let base = std::env::var_os("XDG_DATA_HOME")
+    let base = crate::plat::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
+        .or_else(|| crate::plat::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
     Some(base.join("gpui-xq-demo").join("tick_tape.json"))
 }
 
@@ -203,7 +203,7 @@ impl TickTape {
         // 壓測模式不讀也不寫設定（跟 store.rs 同規則），結果才可重現
         let persist = !["XQ_BENCH", "XQ_TICK_BENCH", "XQ_CHART_STRESS", "XQ_GROUP_STRESS"]
             .iter()
-            .any(|k| std::env::var_os(k).is_some_and(|v| v != "0"));
+            .any(|k| crate::plat::var_os(k).is_some_and(|v| v != "0"));
         if persist {
             // 【模式 E】讀檔也不在 UI 執行緒：先用預設值畫出來，讀完再更新
             let path = settings_path();

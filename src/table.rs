@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 use gpui::{
-    div, prelude::*, px, uniform_list, Context, EventEmitter, MouseButton, ScrollStrategy, SharedString,
-    UniformListScrollHandle, Window,
+    deferred, div, prelude::*, px, uniform_list, Context, Entity, EventEmitter, MouseButton, ScrollStrategy,
+    SharedString, UniformListScrollHandle, Window,
 };
 use xq_feed::Quote;
 
+use crate::search::{find_matches, SearchEvent, SearchInput};
 use crate::theme::*;
 
 pub fn row_h() -> f32 { xq_tokens::t().layout.table_row }
@@ -44,6 +45,10 @@ pub struct QuoteTable {
     pub paints: u64,
     pub paint_us: u64,
     pub cells: u64,
+    /// 股名／代號搜尋（IME 測試）：建議清單只在查詢字串改變時算一次
+    search: Option<Entity<SearchInput>>,
+    matches: Vec<usize>,
+    match_sel: usize,
 }
 
 impl EventEmitter<TableEvent> for QuoteTable {}
@@ -55,7 +60,40 @@ impl QuoteTable {
             .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0, changed_us: 0 })
             .collect();
         let index = rows.iter().enumerate().map(|(i, r)| (r.symbol.clone(), i)).collect();
-        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0 }
+        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0, search: None, matches: Vec::new(), match_sel: 0 }
+    }
+
+    /// 建立搜尋框並訂閱它的事件（QuoteTable::new 沒有 cx，所以另外呼叫）
+    pub fn attach_search(&mut self, cx: &mut Context<Self>) {
+        let input = cx.new(SearchInput::new);
+        cx.subscribe(&input, |this: &mut Self, input, ev: &SearchEvent, cx| match ev {
+            SearchEvent::Changed(q) => {
+                this.matches = find_matches(this.rows.iter().enumerate().map(|(i, r)| (i, r.symbol.as_ref(), r.name.as_ref())), q, 8);
+                this.match_sel = 0;
+                cx.notify();
+            }
+            SearchEvent::Move(d) => {
+                if !this.matches.is_empty() {
+                    let n = this.matches.len() as i32;
+                    this.match_sel = ((this.match_sel as i32 + d).rem_euclid(n)) as usize;
+                    cx.notify();
+                }
+            }
+            SearchEvent::Submit => {
+                if let Some(&ix) = this.matches.get(this.match_sel) {
+                    this.pick(ix, &input, cx);
+                }
+            }
+            SearchEvent::Cancel => input.update(cx, |i, cx| i.clear(cx)),
+        })
+        .detach();
+        self.search = Some(input);
+    }
+
+    fn pick(&mut self, ix: usize, input: &Entity<SearchInput>, cx: &mut Context<Self>) {
+        self.matches.clear();
+        input.update(cx, |i, cx| i.clear(cx));
+        self.select(ix, None, cx);
     }
 
     pub fn symbols(&self) -> Vec<String> {
@@ -73,7 +111,7 @@ impl QuoteTable {
     /// 只碰有變的列；有變才 notify。回傳變動列數。
     pub fn apply(&mut self, order: &[String], quotes: &HashMap<String, Quote>, cx: &mut Context<Self>) -> usize {
         let mut changed = 0;
-        let now = xq_feed::unix_us();
+        let now = crate::plat::unix_us();
         for sym in order {
             let Some(q) = quotes.get(sym) else { continue };
             let Some(&i) = self.index.get(sym.as_str()) else { continue };
@@ -186,7 +224,7 @@ impl QuoteTable {
     }
 
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」
         if range.len() > 1 {
             self.paints += 1;
@@ -273,6 +311,43 @@ impl Render for QuoteTable {
                     .border_b_1()
                     .border_color(border())
                     .child(div().flex().gap_2().child("報價").child(div().text_color(dim()).child(format!("{} 檔", fmt_int(count as i64)))))
+                    .children(self.search.clone().map(|input| {
+                        let matches = self.matches.clone();
+                        let sel = self.match_sel;
+                        let list = (!matches.is_empty()).then(|| {
+                            deferred(
+                                div()
+                                    .absolute()
+                                    .top(px(22.))
+                                    .left_0()
+                                    .w(px(220.))
+                                    .bg(header())
+                                    .border_1()
+                                    .border_color(accent())
+                                    .rounded_sm()
+                                    .shadow_md()
+                                    .children(matches.into_iter().enumerate().map(|(k, ix)| {
+                                        let r = &self.rows[ix];
+                                        let input = input.clone();
+                                        div()
+                                            .id(("sr", k))
+                                            .flex()
+                                            .gap_2()
+                                            .px_2()
+                                            .h(px(20.))
+                                            .items_center()
+                                            .cursor_pointer()
+                                            .when(k == sel, |d| d.bg(selected()))
+                                            .hover(|s| s.bg(selected()))
+                                            .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, _, cx| this.pick(ix, &input, cx)))
+                                            .child(div().w(px(56.)).font_family(mono_font()).child(r.symbol.clone()))
+                                            .child(r.name.clone())
+                                    })),
+                            )
+                            .with_priority(1)
+                        });
+                        div().relative().child(input).children(list)
+                    }))
                     .child(
                         div()
                             .id("stress")
