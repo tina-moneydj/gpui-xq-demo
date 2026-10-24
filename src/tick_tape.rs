@@ -35,6 +35,20 @@ pub const TAPE_CAP: usize = 5000;
 /// 背景佇列容量：UI 一幀（16 ms）內最多收幾筆；超過代表 UI 嚴重落後，擠掉最舊的並計數
 pub const PENDING_CAP: usize = 4096;
 const ROW_H: f32 = 20.0;
+/// 捲動位置離最上面超過這麼多像素，就算「正在看舊資料」，暫停跟隨
+const FOLLOW_EPS: f32 = 1.0;
+
+/// 新成交插在最上面時，該把捲動位置調到哪裡（純函式，好測）。
+/// `offset_y`：GPUI 的捲動位移，往下捲是負值；0 代表停在最上面（跟隨最新）。
+/// 停在最上面 → 不動（照常跟隨）；已經往下捲 → 再往下推 `added` 列，畫面內容不動。
+/// 推過頭不用管：uniform_list 排版時會夾在最大捲動範圍內。
+fn anchored_offset(offset_y: f32, added: usize, row_h: f32) -> f32 {
+    if offset_y >= -FOLLOW_EPS || added == 0 {
+        offset_y
+    } else {
+        offset_y - added as f32 * row_h
+    }
+}
 const COLS: [(&str, f32); 4] = [("時間", 96.0), ("成交", 72.0), ("單量", 64.0), ("", 28.0)];
 
 // ───────────────── 【模式 A】背景執行緒 → UI ─────────────────
@@ -233,15 +247,33 @@ impl TickTape {
         let big_qty = self.settings.big_qty;
         // closure 只借用 self.all / self.big 兩個欄位，和 self.spare 不衝突（Rust 2021 分欄位捕獲）
         let (all, big) = (&mut self.all, &mut self.big);
+        let mut big_added = 0usize;
         self.spare.drain_oldest_first(|t| {
             all.push(t);
             if t.qty >= big_qty {
                 big.push(t);
+                big_added += 1;
             }
         });
+        // 捲動時暫停跟隨：使用者往下捲去看舊成交時，新成交插在最上面（index 0），
+        // 把捲動位置往下推同樣的列數，畫面上的那幾筆就不會被推走。停在最上面時照常跟隨最新。
+        let added = if self.settings.big_only { big_added } else { n };
+        {
+            let state = self.scroll.0.borrow();
+            let off = state.base_handle.offset();
+            let new_y = anchored_offset(f32::from(off.y), added, ROW_H);
+            if new_y != f32::from(off.y) {
+                state.base_handle.set_offset(gpui::point(off.x, px(new_y)));
+            }
+        }
         self.applied += n as u64;
         cx.notify();
         n
+    }
+
+    /// 使用者是否離開最上面（正在看舊成交）。footer 顯示「已暫停跟隨」用。
+    fn following_paused(&self) -> bool {
+        f32::from(self.scroll.0.borrow().base_handle.offset().y) < -FOLLOW_EPS
     }
 
     pub fn set_symbol(&mut self, symbol: &str, cx: &mut Context<Self>) {
@@ -459,7 +491,13 @@ impl Render for TickTape {
                     .items_center()
                     .text_size(px(10.))
                     .text_color(dim())
-                    .child(if focused { "b 只看大單 · [ ] 門檻 · Home 回最新" } else { "點一下面板啟用快捷鍵" }),
+                    .child(if self.following_paused() {
+                        "已暫停跟隨最新（正在看舊成交）· Home 回最新"
+                    } else if focused {
+                        "b 只看大單 · [ ] 門檻 · Home 回最新"
+                    } else {
+                        "點一下面板啟用快捷鍵"
+                    }),
             )
     }
 }
@@ -467,6 +505,17 @@ impl Render for TickTape {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scroll_anchor_follows_at_top_and_holds_when_scrolled() {
+        // 停在最上面：照常跟隨，新成交直接出現在頂端
+        assert_eq!(anchored_offset(0.0, 5, ROW_H), 0.0);
+        assert_eq!(anchored_offset(-0.5, 5, ROW_H), -0.5);
+        // 往下捲了 3 列：進來 5 筆 → 再往下推 5 列，看到的還是同一批舊成交
+        assert_eq!(anchored_offset(-60.0, 5, ROW_H), -160.0);
+        // 沒有新成交（例如只看大單時進來的都是小單）：不動
+        assert_eq!(anchored_offset(-60.0, 0, ROW_H), -60.0);
+    }
 
     #[test]
     fn big_qty_steps_clamp_at_both_ends() {
