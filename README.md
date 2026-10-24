@@ -123,7 +123,7 @@ CPU 端每 frame 的工作（套用＋組 scene）不到 1 ms。
 > 程式在 `mobile-android` 分支的 `mobile/` 資料夾。原始數據在 [`docs/bench/mobile/2026-10-23/`](docs/bench/mobile/2026-10-23/)（`summary.md` 是中位數表，`results.jsonl` 是每一輪原始值）。
 
 > **2026-10-24 更新（GPUI）**：
-> - 第 3 輪「畫面停住」原因找到並修好：gpui-mobile 只在 app 有輸入焦點時才畫，焦點被系統對話框／SystemUI 重啟搶走又沒還回來，就一直不畫。改成「看得到就畫」後，同樣的觸發方式修補前 6 輪凍住 2 次、修補後 4 輪 0 次。
+> - 第 3 輪「畫面停住」原因找到並修好：gpui-mobile 只在 app 有輸入焦點時才畫，焦點被系統對話框／SystemUI 重啟搶走又沒還回來，就一直不畫。改成「看得到就畫」後，同樣的觸發方式修補前 6 輪凍住 2 次、修補後 4 輪 0 次；固定觸發（系統面板蓋住 app）修補前 3／3 輪停畫、修補後照畫。
 > - 系統字型改 mmap：PSS 報價表 **91.6 → 57.6 MB**、走勢圖 **93.6 → 61.4 MB**（同一 APK A/B，各 3 輪中位數），和 egui 同一級。下表的 GPUI 記憶體是修補前的數字。
 > - 詳見 [`docs/bench/mobile/2026-10-24/`](docs/bench/mobile/2026-10-24/README.md)。
 

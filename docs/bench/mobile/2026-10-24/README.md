@@ -38,9 +38,21 @@
 - 修補後 4 輪砍 SystemUI：3 輪是砍完後系統跳回鎖定畫面，app 被系統收到背景（`Stop`、surface 被收走），本來就不用畫，這是正確行為；另 1 輪是 app 一啟動就被鎖定畫面蓋住，90 秒後回到前景就繼續畫（`canDraw=true`）。
 - 修補前 6 輪裡另外 4 輪：2 輪沒凍住、1 輪鎖定畫面（同上，不算）、1 輪模擬器太慢沒啟動完。
 - 這個觸發方式是隨機的（要剛好焦點沒還回來），所以次數不多；但修補前凍住時的狀態每次都一樣，原因很明確。
-- 另外做了「開一個系統對話框蓋在 app 上 25 秒」的固定觸發，結果見下面「對話框測試」。
+- 另外做了「開一個系統面板蓋在 app 上」的固定觸發，每次都會發生，結果見下面「對話框測試」。
 
-（對話框測試進行中，結果補在這裡）
+### 對話框測試（固定觸發，每次都會發生）
+
+在 app 上面開系統設定的「網際網路」半透明面板（app 收到 `Pause`、失焦，但後面還看得到），看面板開著那段時間 GPUI 有沒有畫。
+面板在這台模擬器上只開 2～19 秒就自己關掉，所以只看「`Pause` 到 `Resume`」那一段（`dialog/window-analysis.txt`）。
+
+| | 面板開著時有沒有畫 | 輪數 |
+|---|---|---|
+| 修補前 | **0 幀**，每一秒 `canDraw=false`（開 4.9／4.7／17.2 秒） | 3／3 輪都停畫 |
+| 修補後 | **照畫**：17.5 秒內 31 幀、2 秒內 5 幀，`canDraw=true` | 2／2 輪照畫（第 3 輪面板只開 2.2 秒，取樣不夠，不算） |
+
+修補前，焦點一回來就恢復；如果焦點一直沒回來（上面砍 SystemUI 的情況），就會一直停住，也就是第 3 輪看到的現象。
+
+註：原本也試過「拉下通知欄」，但這台模擬器上通知欄沒有搶走焦點，修補前後都照畫，分辨不出來，所以不採用（`freeze-ab/shade-base-not-discriminating.jsonl`）。
 
 ### 修補內容（`mobile/vendor/gpui-mobile`，詳見 `PATCHES.md`）
 - 畫不畫改看「看得到＋有 surface」，不看輸入焦點。
@@ -78,5 +90,6 @@
 - `mem/`：記憶體 A/B 原始值（`mem.jsonl`）、兩種模式的 dumpsys 分項（通知欄開著的那次，只拿來看分項）、截圖。
 - `freeze-before/`：修補前的凍結紀錄（PACER、焦點事件、視窗／焦點狀態、執行緒）。
 - `freeze-ab/`：砍 SystemUI 的修補前後各輪紀錄（只留 gpui／xq 的 log 行）。
-- 腳本：`scripts/mobile/freeze-repro.py`、`mem-ab.py`、`focus-dialog.py`。
+- `dialog/`：系統面板測試的修補前後各輪紀錄與分析。
+- 腳本：`scripts/mobile/freeze-repro.py`、`mem-ab.py`、`focus-dialog.py`、`focus-dialog-analyze.py`。
 - 測試環境：Android 模擬器（x86_64，API 35），沒有 GPU、沒有 KVM，純軟體模擬；行情用 box 上的 `WryFeedHost --demo-ticks`。
