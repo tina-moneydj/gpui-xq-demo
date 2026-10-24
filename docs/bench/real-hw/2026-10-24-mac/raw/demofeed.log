@@ -1,0 +1,168 @@
+==== feed 2026-10-23T20:13:43
+   0.276 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.321 [xq-demofeed] client connected #1
+   0.427 [xq-demofeed] client #1 done None
+   1.982 [xq-demofeed] client connected #2
+   1.982 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:14:27
+   0.012 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.110 [xq-demofeed] client connected #1
+   0.215 [xq-demofeed] client #1 done None
+   1.275 [xq-demofeed] client connected #2
+   1.275 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:15:36
+   0.011 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.112 [xq-demofeed] client connected #1
+   0.214 [xq-demofeed] client #1 done None
+   1.280 [xq-demofeed] client connected #2
+   1.280 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:21:37
+   0.015 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.117 [xq-demofeed] client connected #1
+   0.220 [xq-demofeed] client #1 done None
+   2.299 [xq-demofeed] client connected #2
+   2.299 [xq-demofeed] subscribe n=33 chart=-
+  61.841 [xq-demofeed] client #2 done None
+==== feed 2026-10-23T20:22:21
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.107 [xq-demofeed] client connected #1
+   0.218 [xq-demofeed] client #1 done None
+   1.258 [xq-demofeed] client connected #2
+   1.258 [xq-demofeed] subscribe n=33 chart=-
+  43.374 [xq-demofeed] client #2 done None
+==== feed 2026-10-23T20:23:30
+   0.008 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.112 [xq-demofeed] client connected #1
+   0.223 [xq-demofeed] client #1 done None
+   1.255 [xq-demofeed] client connected #2
+   1.255 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:29:30
+   0.015 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.119 [xq-demofeed] client connected #1
+   0.229 [xq-demofeed] client #1 done None
+   1.290 [xq-demofeed] client connected #2
+   1.290 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:30:14
+   0.009 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.108 [xq-demofeed] client connected #1
+   0.218 [xq-demofeed] client #1 done None
+   1.268 [xq-demofeed] client connected #2
+   1.268 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:31:23
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.112 [xq-demofeed] client connected #1
+   0.222 [xq-demofeed] client #1 done None
+   1.274 [xq-demofeed] client connected #2
+   1.274 [xq-demofeed] subscribe n=33 chart=-
+  68.542 [xq-demofeed] client #2 done None
+==== feed 2026-10-23T20:37:23
+   0.007 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.114 [xq-demofeed] client connected #1
+   0.225 [xq-demofeed] client #1 done None
+   1.293 [xq-demofeed] client connected #2
+   1.345 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:38:07
+   0.008 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.116 [xq-demofeed] client connected #1
+   0.116 [xq-demofeed] client #1 done None
+   1.262 [xq-demofeed] client connected #2
+   1.262 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:39:16
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.117 [xq-demofeed] client connected #1
+   0.117 [xq-demofeed] client #1 done None
+   1.275 [xq-demofeed] client connected #2
+   1.275 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:45:16
+   0.014 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.117 [xq-demofeed] client connected #1
+   0.220 [xq-demofeed] client #1 done None
+   1.291 [xq-demofeed] client connected #2
+   1.343 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:46:00
+   0.008 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.111 [xq-demofeed] client connected #1
+   0.221 [xq-demofeed] client #1 done None
+   1.250 [xq-demofeed] client connected #2
+   1.251 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:47:09
+   0.009 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.116 [xq-demofeed] client connected #1
+   0.218 [xq-demofeed] client #1 done None
+   1.276 [xq-demofeed] client connected #2
+   1.276 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:53:09
+   0.016 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.120 [xq-demofeed] client connected #1
+   0.120 [xq-demofeed] client #1 done None
+   1.286 [xq-demofeed] client connected #2
+   1.286 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:53:53
+   0.012 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.116 [xq-demofeed] client connected #1
+   0.117 [xq-demofeed] client #1 done None
+   1.272 [xq-demofeed] client connected #2
+   1.272 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T20:55:02
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.118 [xq-demofeed] client connected #1
+   0.118 [xq-demofeed] client #1 done None
+   1.264 [xq-demofeed] client connected #2
+   1.264 [xq-demofeed] subscribe n=33 chart=-
+  68.516 [xq-demofeed] client #2 done None
+==== feed 2026-10-23T21:01:02
+   0.008 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.115 [xq-demofeed] client connected #1
+   0.217 [xq-demofeed] client #1 done None
+   1.291 [xq-demofeed] client connected #2
+   1.343 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:01:46
+   0.011 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.112 [xq-demofeed] client connected #1
+   0.223 [xq-demofeed] client #1 done None
+   1.270 [xq-demofeed] client connected #2
+   1.270 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:02:55
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.110 [xq-demofeed] client connected #1
+   0.220 [xq-demofeed] client #1 done None
+   1.273 [xq-demofeed] client connected #2
+   1.273 [xq-demofeed] subscribe n=33 chart=-
+  68.552 [xq-demofeed] client #2 done None
+==== feed 2026-10-23T21:08:55
+   0.015 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.120 [xq-demofeed] client connected #1
+   0.227 [xq-demofeed] client #1 done None
+   1.291 [xq-demofeed] client connected #2
+   1.292 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:09:39
+   0.010 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.117 [xq-demofeed] client connected #1
+   0.117 [xq-demofeed] client #1 done None
+   1.276 [xq-demofeed] client connected #2
+   1.276 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:10:48
+   0.009 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.110 [xq-demofeed] client connected #1
+   0.220 [xq-demofeed] client #1 done None
+   1.261 [xq-demofeed] client connected #2
+   1.261 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:16:48
+   0.014 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.111 [xq-demofeed] client connected #1
+   0.220 [xq-demofeed] client #1 done None
+   1.277 [xq-demofeed] client connected #2
+   1.277 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:17:32
+   0.008 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.106 [xq-demofeed] client connected #1
+   0.106 [xq-demofeed] client #1 done None
+   1.288 [xq-demofeed] client connected #2
+   1.288 [xq-demofeed] subscribe n=33 chart=-
+==== feed 2026-10-23T21:18:41
+   0.011 [xq-demofeed] listening 127.0.0.1:47631 interval=25ms  *** 合成行情（路徑測試用），不是真實行情 ***
+   0.115 [xq-demofeed] client connected #1
+   0.217 [xq-demofeed] client #1 done None
+   1.279 [xq-demofeed] client connected #2
+   1.279 [xq-demofeed] subscribe n=33 chart=-
+  68.496 [xq-demofeed] client #2 done None

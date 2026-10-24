@@ -31,7 +31,7 @@ pub struct Store {
 }
 
 pub fn path() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("XQ_GPUI_STATE") {
+    if let Some(p) = crate::plat::var_os("XQ_GPUI_STATE") {
         return Some(PathBuf::from(p));
     }
     let base = crate::data_dir()?;

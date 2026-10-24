@@ -8,7 +8,6 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
@@ -50,7 +49,7 @@ pub struct FeedBridge {
     pub inbox: Arc<Mutex<Inbox>>,
     pending: Arc<AtomicBool>,
     pub counters: Arc<Counters>,
-    cmd: Sender<Subscribe>,
+    cmd: crate::plat::FeedTx,
     last_sub: Option<Subscribe>,
 }
 
@@ -61,16 +60,15 @@ impl FeedBridge {
         let pending = Arc::new(AtomicBool::new(false));
         let counters = Arc::new(Counters { frames: AtomicU64::new(0), quote_rows: AtomicU64::new(0) });
         let (wake_tx, wake_rx) = unbounded::<()>();
-        let (cmd_tx, cmd_rx) = std::sync::mpsc::channel();
-        {
+        let cmd_tx = {
             let inbox = inbox.clone();
             let pending = pending.clone();
             let counters = counters.clone();
-            xq_feed::spawn_client(xq_feed::feed_addr(), cmd_rx, move |ev| {
+            crate::plat::spawn_feed(move |ev| {
                 merge(&inbox, &counters, tape.as_ref(), ev);
                 wake(&pending, &wake_tx);
-            });
-        }
+            })
+        };
         (FeedBridge { inbox, pending, counters, cmd: cmd_tx, last_sub: None }, wake_rx)
     }
 
@@ -90,7 +88,7 @@ impl FeedBridge {
             return;
         }
         self.last_sub = Some(sub.clone());
-        let _ = self.cmd.send(sub);
+        self.cmd.send(sub);
     }
 }
 

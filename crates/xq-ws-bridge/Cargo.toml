@@ -1,0 +1,11 @@
+[package]
+name = "xq-ws-bridge"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "瀏覽器（wasm）版用：把 WryFeedHost／xq-tickgen 的 TCP 行情（127.0.0.1:47631）原封不動轉成 WebSocket（ws://127.0.0.1:47632）。不解碼、不合併。"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "macros", "fs"] }
+tokio-tungstenite = "0.26"
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }

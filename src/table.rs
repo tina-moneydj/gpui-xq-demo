@@ -5,14 +5,15 @@ use std::collections::HashMap;
 use std::ops::Range;
 
 use gpui::{
-    div, prelude::*, px, uniform_list, Context, EventEmitter, MouseButton, ScrollStrategy, SharedString,
-    UniformListScrollHandle, Window,
+    deferred, div, prelude::*, px, uniform_list, Context, Entity, EventEmitter, MouseButton, ScrollStrategy,
+    SharedString, UniformListScrollHandle, Window,
 };
 use xq_feed::Quote;
 
+use crate::search::{find_matches, SearchEvent, SearchInput};
 use crate::theme::*;
 
-pub const ROW_H: f32 = 22.0;
+pub fn row_h() -> f32 { xq_tokens::t().layout.table_row }
 const COLS: [(&str, f32); 6] = [("代號", 58.0), ("名稱", 92.0), ("成交", 76.0), ("漲跌", 70.0), ("幅度", 64.0), ("總量", 92.0)];
 pub const STRESS_ROWS: usize = 50_000;
 
@@ -44,6 +45,10 @@ pub struct QuoteTable {
     pub paints: u64,
     pub paint_us: u64,
     pub cells: u64,
+    /// 股名／代號搜尋（IME 測試）：建議清單只在查詢字串改變時算一次
+    search: Option<Entity<SearchInput>>,
+    matches: Vec<usize>,
+    match_sel: usize,
 }
 
 impl EventEmitter<TableEvent> for QuoteTable {}
@@ -55,7 +60,40 @@ impl QuoteTable {
             .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0, changed_us: 0 })
             .collect();
         let index = rows.iter().enumerate().map(|(i, r)| (r.symbol.clone(), i)).collect();
-        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0 }
+        QuoteTable { real_len: rows.len(), rows, index, selected: 0, scroll: UniformListScrollHandle::new(), stress: false, paints: 0, paint_us: 0, cells: 0, search: None, matches: Vec::new(), match_sel: 0 }
+    }
+
+    /// 建立搜尋框並訂閱它的事件（QuoteTable::new 沒有 cx，所以另外呼叫）
+    pub fn attach_search(&mut self, cx: &mut Context<Self>) {
+        let input = cx.new(SearchInput::new);
+        cx.subscribe(&input, |this: &mut Self, input, ev: &SearchEvent, cx| match ev {
+            SearchEvent::Changed(q) => {
+                this.matches = find_matches(this.rows.iter().enumerate().map(|(i, r)| (i, r.symbol.as_ref(), r.name.as_ref())), q, 8);
+                this.match_sel = 0;
+                cx.notify();
+            }
+            SearchEvent::Move(d) => {
+                if !this.matches.is_empty() {
+                    let n = this.matches.len() as i32;
+                    this.match_sel = ((this.match_sel as i32 + d).rem_euclid(n)) as usize;
+                    cx.notify();
+                }
+            }
+            SearchEvent::Submit => {
+                if let Some(&ix) = this.matches.get(this.match_sel) {
+                    this.pick(ix, &input, cx);
+                }
+            }
+            SearchEvent::Cancel => input.update(cx, |i, cx| i.clear(cx)),
+        })
+        .detach();
+        self.search = Some(input);
+    }
+
+    fn pick(&mut self, ix: usize, input: &Entity<SearchInput>, cx: &mut Context<Self>) {
+        self.matches.clear();
+        input.update(cx, |i, cx| i.clear(cx));
+        self.select(ix, None, cx);
     }
 
     pub fn symbols(&self) -> Vec<String> {
@@ -73,7 +111,7 @@ impl QuoteTable {
     /// 只碰有變的列；有變才 notify。回傳變動列數。
     pub fn apply(&mut self, order: &[String], quotes: &HashMap<String, Quote>, cx: &mut Context<Self>) -> usize {
         let mut changed = 0;
-        let now = xq_feed::unix_us();
+        let now = crate::plat::unix_us();
         for sym in order {
             let Some(q) = quotes.get(sym) else { continue };
             let Some(&i) = self.index.get(sym.as_str()) else { continue };
@@ -185,8 +223,32 @@ impl QuoteTable {
         cx.notify();
     }
 
+    /// 搜尋框（手機版）：代號開頭或名稱包含，最多 max 筆，回傳（代號, 名稱）
+    #[allow(dead_code)]
+    pub fn search(&self, q: &str, max: usize) -> Vec<(SharedString, SharedString)> {
+        let q = q.trim();
+        if q.is_empty() {
+            return Vec::new();
+        }
+        let ql = q.to_lowercase();
+        self.rows
+            .iter()
+            .filter(|r| r.symbol.to_lowercase().starts_with(&ql) || r.name.contains(q))
+            .take(max)
+            .map(|r| (r.symbol.clone(), r.name.clone()))
+            .collect()
+    }
+
+    /// 直接選某個代號（搜尋結果點選用）；會發 Select 事件
+    #[allow(dead_code)]
+    pub fn select_symbol(&mut self, symbol: &str, cx: &mut Context<Self>) {
+        if let Some(&ix) = self.index.get(symbol) {
+            self.select(ix, None, cx);
+        }
+    }
+
     fn render_rows(&mut self, range: Range<usize>, cx: &mut Context<Self>) -> Vec<gpui::AnyElement> {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         // uniform_list 會先用 0..1 量第一列高度，那次不算一次「可見列更新」
         if range.len() > 1 {
             self.paints += 1;
@@ -208,8 +270,8 @@ impl QuoteTable {
                 ("--".into(), "--".into(), "--".into(), "--".into())
             };
             let tick_bg = match r.tick {
-                1 => Some(gpui::rgba(0xff4d4f22)),
-                -1 => Some(gpui::rgba(0x22c55e22)),
+                1 => Some(crate::theme::rgba_tok(tk().market.up_flash)),
+                -1 => Some(crate::theme::rgba_tok(tk().market.down_flash)),
                 _ => None,
             };
             let mut price_cell = cell(COLS[2].1, true).text_color(color).child(price);
@@ -222,7 +284,7 @@ impl QuoteTable {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .h(px(ROW_H))
+                    .h(px(row_h()))
                     .w_full()
                     .when(ix == self.selected, |d| d.bg(selected()))
                     .when(ix != self.selected, |d| d.hover(|s| s.bg(header())))
@@ -242,12 +304,12 @@ impl QuoteTable {
 }
 
 fn rgb_vol() -> gpui::Rgba {
-    gpui::rgb(0xf0c674)
+    gpui::rgb(tk().market.volume)
 }
 
 fn cell(w: f32, right: bool) -> gpui::Div {
     let d = div().w(px(w)).px_1().overflow_hidden().whitespace_nowrap();
-    if right { d.flex().justify_end().font_family(MONO_FONT) } else { d }
+    if right { d.flex().justify_end().font_family(mono_font()) } else { d }
 }
 
 impl Render for QuoteTable {
@@ -259,7 +321,7 @@ impl Render for QuoteTable {
             .flex_col()
             .size_full()
             .bg(panel())
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
@@ -267,17 +329,54 @@ impl Render for QuoteTable {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .h(px(26.))
+                    .h(px(tk().layout.table_header))
                     .px_2()
                     .bg(header())
                     .border_b_1()
                     .border_color(border())
                     .child(div().flex().gap_2().child("報價").child(div().text_color(dim()).child(format!("{} 檔", fmt_int(count as i64)))))
+                    .children(self.search.clone().map(|input| {
+                        let matches = self.matches.clone();
+                        let sel = self.match_sel;
+                        let list = (!matches.is_empty()).then(|| {
+                            deferred(
+                                div()
+                                    .absolute()
+                                    .top(px(22.))
+                                    .left_0()
+                                    .w(px(220.))
+                                    .bg(header())
+                                    .border_1()
+                                    .border_color(accent())
+                                    .rounded_sm()
+                                    .shadow_md()
+                                    .children(matches.into_iter().enumerate().map(|(k, ix)| {
+                                        let r = &self.rows[ix];
+                                        let input = input.clone();
+                                        div()
+                                            .id(("sr", k))
+                                            .flex()
+                                            .gap_2()
+                                            .px_2()
+                                            .h(px(20.))
+                                            .items_center()
+                                            .cursor_pointer()
+                                            .when(k == sel, |d| d.bg(selected()))
+                                            .hover(|s| s.bg(selected()))
+                                            .on_mouse_down(MouseButton::Left, cx.listener(move |this, _, _, cx| this.pick(ix, &input, cx)))
+                                            .child(div().w(px(56.)).font_family(mono_font()).child(r.symbol.clone()))
+                                            .child(r.name.clone())
+                                    })),
+                            )
+                            .with_priority(1)
+                        });
+                        div().relative().child(input).children(list)
+                    }))
                     .child(
                         div()
                             .id("stress")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if stress { accent() } else { border() })
@@ -291,7 +390,7 @@ impl Render for QuoteTable {
                 div()
                     .flex()
                     .flex_row()
-                    .h(px(22.))
+                    .h(px(tk().layout.table_col_header))
                     .items_center()
                     .text_color(dim())
                     .border_b_1()

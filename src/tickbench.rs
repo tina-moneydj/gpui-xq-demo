@@ -13,7 +13,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use xq_feed::{unix_us, Stamp};
+use crate::plat::unix_us;
+use xq_feed::Stamp;
 
 #[derive(Default)]
 pub struct TickBench {
@@ -38,7 +39,7 @@ pub struct TickBench {
 
 impl TickBench {
     pub fn for_window(win: usize) -> Self {
-        let next_frame_probe = std::env::var("XQ_PROBE").as_deref() == Ok("nextframe");
+        let next_frame_probe = crate::plat::var("XQ_PROBE").as_deref() == Ok("nextframe");
         TickBench { win, next_frame_probe, ..Default::default() }
     }
 

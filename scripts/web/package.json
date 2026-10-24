@@ -1,0 +1,6 @@
+{
+  "name": "xq-web-bench",
+  "private": true,
+  "description": "網頁版（wasm）壓測：puppeteer-core 驅動系統 Chrome",
+  "dependencies": { "puppeteer-core": "^23" }
+}

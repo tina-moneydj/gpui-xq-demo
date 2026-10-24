@@ -1,0 +1,88 @@
+START 2026-10-23 01:53:06 +0800
+01:53:06 run=1 egui ticks:s1k load=8.71 7.88 7.10
+{"app":"egui-web","mode":"ticks:s1k","run":1,"ok":true,"load":{"first_frame_s":0.288748545,"first_quote_s":0.4146504980000001,"wasm_start_s":0.12181362900000003,"bytes_transferred":7563480},"cpu":297.7,"ticks":{"p50":41.1,"p99":65.7,"loss":0,"fps":47}}
+01:53:50 run=1 gpui ticks:s1k load=8.33 7.85 7.13
+{"app":"gpui-web","mode":"ticks:s1k","run":1,"ok":true,"load":{"first_frame_s":0.6024880040000001,"first_quote_s":0.855821928,"wasm_start_s":0.203710293,"bytes_transferred":13070599},"cpu":372.3,"ticks":{"p50":68.3,"p99":104,"loss":0,"fps":32}}
+01:54:34 run=1 egui ticks:s10k load=8.62 8.04 7.23
+{"app":"egui-web","mode":"ticks:s10k","run":1,"ok":true,"load":{"first_frame_s":0.4779393459999999,"first_quote_s":0.5147599840000001,"wasm_start_s":0.20532533900000005,"bytes_transferred":7563480},"cpu":302.5,"ticks":{"p50":42.3,"p99":71.2,"loss":0,"fps":46}}
+01:55:18 run=1 gpui ticks:s10k load=7.99 8.01 7.26
+{"app":"gpui-web","mode":"ticks:s10k","run":1,"ok":true,"load":{"first_frame_s":0.6652048480000001,"first_quote_s":0.9382249420000002,"wasm_start_s":0.29740004900000017,"bytes_transferred":13070599},"cpu":449,"ticks":{"p50":48.5,"p99":77.2,"loss":0,"fps":40}}
+01:56:02 run=1 egui ticks:s50k load=6.54 7.62 7.16
+{"app":"egui-web","mode":"ticks:s50k","run":1,"ok":true,"load":{"first_frame_s":0.33259066800000003,"first_quote_s":0.3867572939999999,"wasm_start_s":0.13727178399999995,"bytes_transferred":7563480},"cpu":355.9,"ticks":{"p50":31.9,"p99":65,"loss":0,"fps":53}}
+01:56:46 run=1 gpui ticks:s50k load=4.75 7.01 6.98
+{"app":"gpui-web","mode":"ticks:s50k","run":1,"ok":true,"load":{"first_frame_s":0.47758394400000004,"first_quote_s":0.681125097,"wasm_start_s":0.17189298099999994,"bytes_transferred":13070599},"cpu":440.2,"ticks":{"p50":48.2,"p99":61.5,"loss":0,"fps":39}}
+01:57:30 run=1 egui ticks:s100k load=4.68 6.64 6.85
+{"app":"egui-web","mode":"ticks:s100k","run":1,"ok":true,"load":{"first_frame_s":0.326643421,"first_quote_s":0.3586493740000001,"wasm_start_s":0.14036731300000016,"bytes_transferred":7563480},"cpu":342.1,"ticks":{"p50":32.5,"p99":65,"loss":0,"fps":50}}
+01:58:14 run=1 gpui ticks:s100k load=5.89 6.66 6.85
+{"app":"gpui-web","mode":"ticks:s100k","run":1,"ok":true,"load":{"first_frame_s":0.576872698,"first_quote_s":0.8136474780000001,"wasm_start_s":0.187528543,"bytes_transferred":13070599},"cpu":401.3,"ticks":{"p50":56.1,"p99":81.1,"loss":0,"fps":37}}
+01:58:58 run=1 egui ticks:burst load=6.95 6.88 6.91
+{"app":"egui-web","mode":"ticks:burst","run":1,"ok":true,"load":{"first_frame_s":0.305393373,"first_quote_s":0.34041044,"wasm_start_s":0.11726972699999993,"bytes_transferred":7563480},"cpu":300.4,"ticks":{"p50":33.1,"p99":65.9,"loss":0,"fps":49}}
+01:59:41 run=1 gpui ticks:burst load=8.48 7.22 7.02
+{"app":"gpui-web","mode":"ticks:burst","run":1,"ok":true,"load":{"first_frame_s":0.5180770780000001,"first_quote_s":0.733367084,"wasm_start_s":0.184025377,"bytes_transferred":13070599},"cpu":402.2,"ticks":{"p50":54,"p99":83.6,"loss":0,"fps":38}}
+DONE 2026-10-23 02:00:26 +0800
+START 2026-10-23 02:00:26 +0800
+02:00:26 run=2 egui main load=8.63 7.41 7.10
+{"app":"egui-web","mode":"main","run":2,"ok":true,"load":{"first_frame_s":0.4667539530000002,"first_quote_s":0.4920186040000003,"wasm_start_s":0.26391413600000013,"bytes_transferred":7563480},"fps":23.8,"cpu":146.3,"rss60":1233.2}
+02:01:30 run=2 gpui main load=7.95 7.46 7.14
+{"app":"gpui-web","mode":"main","run":2,"ok":true,"load":{"first_frame_s":0.5497471920000001,"first_quote_s":0.7594220600000001,"wasm_start_s":0.21483369400000019,"bytes_transferred":13070599},"fps":25.1,"cpu":279.8,"rss60":1272.9}
+02:02:35 run=2 egui stress load=7.59 7.55 7.19
+{"app":"egui-web","mode":"stress","run":2,"ok":true,"load":{"first_frame_s":0.333509332,"first_quote_s":0.36618198199999985,"wasm_start_s":0.134659702,"bytes_transferred":7563480}}
+02:03:21 run=2 gpui stress load=7.73 7.60 7.23
+{"app":"gpui-web","mode":"stress","run":2,"ok":true,"load":{"first_frame_s":0.566217924,"first_quote_s":0.8119953719999997,"wasm_start_s":0.2545205460000002,"bytes_transferred":13070599}}
+02:04:07 run=2 egui heavy load=7.31 7.56 7.23
+{"app":"egui-web","mode":"heavy","run":2,"ok":true,"load":{"first_frame_s":0.39063895699999973,"first_quote_s":0.4300440779999999,"heavy_frame_s":0.8450973849999999,"wasm_start_s":0.15146449299999976,"bytes_transferred":7563480},"phases":{"ticks":[26,390.8,1294.5],"crosshair":[26.6,392.2,1309.3],"pan":[27.2,384.8,1339.7]}}
+02:04:45 run=2 gpui heavy load=8.14 7.79 7.33
+{"app":"gpui-web","mode":"heavy","run":2,"ok":true,"load":{"first_frame_s":0.5944743019999998,"first_quote_s":0.7688540029999997,"heavy_frame_s":1.097623519,"wasm_start_s":0.17961147100000008,"bytes_transferred":13070599},"phases":{"ticks":[24.1,510.9,1349.9],"crosshair":[17.6,386.8,1354.8],"pan":[19.2,414.8,1354.8]}}
+02:05:24 run=2 egui ticks:s1k load=8.56 7.93 7.40
+{"app":"egui-web","mode":"ticks:s1k","run":2,"ok":true,"load":{"first_frame_s":0.411356394,"first_quote_s":0.44337666900000006,"wasm_start_s":0.16309282400000003,"bytes_transferred":7563480},"cpu":309.1,"ticks":{"p50":33,"p99":67,"loss":0,"fps":50}}
+02:06:08 run=2 gpui ticks:s1k load=7.92 7.85 7.39
+{"app":"gpui-web","mode":"ticks:s1k","run":2,"ok":true,"load":{"first_frame_s":0.636171006,"first_quote_s":0.934590922,"wasm_start_s":0.22450990700000006,"bytes_transferred":13070599},"cpu":417.1,"ticks":{"p50":55.7,"p99":89.8,"loss":0,"fps":38}}
+02:06:52 run=2 egui ticks:s10k load=9.00 8.16 7.52
+{"app":"egui-web","mode":"ticks:s10k","run":2,"ok":true,"load":{"first_frame_s":0.3553931830000001,"first_quote_s":0.40159427999999986,"wasm_start_s":0.13809071699999997,"bytes_transferred":7563480},"cpu":321.6,"ticks":{"p50":34,"p99":66,"loss":0,"fps":49}}
+02:07:36 run=2 gpui ticks:s10k load=9.21 8.27 7.58
+{"app":"gpui-web","mode":"ticks:s10k","run":2,"ok":true,"load":{"first_frame_s":0.5204390430000001,"first_quote_s":0.7445184069999999,"wasm_start_s":0.17074196899999994,"bytes_transferred":13070599},"cpu":421,"ticks":{"p50":58,"p99":88.4,"loss":0,"fps":37}}
+02:08:20 run=2 egui ticks:s50k load=10.30 8.70 7.76
+{"app":"egui-web","mode":"ticks:s50k","run":2,"ok":true,"load":{"first_frame_s":0.43746854599999996,"first_quote_s":0.502288849,"wasm_start_s":0.14322854400000007,"bytes_transferred":7563480},"cpu":302.3,"ticks":{"p50":35.7,"p99":66.1,"loss":0,"fps":48}}
+02:09:04 run=2 gpui ticks:s50k load=10.25 8.92 7.88
+{"app":"gpui-web","mode":"ticks:s50k","run":2,"ok":true,"load":{"first_frame_s":0.6435566260000001,"first_quote_s":0.8316425429999998,"wasm_start_s":0.23123647400000003,"bytes_transferred":13070599},"cpu":389.7,"ticks":{"p50":65.1,"p99":94,"loss":0,"fps":34}}
+02:09:48 run=2 egui ticks:s100k load=10.18 9.11 7.99
+{"app":"egui-web","mode":"ticks:s100k","run":2,"ok":true,"load":{"first_frame_s":0.378293871,"first_quote_s":0.4206307400000001,"wasm_start_s":0.15338200700000004,"bytes_transferred":7563480},"cpu":315.4,"ticks":{"p50":44,"p99":65.4,"loss":0,"fps":46}}
+02:10:32 run=2 gpui ticks:s100k load=9.51 9.16 8.07
+{"app":"gpui-web","mode":"ticks:s100k","run":2,"ok":true,"load":{"first_frame_s":0.6000112679999998,"first_quote_s":0.809956957,"wasm_start_s":0.19323949299999998,"bytes_transferred":13070599},"cpu":372.8,"ticks":{"p50":70.3,"p99":97.8,"loss":0,"fps":33}}
+02:11:16 run=2 egui ticks:burst load=8.49 8.89 8.02
+{"app":"egui-web","mode":"ticks:burst","run":2,"ok":true,"load":{"first_frame_s":0.40684373900000004,"first_quote_s":0.4753715989999999,"wasm_start_s":0.16798136399999997,"bytes_transferred":7563480},"cpu":310.5,"ticks":{"p50":38.1,"p99":68.3,"loss":0,"fps":46}}
+02:12:00 run=2 gpui ticks:burst load=7.27 8.57 7.96
+{"app":"gpui-web","mode":"ticks:burst","run":2,"ok":true,"load":{"first_frame_s":0.568809689,"first_quote_s":0.7771012140000001,"wasm_start_s":0.22287643099999999,"bytes_transferred":13070599},"cpu":387.5,"ticks":{"p50":62,"p99":88.1,"loss":0,"fps":36}}
+02:12:44 run=3 egui main load=8.47 8.70 8.03
+{"app":"egui-web","mode":"main","run":3,"ok":true,"load":{"first_frame_s":0.3500485979999999,"first_quote_s":0.41865461199999965,"wasm_start_s":0.146322713,"bytes_transferred":7563480},"fps":25.2,"cpu":167.3,"rss60":1229.9}
+02:13:49 run=3 gpui main load=8.50 8.61 8.04
+{"app":"gpui-web","mode":"main","run":3,"ok":true,"load":{"first_frame_s":0.6174572799999998,"first_quote_s":0.850127458,"wasm_start_s":0.27598504999999984,"bytes_transferred":13070599},"fps":25.6,"cpu":291.8,"rss60":1318}
+02:14:53 run=3 egui stress load=9.60 8.79 8.13
+{"app":"egui-web","mode":"stress","run":3,"ok":true,"load":{"first_frame_s":0.37106717200000006,"first_quote_s":0.42123034299999995,"wasm_start_s":0.15605223199999996,"bytes_transferred":7563480}}
+02:15:39 run=3 gpui stress load=7.18 8.32 8.01
+{"app":"gpui-web","mode":"stress","run":3,"ok":true,"load":{"first_frame_s":0.5599681229999998,"first_quote_s":0.7498535719999995,"wasm_start_s":0.2327470169999999,"bytes_transferred":13070599}}
+02:16:26 run=3 egui heavy load=7.52 8.23 7.99
+{"app":"egui-web","mode":"heavy","run":3,"ok":true,"load":{"first_frame_s":0.37030593099999987,"first_quote_s":0.3986019829999998,"heavy_frame_s":0.7853240189999999,"wasm_start_s":0.15926415900000013,"bytes_transferred":7563480},"phases":{"ticks":[25.7,392.6,1300.4],"crosshair":[25.9,400.8,1291.3],"pan":[26.6,395.4,1318.8]}}
+02:17:04 run=3 gpui heavy load=8.79 8.49 8.09
+{"app":"gpui-web","mode":"heavy","run":3,"ok":true,"load":{"first_frame_s":0.5433006260000002,"first_quote_s":0.7524320860000002,"heavy_frame_s":1.1015846169999999,"wasm_start_s":0.1931065919999999,"bytes_transferred":13070599},"phases":{"ticks":[22.8,503.8,1352],"crosshair":[18.3,408.5,1355.6],"pan":[18.9,414.7,1358.3]}}
+02:17:43 run=3 egui ticks:s1k load=9.71 8.74 8.19
+{"app":"egui-web","mode":"ticks:s1k","run":3,"ok":true,"load":{"first_frame_s":0.39763081899999986,"first_quote_s":0.43385142499999996,"wasm_start_s":0.14456850200000004,"bytes_transferred":7563480},"cpu":300.9,"ticks":{"p50":35.3,"p99":66,"loss":0,"fps":48}}
+02:18:27 run=3 gpui ticks:s1k load=9.08 8.72 8.21
+{"app":"gpui-web","mode":"ticks:s1k","run":3,"ok":true,"load":{"first_frame_s":0.48743060000000016,"first_quote_s":0.6554220340000001,"wasm_start_s":0.17255522200000006,"bytes_transferred":13070599},"cpu":398.2,"ticks":{"p50":61.1,"p99":86.3,"loss":0,"fps":37}}
+02:19:11 run=3 egui ticks:s10k load=7.67 8.41 8.13
+{"app":"egui-web","mode":"ticks:s10k","run":3,"ok":true,"load":{"first_frame_s":0.3919699430000001,"first_quote_s":0.41307945999999984,"wasm_start_s":0.1744242279999999,"bytes_transferred":7563480},"cpu":314.4,"ticks":{"p50":34.7,"p99":69.3,"loss":0,"fps":47}}
+02:19:55 run=3 gpui ticks:s10k load=5.65 7.79 7.93
+{"app":"gpui-web","mode":"ticks:s10k","run":3,"ok":true,"load":{"first_frame_s":0.5726054319999999,"first_quote_s":0.7722341389999999,"wasm_start_s":0.20395062800000008,"bytes_transferred":13070599},"cpu":380.7,"ticks":{"p50":67.1,"p99":125.2,"loss":0,"fps":34}}
+02:20:39 run=3 egui ticks:s50k load=6.77 7.79 7.93
+{"app":"egui-web","mode":"ticks:s50k","run":3,"ok":true,"load":{"first_frame_s":0.4085909830000001,"first_quote_s":0.4456748279999998,"wasm_start_s":0.16872345600000005,"bytes_transferred":7563480},"cpu":321.2,"ticks":{"p50":35.8,"p99":66.1,"loss":0,"fps":46}}
+02:21:23 run=3 gpui ticks:s50k load=7.13 7.75 7.90
+{"app":"gpui-web","mode":"ticks:s50k","run":3,"ok":true,"load":{"first_frame_s":0.557106784,"first_quote_s":0.7878274579999999,"wasm_start_s":0.191819815,"bytes_transferred":13070599},"cpu":421.6,"ticks":{"p50":48.5,"p99":79.9,"loss":0,"fps":39}}
+02:22:07 run=3 egui ticks:s100k load=5.61 7.26 7.73
+{"app":"egui-web","mode":"ticks:s100k","run":3,"ok":true,"load":{"first_frame_s":0.342935106,"first_quote_s":0.370741227,"wasm_start_s":0.15434442000000004,"bytes_transferred":7563480},"cpu":360.7,"ticks":{"p50":32.1,"p99":65.5,"loss":0,"fps":53}}
+02:22:50 run=3 gpui ticks:s100k load=4.25 6.69 7.52
+{"app":"gpui-web","mode":"ticks:s100k","run":3,"ok":true,"load":{"first_frame_s":0.520246826,"first_quote_s":0.7114075540000001,"wasm_start_s":0.20486093700000008,"bytes_transferred":13070599},"cpu":434.2,"ticks":{"p50":49,"p99":62,"loss":0,"fps":39}}
+02:23:34 run=3 egui ticks:burst load=4.29 6.36 7.37
+{"app":"egui-web","mode":"ticks:burst","run":3,"ok":true,"load":{"first_frame_s":0.30189179499999996,"first_quote_s":0.3288162010000001,"wasm_start_s":0.13431802300000006,"bytes_transferred":7563480},"cpu":351.4,"ticks":{"p50":31.8,"p99":66.8,"loss":0,"fps":54}}
+02:24:18 run=3 gpui ticks:burst load=4.20 6.08 7.23
+{"app":"gpui-web","mode":"ticks:burst","run":3,"ok":true,"load":{"first_frame_s":0.505578566,"first_quote_s":0.6761322280000001,"wasm_start_s":0.20035017600000005,"bytes_transferred":13070599},"cpu":435.3,"ticks":{"p50":48.8,"p99":65.7,"loss":0,"fps":39}}
+DONE 2026-10-23 02:25:02 +0800

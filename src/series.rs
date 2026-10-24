@@ -184,11 +184,8 @@ fn round2(x: f64) -> f64 {
 
 /// 往回推 n 個交易日（跳過週末），回傳 yyyymmdd，舊→新。
 fn trading_days(n: usize) -> Vec<u32> {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
-        + 8 * 3600;
+    // wasm32 的 SystemTime::now() 會 panic，統一走 plat::unix_us（原生＝SystemTime）
+    let secs = (crate::plat::unix_us() / 1_000_000) as i64 + 8 * 3600;
     let mut day = secs.div_euclid(86_400);
     let mut out = Vec::with_capacity(n);
     while out.len() < n {

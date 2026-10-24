@@ -1,31 +1,39 @@
-//! 顏色／字型常數。台股慣例：漲紅、跌綠。
+//! 顏色／字型：全部來自共用設計 token（crates/xq-tokens，W3C DTCG JSON），不再寫死。台股慣例：漲紅、跌綠。
+//! 函式名稱保持不變，呼叫端不用改；換主題／熱更新後下一次呼叫就拿到新值。
 
 use gpui::{rgb, Rgba};
 
-#[cfg(not(windows))]
-pub const UI_FONT: &str = "Noto Sans CJK TC";
-#[cfg(not(windows))]
-pub const MONO_FONT: &str = "Noto Sans Mono CJK TC";
-/// Windows：系統內建的微軟正黑體；等寬用 Consolas（中文字由 DirectWrite 字型後援補上）
-#[cfg(windows)]
-pub const UI_FONT: &str = "Microsoft JhengHei UI";
-#[cfg(windows)]
-pub const MONO_FONT: &str = "Consolas";
+pub use xq_tokens::t as tk;
 
-pub fn bg() -> Rgba { rgb(0x0b0e14) }
-pub fn panel() -> Rgba { rgb(0x10141c) }
-pub fn header() -> Rgba { rgb(0x171c26) }
-pub fn border() -> Rgba { rgb(0x2a3140) }
-pub fn text() -> Rgba { rgb(0xd8dee9) }
-pub fn dim() -> Rgba { rgb(0x7f8a9e) }
-pub fn up() -> Rgba { rgb(0xff4d4f) }
-pub fn down() -> Rgba { rgb(0x22c55e) }
-pub fn flat() -> Rgba { rgb(0xe5e7eb) }
-pub fn accent() -> Rgba { rgb(0x3b82f6) }
-pub fn selected() -> Rgba { rgb(0x1e3a5f) }
-pub fn grid() -> Rgba { rgb(0x1c2230) }
-pub fn cross() -> Rgba { rgb(0x9aa4b2) }
-pub fn ma_colors() -> [Rgba; 3] { [rgb(0xf5c542), rgb(0xd17dff), rgb(0x4fc3f7)] }
+/// 0xRRGGBB ＋ alpha（0..1，token 裡的 alpha）→ gpui Rgba；alpha 先量化成 8 bit，跟原本 rgba(0xRRGGBBAA) 寫法逐位元相同
+pub fn rgba_tok(c: xq_tokens::Rgba) -> Rgba {
+    gpui::rgba((c.rgb << 8) | (c.a.clamp(0.0, 1.0) * 255.0).round() as u32)
+}
+
+#[cfg(not(windows))]
+pub fn ui_font() -> &'static str { tk().font.ui }
+#[cfg(not(any(target_os = "android", windows)))]
+pub fn mono_font() -> &'static str { tk().font.mono }
+/// Windows：系統內建的微軟正黑體；等寬用 Consolas（中文字由 DirectWrite 字型後援補上）。token 的 Noto Sans CJK 在 Windows 上沒有內建。
+#[cfg(windows)]
+pub fn ui_font() -> &'static str { "Microsoft JhengHei UI" }
+#[cfg(windows)]
+pub fn mono_font() -> &'static str { "Consolas" }
+/// Android 系統字型沒有 Mono CJK：等寬字也用介面字型（Noto Sans CJK TC，egui 手機版同樣做法）
+#[cfg(target_os = "android")]
+pub fn mono_font() -> &'static str { tk().font.ui }
+
+pub fn bg() -> Rgba { rgb(tk().ui.bg) }
+pub fn panel() -> Rgba { rgb(tk().ui.panel) }
+pub fn header() -> Rgba { rgb(tk().ui.header) }
+pub fn border() -> Rgba { rgb(tk().ui.border) }
+pub fn text() -> Rgba { rgb(tk().ui.text) }
+pub fn dim() -> Rgba { rgb(tk().ui.text_dim) }
+pub fn up() -> Rgba { rgb(tk().market.up) }
+pub fn down() -> Rgba { rgb(tk().market.down) }
+pub fn flat() -> Rgba { rgb(tk().market.flat) }
+pub fn accent() -> Rgba { rgb(tk().ui.accent) }
+pub fn selected() -> Rgba { rgb(tk().ui.selected) }
 
 pub fn dir_color(change: f64) -> Rgba {
     if change > 0.0 {

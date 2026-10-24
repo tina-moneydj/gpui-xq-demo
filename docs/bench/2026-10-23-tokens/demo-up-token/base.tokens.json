@@ -1,0 +1,243 @@
+{
+  "$description": "XQ 字型、字級、間距、圓角、線寬、版面尺寸（深淺色共用）。",
+  "font": {
+    "family": {
+      "$type": "fontFamily",
+      "ui": {
+        "$value": "Noto Sans CJK TC",
+        "$description": "介面字型（GPUI 用字型名稱；egui 讀字型檔，見 README）"
+      },
+      "mono": {
+        "$value": "Noto Sans Mono CJK TC",
+        "$description": "數字等寬字型"
+      }
+    },
+    "size": {
+      "$type": "dimension",
+      "xs": {
+        "$value": {
+          "value": 10,
+          "unit": "px"
+        },
+        "$description": "最小字（成交明細頁尾）"
+      },
+      "sm": {
+        "$value": {
+          "value": 11,
+          "unit": "px"
+        },
+        "$description": "座標軸、狀態列、提示"
+      },
+      "md": {
+        "$value": {
+          "value": 12,
+          "unit": "px"
+        },
+        "$description": "內文、報價表、按鈕"
+      },
+      "lg": {
+        "$value": {
+          "value": 13,
+          "unit": "px"
+        },
+        "$description": "圖表標題、區塊標題"
+      },
+      "xl": {
+        "$value": {
+          "value": 15,
+          "unit": "px"
+        },
+        "$description": "個股名稱"
+      }
+    }
+  },
+  "space": {
+    "$type": "dimension",
+    "xxs": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      }
+    },
+    "xs": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      }
+    },
+    "sm": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      }
+    },
+    "md": {
+      "$value": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "lg": {
+      "$value": {
+        "value": 10,
+        "unit": "px"
+      }
+    }
+  },
+  "radius": {
+    "$type": "dimension",
+    "xs": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "egui 版按鈕圓角（現況，與 GPUI 不同）"
+    },
+    "sm": {
+      "$value": {
+        "value": 4,
+        "unit": "px"
+      },
+      "$description": "GPUI 版按鈕／輸入框圓角（rounded_sm）"
+    },
+    "md": {
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "選單、彈出框圓角（rounded_md）"
+    }
+  },
+  "stroke": {
+    "$type": "dimension",
+    "hairline": {
+      "$value": {
+        "value": 1,
+        "unit": "px"
+      },
+      "$description": "框線、分隔線"
+    },
+    "selected": {
+      "$value": {
+        "value": 2,
+        "unit": "px"
+      },
+      "$description": "選取中的畫線"
+    },
+    "series": {
+      "$value": {
+        "value": 1.7,
+        "unit": "px"
+      },
+      "$description": "egui 工具列圖示線寬"
+    }
+  },
+  "layout": {
+    "$type": "dimension",
+    "titleBar": {
+      "$value": {
+        "value": 26,
+        "unit": "px"
+      },
+      "$description": "最上方標題列高"
+    },
+    "statusBar": {
+      "$value": {
+        "value": 22,
+        "unit": "px"
+      },
+      "$description": "最下方狀態列高"
+    },
+    "splitter": {
+      "$value": {
+        "value": 5,
+        "unit": "px"
+      },
+      "$description": "可拖分隔條寬"
+    },
+    "tableRow": {
+      "$value": {
+        "value": 22,
+        "unit": "px"
+      },
+      "$description": "報價表列高"
+    },
+    "tableHeader": {
+      "$value": {
+        "value": 26,
+        "unit": "px"
+      },
+      "$description": "報價表標題高"
+    },
+    "tableColHeader": {
+      "$value": {
+        "value": 22,
+        "unit": "px"
+      },
+      "$description": "報價表欄名列高"
+    },
+    "tapeRow": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      },
+      "$description": "成交明細列高"
+    },
+    "tapeWidth": {
+      "$value": {
+        "value": 276,
+        "unit": "px"
+      },
+      "$description": "成交明細面板寬"
+    },
+    "tapeColHeader": {
+      "$value": {
+        "value": 20,
+        "unit": "px"
+      },
+      "$description": "成交明細欄名列高"
+    },
+    "tapeFooter": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "成交明細頁尾高"
+    },
+    "axisWidth": {
+      "$value": {
+        "value": 66,
+        "unit": "px"
+      },
+      "$description": "價格軸寬"
+    },
+    "timeAxis": {
+      "$value": {
+        "value": 18,
+        "unit": "px"
+      },
+      "$description": "時間軸高"
+    },
+    "chartHeader": {
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      },
+      "$description": "圖表上方工具列高"
+    },
+    "toolRail": {
+      "$value": {
+        "value": 34,
+        "unit": "px"
+      },
+      "$description": "左側畫線工具列寬"
+    },
+    "toolButton": {
+      "$value": {
+        "value": 28,
+        "unit": "px"
+      },
+      "$description": "畫線工具按鈕邊長"
+    }
+  }
+}

@@ -34,7 +34,21 @@ use crate::theme::*;
 pub const TAPE_CAP: usize = 5000;
 /// 背景佇列容量：UI 一幀（16 ms）內最多收幾筆；超過代表 UI 嚴重落後，擠掉最舊的並計數
 pub const PENDING_CAP: usize = 4096;
-const ROW_H: f32 = 20.0;
+/// 捲動位置離最上面超過這麼多像素，就算「正在看舊資料」，暫停跟隨
+const FOLLOW_EPS: f32 = 1.0;
+
+/// 新成交插在最上面時，該把捲動位置調到哪裡（純函式，好測）。
+/// `offset_y`：GPUI 的捲動位移，往下捲是負值；0 代表停在最上面（跟隨最新）。
+/// 停在最上面 → 不動（照常跟隨）；已經往下捲 → 再往下推 `added` 列，畫面內容不動。
+/// 推過頭不用管：uniform_list 排版時會夾在最大捲動範圍內。
+fn anchored_offset(offset_y: f32, added: usize, row_h: f32) -> f32 {
+    if offset_y >= -FOLLOW_EPS || added == 0 {
+        offset_y
+    } else {
+        offset_y - added as f32 * row_h
+    }
+}
+fn row_h() -> f32 { xq_tokens::t().layout.tape_row }
 const COLS: [(&str, f32); 4] = [("時間", 96.0), ("成交", 72.0), ("單量", 64.0), ("", 28.0)];
 
 // ───────────────── 【模式 A】背景執行緒 → UI ─────────────────
@@ -61,7 +75,7 @@ impl TapeFeed {
     /// **在行情執行緒上**被 `bridge::merge` 呼叫，每個報價封包一次。
     /// 規則：只做 O(1)／筆的事、不配置記憶體、不碰任何 UI 物件、不做 I/O、不 log。
     pub fn on_quotes(&self, quotes: &[Quote]) {
-        let now = xq_feed::unix_us() / 1000;
+        let now = crate::plat::unix_us() / 1000;
         let mut s = self.0.lock(); // 鎖一次處理整包，不要每筆鎖一次
         let TapeShared { core, pending } = &mut *s; // 解構成兩個可變借用（不同欄位可同時借）
         for q in quotes {
@@ -127,7 +141,7 @@ impl TapeSettings {
 }
 
 fn settings_path() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("XQ_TAPE_STATE") {
+    if let Some(p) = crate::plat::var_os("XQ_TAPE_STATE") {
         return Some(PathBuf::from(p));
     }
     let base = crate::data_dir()?;
@@ -187,7 +201,7 @@ impl TickTape {
         // 壓測模式不讀也不寫設定（跟 store.rs 同規則），結果才可重現
         let persist = !["XQ_BENCH", "XQ_TICK_BENCH", "XQ_CHART_STRESS", "XQ_GROUP_STRESS"]
             .iter()
-            .any(|k| std::env::var_os(k).is_some_and(|v| v != "0"));
+            .any(|k| crate::plat::var_os(k).is_some_and(|v| v != "0"));
         if persist {
             // 【模式 E】讀檔也不在 UI 執行緒：先用預設值畫出來，讀完再更新
             let path = settings_path();
@@ -231,15 +245,33 @@ impl TickTape {
         let big_qty = self.settings.big_qty;
         // closure 只借用 self.all / self.big 兩個欄位，和 self.spare 不衝突（Rust 2021 分欄位捕獲）
         let (all, big) = (&mut self.all, &mut self.big);
+        let mut big_added = 0usize;
         self.spare.drain_oldest_first(|t| {
             all.push(t);
             if t.qty >= big_qty {
                 big.push(t);
+                big_added += 1;
             }
         });
+        // 捲動時暫停跟隨：使用者往下捲去看舊成交時，新成交插在最上面（index 0），
+        // 把捲動位置往下推同樣的列數，畫面上的那幾筆就不會被推走。停在最上面時照常跟隨最新。
+        let added = if self.settings.big_only { big_added } else { n };
+        {
+            let state = self.scroll.0.borrow();
+            let off = state.base_handle.offset();
+            let new_y = anchored_offset(f32::from(off.y), added, row_h());
+            if new_y != f32::from(off.y) {
+                state.base_handle.set_offset(gpui::point(off.x, px(new_y)));
+            }
+        }
         self.applied += n as u64;
         cx.notify();
         n
+    }
+
+    /// 使用者是否離開最上面（正在看舊成交）。footer 顯示「已暫停跟隨」用。
+    fn following_paused(&self) -> bool {
+        f32::from(self.scroll.0.borrow().base_handle.offset().y) < -FOLLOW_EPS
     }
 
     pub fn set_symbol(&mut self, symbol: &str, cx: &mut Context<Self>) {
@@ -345,13 +377,13 @@ impl TickTape {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .h(px(ROW_H))
+                    .h(px(row_h()))
                     .w_full()
-                    .font_family(MONO_FONT)
-                    .when(big, |d| d.bg(gpui::rgba(0xf0c67418)))
+                    .font_family(mono_font())
+                    .when(big, |d| d.bg(crate::theme::rgba_tok(tk().market.big_trade_bg)))
                     .child(cell(COLS[0].1, false).text_color(dim()).child(r.time))
                     .child(cell(COLS[1].1, true).text_color(color).child(r.price))
-                    .child(cell(COLS[2].1, true).text_color(if big { gpui::rgb(0xf0c674) } else { text() }).child(r.qty))
+                    .child(cell(COLS[2].1, true).text_color(if big { gpui::rgb(tk().market.volume) } else { text() }).child(r.qty))
                     .child(cell(COLS[3].1, true).text_color(color).child(r.side))
                     .into_any_element(),
             );
@@ -397,7 +429,7 @@ impl Render for TickTape {
             .bg(panel())
             .border_1()
             .border_color(if focused { accent() } else { border() })
-            .text_size(px(12.))
+            .text_size(px(tk().font.md))
             .text_color(text())
             .child(
                 div()
@@ -405,7 +437,7 @@ impl Render for TickTape {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .h(px(26.))
+                    .h(px(tk().layout.table_header))
                     .px_2()
                     .bg(header())
                     .border_b_1()
@@ -422,7 +454,7 @@ impl Render for TickTape {
                         div()
                             .id("tape-big")
                             .px_2()
-                            .rounded_sm()
+                            .rounded(px(tk().radius.sm))
                             .cursor_pointer()
                             .border_1()
                             .border_color(if s.big_only { accent() } else { border() })
@@ -437,7 +469,7 @@ impl Render for TickTape {
                 div()
                     .flex()
                     .flex_row()
-                    .h(px(20.))
+                    .h(px(tk().layout.tape_col_header))
                     .items_center()
                     .text_color(dim())
                     .border_b_1()
@@ -451,13 +483,19 @@ impl Render for TickTape {
             )
             .child(
                 div()
-                    .h(px(18.))
+                    .h(px(tk().layout.tape_footer))
                     .px_2()
                     .flex()
                     .items_center()
-                    .text_size(px(10.))
+                    .text_size(px(tk().font.xs))
                     .text_color(dim())
-                    .child(if focused { "b 只看大單 · [ ] 門檻 · Home 回最新" } else { "點一下面板啟用快捷鍵" }),
+                    .child(if self.following_paused() {
+                        "已暫停跟隨最新（正在看舊成交）· Home 回最新"
+                    } else if focused {
+                        "b 只看大單 · [ ] 門檻 · Home 回最新"
+                    } else {
+                        "點一下面板啟用快捷鍵"
+                    }),
             )
     }
 }
@@ -465,6 +503,19 @@ impl Render for TickTape {
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// 測試用固定列高（預設 token layout.tape_row 也是 20）
+    const ROW_H: f32 = 20.0;
+
+    #[test]
+    fn scroll_anchor_follows_at_top_and_holds_when_scrolled() {
+        // 停在最上面：照常跟隨，新成交直接出現在頂端
+        assert_eq!(anchored_offset(0.0, 5, ROW_H), 0.0);
+        assert_eq!(anchored_offset(-0.5, 5, ROW_H), -0.5);
+        // 往下捲了 3 列：進來 5 筆 → 再往下推 5 列，看到的還是同一批舊成交
+        assert_eq!(anchored_offset(-60.0, 5, ROW_H), -160.0);
+        // 沒有新成交（例如只看大單時進來的都是小單）：不動
+        assert_eq!(anchored_offset(-60.0, 0, ROW_H), -60.0);
+    }
 
     #[test]
     fn big_qty_steps_clamp_at_both_ends() {

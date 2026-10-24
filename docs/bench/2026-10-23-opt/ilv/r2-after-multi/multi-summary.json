@@ -1,0 +1,67 @@
+{
+ "date": "2026-10-23 12:45 +0800",
+ "runs": 1,
+ "durationSec": 30.0,
+ "rate": 10000,
+ "screen": "3840x2160",
+ "scale": "2",
+ "tile": [
+  1920,
+  1080
+ ],
+ "medians": {
+  "gpui/1w": {
+   "runs": 1,
+   "sent": 299989,
+   "loss": 0,
+   "lat_p50": 63.8,
+   "lat_p99": 159.3,
+   "lat_max": 700.7,
+   "worst_window_p99": 159.3,
+   "fps_per_window": [
+    19
+   ],
+   "fps_min_window": 19,
+   "fps_mean": 19.0,
+   "cpu": 261.5,
+   "cpuExLlvmpipe": 11.8,
+   "rssEnd": 236.1,
+   "pssEnd": 198.4,
+   "rssPeak": 236.1,
+   "pssPeak": 198.5,
+   "rssStart": 235.2,
+   "pssStart": 197.6,
+   "procs": [
+    "gpui-xq-demo"
+   ]
+  },
+  "gpui/4w": {
+   "runs": 1,
+   "sent": 299969,
+   "loss": 0,
+   "lat_p50": 321.3,
+   "lat_p99": 553.0,
+   "lat_max": 607.1,
+   "worst_window_p99": 591.8,
+   "fps_per_window": [
+    8,
+    7,
+    8,
+    7
+   ],
+   "fps_min_window": 7,
+   "fps_mean": 7.5,
+   "cpu": 340.0,
+   "cpuExLlvmpipe": 14.1,
+   "rssEnd": 483.2,
+   "pssEnd": 445.5,
+   "rssPeak": 483.2,
+   "pssPeak": 445.5,
+   "rssStart": 482.9,
+   "pssStart": 445.3,
+   "procs": [
+    "gpui-xq-demo"
+   ]
+  }
+ }
+}

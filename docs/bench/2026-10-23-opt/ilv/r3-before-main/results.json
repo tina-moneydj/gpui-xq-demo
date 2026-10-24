@@ -1,0 +1,114 @@
+{
+ "baseline": [
+  {
+   "app": "gpui",
+   "window_s": 0.3971333780027635,
+   "first_frame_s": 0.4201956690012594,
+   "first_quote_s": 0.6634157500011497,
+   "idle10": {
+    "rss_mb": 184.08203125,
+    "pss_mb": 146.107421875,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 184.1,
+      "pss_mb": 146.1,
+      "threads": 53
+     }
+    ]
+   },
+   "steady60": {
+    "rss_mb": 184.1328125,
+    "pss_mb": 146.166015625,
+    "threads": 53,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 184.1,
+      "pss_mb": 146.2,
+      "threads": 53
+     }
+    ]
+   },
+   "cpu_threads": {
+    "gpui-xq-demo/llvmpipe": 114.8,
+    "gpui-xq-demo/gpui-xq-demo": 9.0
+   },
+   "cpu_pct": 124.7742927857306,
+   "fps_avg": 18.866666666666667,
+   "geom": [
+    1200,
+    720
+   ],
+   "run": 1
+  }
+ ],
+ "stress": [
+  {
+   "app": "gpui",
+   "stress": true,
+   "tick_end": {
+    "phase": "tick-end",
+    "elapsedMs": 30038,
+    "fps": 22.6,
+    "paints": 678,
+    "avgPaintMs": 0.06,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 56952
+   },
+   "done": {
+    "phase": "done",
+    "rows": 50033,
+    "cols": 6,
+    "tickFps": 22.7,
+    "scrollFps": 24.2,
+    "scrollJankCount": 146,
+    "scrollJankAvgMs": 53.5,
+    "fps": 24.2,
+    "paints": 243,
+    "avgPaintMs": 0.074,
+    "avgCellsPerPaint": 84,
+    "cellUpdates": 20412
+   },
+   "cpu_tick_pct": 151.07720038983362,
+   "cpu_tick_threads": {
+    "gpui-xq-demo/llvmpipe": 140.1,
+    "gpui-xq-demo/gpui-xq-demo": 9.9
+   },
+   "cpu_scroll_pct": 160.72187026301702,
+   "mem_tick": {
+    "rss_mb": 188.21875,
+    "pss_mb": 150.3310546875,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 188.2,
+      "pss_mb": 150.3,
+      "threads": 52
+     }
+    ]
+   },
+   "mem_scroll": {
+    "rss_mb": 188.26953125,
+    "pss_mb": 150.3818359375,
+    "threads": 52,
+    "nproc": 1,
+    "procs": [
+     {
+      "comm": "gpui-xq-demo",
+      "rss_mb": 188.3,
+      "pss_mb": 150.4,
+      "threads": 52
+     }
+    ]
+   },
+   "screenshot": "/workspace/bench/opt-20261023/ilv/r3-before-main/gpui-stress.png",
+   "run": 1
+  }
+ ]
+}
