@@ -16,7 +16,7 @@ param(
     [int]$Runs = 3,
     [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi"),
     [string[]]$Ticks = @("s1k", "s10k", "s50k", "s100k", "burst"),
-    [string[]]$Apps = @("gpui", "egui", "egui-wgpu"),
+    [string[]]$Apps = @("gpui", "gpui-quads", "egui", "egui-wgpu"),
     [string[]]$Windows = @("1", "4"),
     [switch]$Quick,
     [switch]$Update,
@@ -57,7 +57,7 @@ $CLICK = @{
     gpui = @{ "2330" = @(30, (EnvInt "GPUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "GPUI_ROW1_Y" 484)) }
     egui = @{ "2330" = @(30, (EnvInt "EGUI_ROW0_Y" 462)); "2317" = @(30, (EnvInt "EGUI_ROW1_Y" 484)) }
 }
-$CLICK["egui-wgpu"] = $CLICK.egui
+$CLICK["egui-wgpu"] = $CLICK.egui; $CLICK["gpui-quads"] = $CLICK.gpui
 $WATCH = @("2330","2317","2454","0050","2303","2881","2882","2308","2412","2382","3711","2891","2886","1301","1303",
            "2002","3008","2357","2603","2609","3231","6505","2884","2892","5880","2207","1216","2379","3034","2345",
            "AAPL","TSLA","NVDA")
@@ -68,7 +68,10 @@ $EXES = [ordered]@{
     egui     = @{ file = "egui-xq-demo.exe"; repo = "egui-xq-demo"; private = $true }
 }
 # 同一個 exe 用不同 renderer 跑的 app（XQ_RENDERER）：egui＝glow／OpenGL，egui-wgpu＝wgpu（Windows 上走 DX12／Vulkan）
-$APP_BIN = @{ gpui = "gpui"; egui = "egui"; "egui-wgpu" = "egui" }
+$APP_BIN = @{ gpui = "gpui"; "gpui-quads" = "gpui"; egui = "egui"; "egui-wgpu" = "egui" }
+# gpui-quads＝同一個 GPUI exe 打開 XQ_DRAW_QUADS=1（畫線層橫平豎直的圖形改用 quad 畫）；只影響畫線，所以只跑重圖表，其他情境略過
+$HEAVY_ONLY = @("gpui-quads")
+function Runs-In($a, $sc) { return ($sc -eq "heavy") -or ($HEAVY_ONLY -notcontains $a) }
 
 # ---------------------------------------------------------------- 原生輔助
 $csPath = Join-Path $PSScriptRoot "XqBench.cs"
@@ -230,7 +233,9 @@ function New-Env($name, $extra) {
     $e["XQ_PERIOD"] = "D"
     if ($name -eq "egui") { $e["XQ_RENDERER"] = "glow"; $e["XQ_EGUI_STATE"] = (Join-Path $Script:Work "egui-bench-state.json") }
     if ($name -eq "egui-wgpu") { $e["XQ_RENDERER"] = "wgpu"; $e["XQ_EGUI_STATE"] = (Join-Path $Script:Work "egui-bench-state.json") }
-    if ($name -eq "gpui") { $e["XQ_GPUI_STATE"] = (Join-Path $Script:Work "gpui-bench-state.json") }
+    if ($name -eq "gpui" -or $name -eq "gpui-quads") { $e["XQ_GPUI_STATE"] = (Join-Path $Script:Work "gpui-bench-state.json") }
+    if ($name -eq "gpui") { $e["XQ_DRAW_QUADS"] = "0" }
+    if ($name -eq "gpui-quads") { $e["XQ_DRAW_QUADS"] = "1" }
     foreach ($k in $extra.Keys) { $e[$k] = $extra[$k] }
     return $e
 }
@@ -724,7 +729,7 @@ function Summarize($all) {
 }
 
 # ---------------------------------------------------------------- summary.md（中文、結論在前、標出贏家）
-$AppLabel = @{ gpui = "GPUI（DirectX 11）"; egui = "egui（glow／OpenGL）"; "egui-wgpu" = "egui（wgpu）" }
+$AppLabel = @{ gpui = "GPUI（DirectX 11）"; "gpui-quads" = "GPUI quad 畫線（XQ_DRAW_QUADS=1）"; egui = "egui（glow／OpenGL）"; "egui-wgpu" = "egui（wgpu）" }
 function Fmt($v, $unit) { if ($null -eq $v) { return "—" } return ("{0:0.#}{1}" -f [double]$v, $unit) }
 # 勝負（2026-10-24 修正）：每個 app 都和最好的比，差距在 5%（或 1 個單位：ms／%／次 1、MB 2）以內都算贏（可以多個 🏆）；
 # 全部 app 都在範圍內才算平手（＝）；FPS 全部到螢幕更新率 95% 以上也算平手。舊版只有數字完全相同才平手。
@@ -735,7 +740,7 @@ function Tol($unit, $a, $b) {
 }
 function Pick($S, $path, $lower, $unit = "") {
     $vals = [ordered]@{}
-    foreach ($a in $Apps) { $v = Q $S[$a] $path; if ($null -ne $v) { $vals[$a] = [double]$v } }
+    foreach ($a in $Script:CurApps) { $v = Q $S[$a] $path; if ($null -ne $v) { $vals[$a] = [double]$v } }
     if ($vals.Count -lt 2) { return $null }
     $best = $null
     foreach ($a in $vals.Keys) { if ($null -eq $best -or ($lower -and $vals[$a] -lt $vals[$best]) -or (-not $lower -and $vals[$a] -gt $vals[$best])) { $best = $a } }
@@ -748,7 +753,7 @@ function Pick($S, $path, $lower, $unit = "") {
 }
 function Row($S, $label, $path, $unit, $lower) {
     $p = Pick $S $path $lower $unit
-    $cells = @(foreach ($a in $Apps) {
+    $cells = @(foreach ($a in $Script:CurApps) {
         $t = Fmt (Q $S[$a] $path) $unit
         if ($p -and ($p.win -contains $a)) { "**$t** 🏆" } elseif ($p -and $p.tie -and $p.vals.Contains($a)) { "$t ＝" } else { $t }
     })
@@ -767,8 +772,8 @@ function Conclude($label, $path, $unit, $lower) {
 }
 function Table($title, $rows) {
     $Script:Body.Add("### $title"); $Script:Body.Add("")
-    $Script:Body.Add("| 指標 | " + (($Apps | ForEach-Object { $AppLabel[$_] }) -join " | ") + " |")
-    $Script:Body.Add("|---|" + (($Apps | ForEach-Object { "---:" }) -join "|") + "|")
+    $Script:Body.Add("| 指標 | " + (($Script:CurApps | ForEach-Object { $AppLabel[$_] }) -join " | ") + " |")
+    $Script:Body.Add("|---|" + (($Script:CurApps | ForEach-Object { "---:" }) -join "|") + "|")
     foreach ($r in $rows) { $Script:Body.Add((Row $Script:Sum $r[0] $r[1] $r[2] $r[3])) }
     $Script:Body.Add("")
 }
@@ -780,6 +785,7 @@ function Write-Summary($S, $mi, $path) {
     $Script:Body = New-Object System.Collections.Generic.List[string]
     $Script:Concl = New-Object System.Collections.Generic.List[string]
     if ($Scenarios -contains "main") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "main" })
         Conclude "主視窗記憶體（60 秒 Working Set）" "main.ws60_mb" " MB" $true
         Conclude "主視窗待機 CPU" "main.cpu_pct" "%" $true
         Conclude "啟動到第一筆報價" "main.first_quote_ms" " ms" $true
@@ -791,6 +797,7 @@ function Write-Summary($S, $mi, $path) {
             @("FPS（程式回報）", "main.fps", "", $false), @("程序數", "main.nproc", "", $true), @("執行緒數", "main.threads", "", $true))
     }
     if ($Scenarios -contains "stress") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "stress" })
         Conclude "5 萬列＋每秒 3000 筆跳價 CPU" "stress.cpu_tick_pct" "%" $true
         Conclude "5 萬列捲動 FPS" "stress.scroll_fps" "" $false
         Table "5 萬列報價表（6 欄，每秒 3000 筆跳價 30 秒 → 邊跳價邊捲動 10 秒）" @(
@@ -802,6 +809,7 @@ function Write-Summary($S, $mi, $path) {
             @("捲動卡頓次數", "stress.scroll_jank", "", $true))
     }
     if ($Scenarios -contains "heavy") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "heavy" })
         Conclude "重圖表＋十字線 FPS" "heavy.crosshair.fps" "" $false
         Conclude "重圖表＋平移 CPU" "heavy.pan.cpu_pct" "%" $true
         $rows = @(, @("到第一個重圖表幀", "heavy.heavy_frame_ms", " ms", $true))
@@ -814,6 +822,7 @@ function Write-Summary($S, $mi, $path) {
         Table "重圖表（20 個疊加＋8 副圖＋1000 筆畫線／100 層，走勢圖佔 80% 高；7 段各 10 秒，上下順序截圖 3 秒）" $rows
     }
     if ($Scenarios -contains "ticks") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "ticks" })
         $sc = "s100k"; if ($Ticks -notcontains $sc) { $sc = $Ticks[-1] }
         Conclude "高頻 $sc 延遲 p99" "ticks.$sc.lat_p99" " ms" $true
         Conclude "高頻 $sc CPU" "ticks.$sc.cpu" "%" $true
@@ -824,11 +833,12 @@ function Write-Summary($S, $mi, $path) {
                 @("積壓（後 5 秒 − 前 5 秒 p50）", "ticks.$sc.backlog_ms", " ms", $true), @("遺失（送出 − 收到）", "ticks.$sc.loss", "", $true),
                 @("CPU（100%＝1 核）", "ticks.$sc.cpu", "%", $true), @("GPU 3D", "ticks.$sc.gpu3d", "%", $true),
                 @("Working Set 結束", "ticks.$sc.wsEnd", " MB", $true), @("FPS", "ticks.$sc.fps", "", $false), @("點選切換 p50", "ticks.$sc.switch_p50", " ms", $true))
-            $miss = @($Apps | ForEach-Object { Q $S[$_] "ticks.$sc.switch_missed" } | Where-Object { $_ })
+            $miss = @($Script:CurApps | ForEach-Object { Q $S[$_] "ticks.$sc.switch_missed" } | Where-Object { $_ })
             if ($miss.Count) { $Script:Body.Add("> 有點擊沒對到報價列（missed）：點選切換數字可能不準，請看截圖；可用環境變數 GPUI_ROW0_Y／GPUI_ROW1_Y 等校正。"); $Script:Body.Add("") }
         }
     }
     if ($Scenarios -contains "multi") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "multi" })
         foreach ($n in $Windows) {
             Conclude "多視窗 ×$n 延遲 p99" "multi.w$n.lat_p99" " ms" $true
             Conclude "多視窗 ×$n 記憶體" "multi.w$n.wsEnd" " MB" $true
@@ -838,7 +848,7 @@ function Write-Summary($S, $mi, $path) {
                 @("平均 FPS", "multi.w$n.fps_mean", "", $false), @("遺失", "multi.w$n.loss", "", $true), @("CPU", "multi.w$n.cpu", "%", $true),
                 @("GPU 3D", "multi.w$n.gpu3d", "%", $true), @("GPU 專用記憶體", "multi.w$n.gpuDedicated_mb", " MB", $true),
                 @("Working Set 結束", "multi.w$n.wsEnd", " MB", $true), @("Working Set - Private 結束", "multi.w$n.wsPrivateEnd", " MB", $true))
-            $pl = $null; foreach ($a in $Apps) { $x = Q $S[$a] "multi.w$n.placement"; if ($x) { $pl = $x; break } }
+            $pl = $null; foreach ($a in $Script:CurApps) { $x = Q $S[$a] "multi.w$n.placement"; if ($x) { $pl = $x; break } }
             if ($pl) { $Script:Body.Add("視窗擺放：" + ((@($pl) | ForEach-Object { "#$($_.win + 1)→$($_.monitor)（DPI $($_.dpi)，內容區 $($_.client)）" }) -join "；")); $Script:Body.Add("") }
         }
     }
@@ -918,10 +928,10 @@ Say "機器：$($mi.cpu)、$($mi.ramGB) GB、GPU $((@($mi.gpus) | ForEach-Object
 if ($mi.onBattery) { Say "⚠️ 目前用電池，請接上電源（會降頻）" "Yellow" }
 if ((@($mi.monitors).Count -lt 2) -and ($Scenarios -contains "multi")) { Say "只有 1 個螢幕：多視窗 ×4 會 2×2 鋪在同一個螢幕上（有幾個就接幾個效果最好）" "Yellow" }
 
-$est = 0; $na = $Apps.Count
+$est = 0; $na = @($Apps | Where-Object { $HEAVY_ONLY -notcontains $_ }).Count; $nh = $Apps.Count
 if ($Scenarios -contains "main") { $est += $Runs * $na * 72 }
 if ($Scenarios -contains "stress") { $est += $Runs * $na * 62 }
-if ($Scenarios -contains "heavy") { $est += $Runs * $na * 85 }
+if ($Scenarios -contains "heavy") { $est += $Runs * $nh * 85 }
 if ($Scenarios -contains "ticks") { $est += $Ticks.Count * $Runs * $na * 50 }
 if ($Scenarios -contains "multi") { $est += $Windows.Count * $Runs * $na * 54 }
 Say ("預估 {0:0} 分鐘（{1} 輪；情境 {2}；app {3}）。測試中請不要動滑鼠鍵盤，視窗會自己開關。" -f ($est / 60), $Runs, ($Scenarios -join "/"), ($Apps -join "/")) "Cyan"
@@ -943,6 +953,7 @@ $t0All = Get-Date
 try {
     if ($Scenarios -contains "main") {
         for ($i = 1; $i -le $Runs; $i++) { foreach ($a in $Apps) {
+            if (-not (Runs-In $a "main")) { continue }
             Say "主視窗 $i/$Runs $a …"
             $r = Try-Run "main/$a" { Run-Main $a ($i -eq $Runs) }
             if ($r) { $r.run = $i; $all.main += $r; Say ("  第一筆報價 {0} ms、Working Set {1} MB、CPU {2}%、GPU {3}%、FPS {4}" -f $r.first_quote_ms, $r.steady60.ws_mb, $r.cpu_pct, $r.gpu.gpu3d, $r.fps) }
@@ -950,6 +961,7 @@ try {
     }
     if ($Scenarios -contains "stress") {
         for ($i = 1; $i -le $Runs; $i++) { foreach ($a in $Apps) {
+            if (-not (Runs-In $a "stress")) { continue }
             Say "5 萬列 $i/$Runs $a …"
             $r = Try-Run "stress/$a" { Run-Stress $a ($i -eq $Runs) }
             if ($r) { $r.run = $i; $all.stress += $r; Say ("  CPU 跳價 {0}% 捲動 {1}%、Working Set {2} MB、FPS {3}/{4}" -f $r.cpu_tick_pct, $r.cpu_scroll_pct, $r.mem_tick.ws_mb, (Get-P $r.tick_end "fps"), (Get-P $r.done "scrollFps")) }
@@ -965,6 +977,7 @@ try {
     Stop-Feed
     if ($Scenarios -contains "ticks") {
         foreach ($sc in $Ticks) { for ($i = 1; $i -le $Runs; $i++) { foreach ($a in $Apps) {
+            if (-not (Runs-In $a "ticks")) { continue }
             Say "高頻 $sc $i/$Runs $a …"
             $shot = ($i -eq $Runs) -and (($sc -eq "s50k") -or ($sc -eq "burst") -or $Quick)
             $r = Try-Run "ticks/$sc/$a" { Run-Ticks $a $sc $shot }
@@ -973,6 +986,7 @@ try {
     }
     if ($Scenarios -contains "multi") {
         foreach ($n in $Windows) { for ($i = 1; $i -le $Runs; $i++) { foreach ($a in $Apps) {
+            if (-not (Runs-In $a "multi")) { continue }
             Say "多視窗 ×$n $i/$Runs $a …"
             $r = Try-Run "multi/${n}w/$a" { Run-Multi $a $n ($i -eq $Runs) }
             if ($r) { $r.run = $i; $all.multi += $r; Say ("  延遲 p50/p99 {0}/{1} ms、最慢視窗 FPS {2}、CPU {3}%、GPU {4}%、Working Set {5} MB" -f $r.lat.p50, $r.lat.p99, $r.fpsMin, $r.cpu, $r.gpu.gpu3d, $r.mem.end.ws_mb) }

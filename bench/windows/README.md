@@ -8,6 +8,13 @@ wry 已經淘汰，不在這次的比較裡。
 
 > 第一份 Windows 實機數字在 2026-10-23（i7-13700＋GTX 1650，見 docs/bench/real-hw）；2026-10-24 修正了重圖表逾時、勝負判定、egui 點選漏抓（見文末）。跑完後 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
+### 這一版多了什麼：GPUI 優化第 2 批＋GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
+
+- **結論先講：** 這一版的 GPUI 是 gpui-opt2（多視窗報價同一幀到、報價表一列一次畫完、畫線可改用 quad）。請整套重跑一次，跟 2026-10-23 那份比；重圖表會多一欄「GPUI quad 畫線（XQ_DRAW_QUADS=1）」，拿它跟「GPUI」那欄比，就知道在 GTX 1650 上要不要打開這個優化。
+- `XQ_DRAW_QUADS` 是什麼：圖表上水平線、垂直線、矩形框這些「橫平豎直」的畫線，改用便宜的方塊（quad）畫，不走比較貴的路徑（path）。在我們沒有顯示卡的測試機上反而變慢約一半（GPU 批次被切碎），所以**預設關**；真的顯示卡上結果可能不同。
+- 工具包會自動做：「GPUI」那欄固定 `XQ_DRAW_QUADS=0`，app 名 `gpui-quads` 那欄是同一個 exe 加 `XQ_DRAW_QUADS=1`。quad 只影響畫線，所以只有重圖表多跑這一欄（多約 4 分鐘）。
+- 不想多跑：`run-bench.cmd -Apps gpui,egui,egui-wgpu`。
+
 ## 你只要做四件事（不用裝 Rust、不用編譯）
 
 1. **下載**完整版：[egui-xq-demo → windows-bench-latest → `xq-bench-windows.zip`](https://github.com/tina-moneydj/egui-xq-demo/releases/tag/windows-bench-latest)
@@ -31,7 +38,7 @@ wry 已經淘汰，不在這次的比較裡。
 
 | 模式 | 時間 | 怎麼跑 |
 |---|---|---|
-| 完整（預設） | 約 90 分鐘（GPUI、egui glow、egui wgpu 三個 app） | 雙擊 `run-bench.cmd` |
+| 完整（預設） | 約 95 分鐘（GPUI、egui glow、egui wgpu 三個 app；重圖表再加 GPUI quad） | 雙擊 `run-bench.cmd` |
 | 快速版 | 約 25 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Quick` |
 
 開始時畫面上會顯示這次的預估時間。
@@ -86,8 +93,8 @@ run-bench.cmd -Build -SrcRoot D:\src      （D:\src 底下放 gpui-xq-demo、egu
 run-bench.cmd -Quick                          快速版
 run-bench.cmd -Runs 5                         5 輪中位數
 run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ticks,multi）
-run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI（可選 gpui,egui,egui-wgpu）
-run-bench.cmd -Scenarios heavy                只重跑重圖表（3 個 app × 3 輪，約 13 分鐘）
+run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI（可選 gpui,gpui-quads,egui,egui-wgpu；gpui-quads 只跑重圖表）
+run-bench.cmd -Scenarios heavy                只重跑重圖表（4 欄 × 3 輪，約 17 分鐘）
 run-bench.cmd -Windows 1,2,4                  多視窗開幾個
 ```
 
