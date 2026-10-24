@@ -85,6 +85,15 @@ impl TickBench {
         }
     }
 
+    /// 2026-10-25：有樣本已畫進某一幀、等了超過 `us` 微秒還沒有下一幀（例如報價剛好停了，沒有東西再叫視窗畫）。
+    /// 後備計時器看到就叫一次重畫，讓 present 記在「真的下一幀」，不要等到每秒取樣才用「現在」補記。
+    /// 之前 Mac 上每輪都有一筆 0.3–0.5 秒的「停頓」就是這個：最後一包報價的 present 被拖到下一次每秒取樣（量測假象，不是畫面卡住）。
+    pub fn awaiting_older_than(&self, us: u64) -> bool {
+        let now = unix_us();
+        self.awaiting.as_ref().is_some_and(|(_, at)| now.saturating_sub(*at) > us)
+            || self.switch_awaiting.as_ref().is_some_and(|(_, _, at)| now.saturating_sub(*at) > us)
+    }
+
     fn flush_awaiting(&mut self, present: u64) {
         if let Some((s, _)) = self.awaiting.take() {
             self.samples.borrow_mut().push([s[0], s[1], s[2], s[3], s[4], s[5], present]);

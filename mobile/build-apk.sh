@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 ABIS="${1:-x86_64}"
 T=""; for a in ${ABIS//,/ }; do T="$T -t $a"; done
 cargo ndk -P 26 $T -o android/app/src/main/jniLibs build --release
-# cargo-ndk 會順手複製 gpui-mobile 的 rlib 動態副本，不需要打包
-find android/app/src/main/jniLibs -name 'libgpui_mobile-*.so' -delete
+# cargo-ndk 會順手複製 gpui-mobile 的動態副本（vendored 後檔名沒有 hash），app 沒載入它，不需要打包
+find android/app/src/main/jniLibs -name 'libgpui_mobile*.so' -delete
 (cd android && ./gradlew -q assembleRelease -Pabis="$ABIS")
 ls -l android/app/build/outputs/apk/release/app-release.apk

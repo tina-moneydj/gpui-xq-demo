@@ -26,6 +26,12 @@ mod tick_tape;
 mod tickbench;
 mod layers;
 mod zstress;
+#[cfg(not(target_arch = "wasm32"))]
+mod stall;
+#[cfg(not(target_arch = "wasm32"))]
+mod gpuilog;
+#[cfg(target_os = "macos")]
+mod macos;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -58,9 +64,29 @@ fn longframe_ms() -> f64 {
     static V: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
     *V.get_or_init(|| crate::plat::var("XQ_LONGFRAME_MS").ok().and_then(|v| v.parse().ok()).unwrap_or(100.0))
 }
+/// 2026-10-25：舊版在第一次印 LONGFRAME 時才開始計時，所以 t 永遠是 0.000；改成程式一啟動就開始算（原生版跟 STALL 同一個起點）
+#[cfg(not(target_arch = "wasm32"))]
+fn since_start_s() -> f64 {
+    stall::since_start_s()
+}
+#[cfg(target_arch = "wasm32")]
 fn since_start_s() -> f64 {
     static T0: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
     T0.get_or_init(Instant::now).elapsed().as_secs_f64()
+}
+/// 主執行緒打卡（網頁版沒有看門狗）
+#[inline]
+fn beat(p: u8) {
+    #[cfg(not(target_arch = "wasm32"))]
+    stall::beat(match p {
+        1 => stall::Phase::Render,
+        2 => stall::Phase::Painted,
+        3 => stall::Phase::Wake,
+        4 => stall::Phase::Timer,
+        _ => stall::Phase::Fallback,
+    });
+    #[cfg(target_arch = "wasm32")]
+    let _ = p;
 }
 fn log_long(win: usize, kind: &str, ms: f64, extra: &str) {
     eprintln!("LONGFRAME|{{\"win\":{win},\"kind\":\"{kind}\",\"ms\":{ms:.1},\"t\":{:.3}{extra}}}", since_start_s());
@@ -266,6 +292,8 @@ struct Terminal {
     last_render: Option<Instant>,
     /// 後備計時器代為套用的次數（主視窗被蓋住／縮小時才會 > 0）
     fallback_applies: u64,
+    /// 量測用的補畫次數（TickBench::awaiting_older_than）
+    probe_kicks: u64,
     /// XQ_SYNC_CHECK=1：多視窗報價同步驗證（每幀比對畫面上的價與共用報價表）
     sync: Option<SyncCheck>,
     /// A1：共用行情匯流（主視窗建立，其他視窗共用）
@@ -339,6 +367,7 @@ impl Terminal {
         let render_apply = crate::plat::var("XQ_APPLY").as_deref() != Ok("timer");
         let feed_task = wake_rx.map(|mut wake_rx| cx.spawn(async move |this, cx| {
             while wake_rx.next().await.is_some() {
+                beat(3);
                 // A1：一到就叫全部視窗畫（不是只叫主視窗、等它畫完再轉手）
                 let r = this.update(cx, |t, cx| if t.render_apply { t.notify_all(cx) } else { t.apply_feed(cx) });
                 if r.is_err() {
@@ -352,11 +381,16 @@ impl Terminal {
         // 後備：這個視窗被蓋住／縮小（GPUI 停掉它的刷新）時，由計時器代為取件／套用自己的佇列（每個視窗各一個）
         let fallback_task = render_apply.then(|| cx.spawn(async move |this, cx| loop {
             cx.background_executor().timer(Duration::from_millis(FALLBACK_MS)).await;
+            beat(5);
             let r = this.update(cx, |t, cx| {
                 let stale = t.last_render.is_none_or(|r| r.elapsed() >= Duration::from_millis(FALLBACK_MS));
                 if stale && (t.hub.taker.pending() || t.hub.has_queued(t.win)) {
                     t.fallback_applies += 1;
                     t.pump(cx);
+                } else if t.tick.as_ref().is_some_and(|tb| tb.awaiting_older_than(FALLBACK_MS * 1000)) {
+                    // 量測用：最後一批報價畫好後沒有下一幀，叫一次重畫把 present 記在真的下一幀（見 TickBench::awaiting_older_than）
+                    t.probe_kicks += 1;
+                    cx.notify();
                 }
             });
             if r.is_err() {
@@ -366,6 +400,7 @@ impl Terminal {
         // 每秒取樣 FPS / RSS（不跟 tick 綁）
         let stats_task = cx.spawn(async move |this, cx| loop {
             cx.background_executor().timer(Duration::from_secs(1)).await;
+            beat(4);
             if this.update(cx, |t, cx| t.sample(cx)).is_err() {
                 break;
             }
@@ -408,6 +443,7 @@ impl Terminal {
             render_apply,
             last_render: None,
             fallback_applies: 0,
+            probe_kicks: 0,
             sync: (crate::plat::var_os("XQ_SYNC_CHECK").is_some_and(|v| v != "0")).then(SyncCheck::default),
             hub,
             wake_at: None,
@@ -658,6 +694,16 @@ impl Terminal {
     }
 
     fn sample(&mut self, cx: &mut Context<Self>) {
+        // 自我測試卡頓偵測：XQ_STALL_TEST_MS=N → 第 5 次每秒統計時讓主執行緒睡 N ms（只做一次）
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            static N: AtomicU64 = AtomicU64::new(0);
+            if self.win == 0 && N.fetch_add(1, Ordering::Relaxed) == 4 {
+                if let Some(ms) = crate::plat::var("XQ_STALL_TEST_MS").ok().and_then(|v| v.parse::<u64>().ok()) {
+                    std::thread::sleep(Duration::from_millis(ms));
+                }
+            }
+        }
         let frames_in = self.counters.frames.load(Ordering::Relaxed);
         let rows_in = self.counters.quote_rows.load(Ordering::Relaxed);
         let (paints, paint_us) = {
@@ -788,6 +834,39 @@ pub fn rss_mb() -> f64 {
     }
 }
 
+/// 2026-10-25：記憶體拆解用——配置器（malloc）實際在用的量與向系統要來的量（MB），印在 CHARTPERF 行。
+/// RSS 減掉這個＝程式碼／字型檔對映＋GPU 驅動（Metal／wgpu 的緩衝區與貼圖）＋其他。
+/// macOS：malloc_zone_statistics（全部 zone）；Linux（glibc）：mallinfo2；其他平台不印。
+pub fn heap_kv() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        #[repr(C)]
+        #[derive(Default)]
+        struct MallocStats { blocks_in_use: u32, size_in_use: usize, max_size_in_use: usize, size_allocated: usize }
+        extern "C" {
+            fn malloc_zone_statistics(zone: *mut std::ffi::c_void, stats: *mut MallocStats);
+        }
+        let mut st = MallocStats::default();
+        unsafe { malloc_zone_statistics(std::ptr::null_mut(), &mut st) };
+        let mb = |v: usize| v as f64 / 1048576.0;
+        return format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1},\"heapPeakMb\":{:.1}", mb(st.size_in_use), mb(st.size_allocated), mb(st.max_size_in_use));
+    }
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    {
+        #[repr(C)]
+        #[derive(Default)]
+        struct Mallinfo2 { arena: usize, ordblks: usize, smblks: usize, hblks: usize, hblkhd: usize, usmblks: usize, fsmblks: usize, uordblks: usize, fordblks: usize, keepcost: usize }
+        extern "C" {
+            fn mallinfo2() -> Mallinfo2;
+        }
+        let m = unsafe { mallinfo2() };
+        let mb = |v: usize| v as f64 / 1048576.0;
+        return format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1}", mb(m.uordblks + m.hblkhd), mb(m.arena + m.hblkhd));
+    }
+    #[allow(unreachable_code)]
+    String::new()
+}
+
 #[cfg(target_arch = "wasm32")]
 pub fn rss_mb() -> f64 {
     plat::wasm_heap_mb()
@@ -823,6 +902,7 @@ impl Render for Terminal {
                 }
             }
         }
+        beat(1);
         let r0 = Instant::now();
         let prev_render = self.last_render.replace(r0);
         let thr = longframe_ms();
@@ -974,6 +1054,8 @@ impl Render for Terminal {
                         s.frames_in, s.applies
                     ))),
             )
+            // 卡頓偵測：最後一個子元素，paint 到這裡＝我們這一幀畫完（之後是 GPUI 送出／present）
+            .child(gpui::canvas(|_, _, _| {}, |_, _, _, _| beat(2)).absolute().size_0())
     }
 }
 
@@ -986,12 +1068,24 @@ fn window_count() -> usize {
     crate::plat::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
 }
 
+/// 2026-10-25：GPUI 預設對「沒有焦點的視窗」限速（inactive_frame_interval＝33.3ms）：只要這個視窗有 on_next_frame
+/// 回呼（重圖表壓測、動畫、拖曳中的每幀更新）就最多約 30 fps，60Hz 下實際常卡在 20–23 fps。看盤多視窗要每個視窗都即時，
+/// 所以全部視窗都關掉（None）。XQ_INACTIVE_THROTTLE=1 恢復 GPUI 預設（A/B 對照用）。
+fn inactive_frame_interval() -> Option<Duration> {
+    if crate::plat::var("XQ_INACTIVE_THROTTLE").as_deref() == Ok("1") {
+        WindowOptions::default().inactive_frame_interval
+    } else {
+        None
+    }
+}
+
 fn window_options(k: usize, cx: &mut App) -> WindowOptions {
     let bounds = Bounds::centered(None, size(px(1240.0), px(760.0)), cx);
     let title = if k == 0 { "XQ 風格測試（GPUI）".to_string() } else { format!("XQ 風格測試（GPUI） #{}", k + 1) };
     WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
         titlebar: Some(TitlebarOptions { title: Some(title.into()), ..Default::default() }),
+        inactive_frame_interval: inactive_frame_interval(),
         ..Default::default()
     }
 }
@@ -1031,6 +1125,12 @@ fn run(app: gpui::Application) {
         let main = cx
             .open_window(opts, |window, cx| cx.new(|cx| Terminal::new(0, None, window, cx)))
             .expect("open main window");
+        // 卡頓看門狗（src/stall.rs）：背景收行情執行緒的封包數用來分辨「只有主執行緒卡住」還是「整個程序被暫停」
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Ok(p) = main.entity(cx) {
+            let c = p.read(cx).counters.clone();
+            stall::start(Arc::new(move || c.frames.load(Ordering::Relaxed)));
+        }
         let n = window_count();
         if n > 1 {
             let primary = main.entity(cx).expect("main view");
@@ -1069,6 +1169,9 @@ pub fn data_dir() -> Option<std::path::PathBuf> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    gpuilog::init();
+    #[cfg(target_os = "macos")]
+    macos::begin_latency_critical_activity();
     run(gpui_platform::application());
 }
 

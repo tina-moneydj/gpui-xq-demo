@@ -18,6 +18,31 @@
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
 
+## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）
+
+### 結論先看
+
+- 🏆 **多視窗修好，Mac 勉強通過門檻**：MacBook Air M4 上 4 個視窗，GPUI 和 egui 的比較：
+
+  | 項目 | GPUI 第一次 | GPUI 這次 | egui wgpu | egui OpenGL |
+  |---|---:|---:|---:|---:|
+  | 延遲 p50 | 44.8 ms | 31.1 ms | 25.3 ms | 18.0 ms |
+  | 延遲 p99 | 49.6 ms | 35.4 ms | 33.5 ms | 33.4 ms |
+  | 最慢視窗 p99 | 50.1 ms | 35.8 ms | 35.3 ms | 35.9 ms |
+
+  最慢視窗已經和 egui 平手。**Windows 還沒重跑**。
+- **「GPUI 每次高頻測試停 0.3–0.5 秒」不是畫面真的卡住**，有兩個來源：
+  - GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間（egui 版會主動排重畫，所以沒有）。已在 Linux 重現並修好。
+  - 壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
+  - p50／p99 不受影響。
+- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。多出來的在 GPUI／Metal 那一層，不是我們的資料，Linux 也重現不了。新版壓測包會把記憶體拆開記（malloc vs GPU 緩衝區），之後再決定怎麼減。
+- 新加的：
+  - 所有視窗關掉 GPUI 的背景視窗限速（`inactive_frame_interval: None`）。
+  - macOS 申請延遲敏感模式。
+  - 停頓看門狗（卡住就自動抓呼叫堆疊）。
+  - 壓測包多一欄「GPUI 舊設定」對照。
+- 細節：[docs/bench/real-hw/2026-10-25-mac/](docs/bench/real-hw/2026-10-25-mac/README.md)。
+
 ## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
 
 > Tina 在兩台一般客戶等級的電腦上跑壓測包，**不是高階顯卡機**：MacBook Air M4（Apple 內建 GPU、Retina 60 Hz）、Dell Inspiron 3020 桌機（i7-13700；由 **NVIDIA GTX 1650 入門獨立顯卡**繪圖，另有 Intel UHD 770 內顯未使用；2 個 1920×1200 螢幕、59 Hz）。
@@ -39,7 +64,7 @@
 
 - **和 Linux 沒顯卡的結果比**：GPUI 的 FPS 和單視窗延遲差距**在一般電腦上消失了**（Linux GPUI 延遲中位數 74–75 ms、重圖表約 21 FPS → 這裡約 31 ms、60 FPS）。但 **CPU／GPU 用量和多視窗**，egui 仍然明顯較好，Windows 上最明顯。
 - **選型建議改成「GPUI 有條件」**：GPUI 沒有做不到的事（60 FPS、0 掉筆、延遲一樣），但效率約差 2 倍、多視窗落後。先修我們自己程式的三項（多視窗晚一幀、報價表改自己畫、水平垂直線改矩形），再請 Tina 在同兩台重跑；如果多視窗和 Windows CPU 還是明顯落後，看盤核心就改用 egui。
-- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有），原因還在查。
+- **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有）。**10-25 查明：量測假象＋壓測包 vmmap，畫面沒有真的卡住**（見上面）。
 - 細節、框架限制 vs 可修項目、測試包本身的錯（Windows 重圖表逾時、Mac 摘要勝負標錯）：見 [docs/bench/real-hw/README.md](docs/bench/real-hw/README.md)。
 
 ## GPUI 優化第 2 批（2026-10-24，gpui-opt2）
@@ -321,6 +346,11 @@ cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:
 
 > 程式在 `mobile/` 資料夾（2026-10-24 合併到 main）。原始數據在 [`docs/bench/mobile/2026-10-23/`](docs/bench/mobile/2026-10-23/)（`summary.md` 是中位數表，`results.jsonl` 是每一輪原始值）。
 
+> **2026-10-24 更新（GPUI）**：
+> - 第 3 輪「畫面停住」原因找到並修好：gpui-mobile 只在 app 有輸入焦點時才畫，焦點被系統對話框／SystemUI 重啟搶走又沒還回來，就一直不畫。改成「看得到就畫」後，同樣的觸發方式修補前 6 輪凍住 2 次、修補後 4 輪 0 次；固定觸發（系統面板蓋住 app）修補前 3／3 輪停畫、修補後照畫。
+> - 系統字型改 mmap：PSS 報價表 **91.6 → 57.6 MB**、走勢圖 **93.6 → 61.4 MB**（同一 APK A/B，各 3 輪中位數），和 egui 同一級。下表的 GPUI 記憶體是修補前的數字。
+> - 詳見 [`docs/bench/mobile/2026-10-24/`](docs/bench/mobile/2026-10-24/README.md)。
+
 ### 結論先看
 
 1. **兩個都能在 Android 上跑，功能一樣**：5 萬列報價表（手指甩動捲動）、點一列進走勢圖、雙指縮放、單指平移、長按出十字線、1000 條畫線／100 層的重圖表、中文字型、搜尋框。GPUI 用的是長橋（Longbridge）社群版 `gpui-mobile`，**不是 Zed 官方**；圖表邏輯照搬，沒有改寫。
@@ -379,17 +409,17 @@ GPUI 長按出十字線（左：長按中；右：放開後）：
 
 | | egui | GPUI |
 |---|---|---|
-| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130）＋ `gpui-pre` 0.3.9 |
+| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130，2026-10-24 起放在 `mobile/vendor/` 加修補）＋ `gpui-pre` 0.3.9 |
 | 畫圖 | glow（OpenGL ES）；可選 wgpu（Vulkan） | wgpu（Vulkan）；GLES 在模擬器上開不起來（見下） |
 | 觸控 | egui 內建：甩動慣性、雙指 `zoom_delta`；長按 400ms 自己判斷 | 0.3.9 內建手勢：拖曳→捲動事件（含甩動慣性）、`on_pinch`、`LongPressEvent` |
-| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | gpui-mobile 啟動時把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB），這是 PSS 高的原因之一 |
+| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | 原版 gpui-mobile 把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB）；2026-10-24 起本 repo 的 vendored 版改 mmap，PSS 少約 34 MB |
 | 輸入法 | NativeActivity 沒有組字（中文輸入法候選字）介面 | `GpuiInputActivity` 有 InputConnection，理論上可組字 |
 
 ### 沒做到／要注意
 
 - **沒有真手機測試**，全部是模擬器。box 上的 KVM 一開就讓主機核心報錯（`kvm_spurious_fault`，vCPU 直接當掉），只能用純軟體模擬（`-accel off`）。
 - **GPUI 不能改用 OpenGL ES**：設 `XQ_GPU=gl` 時，wgpu 要求的 `max_compute_workgroups_per_dimension=65535` 超過模擬器 GLES 的上限，視窗開不起來（log：`docs/bench/mobile/2026-10-23/gpui-gles-fail.log`）。所以 GPUI 只有 Vulkan。模擬器的 Vulkan 和 GLES 其實都是外面主機的 SwiftShader 代畫。
-- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。原因沒查到（可能是 gpui-mobile 的問題，也可能是模擬器螢幕狀態），要重現才知道。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。
+- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。2026-10-24 查到原因是 gpui-mobile「沒焦點就不畫」，已修（見上面的更新）。
 - **egui（wgpu）第 3 輪**每秒 1 千／1 萬筆兩項沒收到延遲樣本，排除不算（n=2）。
 - 有幾次讀記憶體（dumpsys）逾時，所以部分 PSS 是 n=1。
 - 測試期間（2026-10-23 12:45～20:08，Asia/Taipei）box 重開機兩次：

@@ -1,0 +1,188 @@
+  Window #5 Window{d961fd u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity}:
+    mDisplayId=0 rootTaskId=310 mSession=Session{51369a 17420:u0a10210} mClient=android.os.BinderProxy@5038e54
+    mOwnerUid=10210 showForAllUsers=false package=tw.sysjust.xq.gpui appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=resize} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION fmt=RGB_565 wanim=0x1030001
+      fl=LAYOUT_IN_SCREEN FULLSCREEN LAYOUT_INSET_DECOR SPLIT_TOUCH HARDWARE_ACCELERATED
+      pfl=NO_MOVE_ANIMATION EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+      bhv=SHOW_TRANSIENT_BARS_BY_SWIPE
+      fitSides=
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=1080 h=2400 mLayoutSeq=1231
+    mBaseLayer=21000 mSubLayer=0    mToken=ActivityRecord{7921a0e u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity t310}
+    mActivityRecord=ActivityRecord{7921a0e u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity t310}
+    drawnStateEvaluated=true    mightAffectAllDrawn=true
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+    mGivenContentInsets=[0,0][0,0] mGivenVisibleInsets=[0,0][0,0]
+    mFullConfiguration={1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.3 fontWeightAdjustment=0}
+    mLastReportedConfiguration={1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=standard mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.3 fontWeightAdjustment=0}
+    mLastReportedActivityWindowInfo=ActivityWindowInfo{isEmbedded=false, taskBounds=Rect(0, 0 - 1080, 2400), taskFragmentBounds=Rect(0, 0 - 1080, 2400)}
+    mHasSurface=true isReadyForDisplay()=true mWindowRemovalAllowed=false
+    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,0][1080,2400] last=[0,0][1080,2400] insetsChanged=false
+     surface=[0,0][0,0]
+    WindowStateAnimator{f58ae4d tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity}:
+      mSurface=Surface(name=tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity)/@0xa6bdd02
+      Surface: shown=true      mDrawState=HAS_DRAWN       mLastHidden=false
+      mEnterAnimationPending=false      mSystemDecorRect=[0,0][0,0]
+    mForceSeamlesslyRotate=false seamlesslyRotate: pending=null
+    isOnScreen=true
+    isVisible=true
+    keepClearAreas: restricted=[], unrestricted=[]
+    Requested non-default-visibility types: statusBars
+    mPrepareSyncSeqId=0
+  Window #6 Window{423183e u0 com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity}:
+    mDisplayId=0 rootTaskId=1 mSession=Session{e117943 17297:u0a10179} mClient=android.os.BinderProxy@e5f20f9
+    mOwnerUid=10179 showForAllUsers=false package=com.google.android.apps.nexuslauncher appop=NONE
+    mAttrs={(0,0)(fillxfill) sim={adjust=nothing} layoutInDisplayCutoutMode=always ty=BASE_APPLICATION fmt=TRANSPARENT wanim=0x10302fd
+      fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR SHOW_WALLPAPER SPLIT_TOUCH HARDWARE_ACCELERATED DRAWS_SYSTEM_BAR_BACKGROUNDS
+      pfl=NO_MOVE_ANIMATION OPTIMIZE_MEASURE EDGE_TO_EDGE_ENFORCED FORCE_DRAW_STATUS_BAR_BACKGROUND FIT_INSETS_CONTROLLED
+      vsysui=LAYOUT_STABLE LAYOUT_HIDE_NAVIGATION LAYOUT_FULLSCREEN
+      bhv=DEFAULT
+      fitSides=
+      frameRateBoostOnTouch=true
+      dvrrWindowFrameRateHint=true}
+    Requested w=-1 h=-1 mLayoutSeq=1184
+    mBaseLayer=21000 mSubLayer=0    mToken=ActivityRecord{adf2fbe u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t165}
+    mActivityRecord=ActivityRecord{adf2fbe u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t165}
+    drawnStateEvaluated=false    mightAffectAllDrawn=true
+    mViewVisibility=0x8 mHaveFrame=true mObscured=false
+    mGivenContentInsets=[0,0][0,0] mGivenVisibleInsets=[0,0][0,0]
+    mFullConfiguration={1.0 310mcc260mnc [en_US] ldltr sw480dp w480dp h1067dp 360dpi lrg long port finger qwerty/v/v -nav/h winConfig={ mBounds=Rect(0, 0 - 1080, 2400) mAppBounds=Rect(0, 0 - 1080, 2400) mMaxBounds=Rect(0, 0 - 1080, 2400) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=home mAlwaysOnTop=undefined mRotation=ROTATION_0} as.4 s.7 fontWeightAdjustment=0}
+    mLastReportedConfiguration={0.0 ?mcc0mnc ?localeList ?layoutDir ?swdp ?wdp ?hdp ?density ?lsize ?long ?ldr ?wideColorGamut ?orien ?uimode ?night ?touch ?keyb/?/? ?nav/? winConfig={ mBounds=Rect(0, 0 - 0, 0) mAppBounds=null mMaxBounds=Rect(0, 0 - 0, 0) mDisplayRotation=undefined mWindowingMode=undefined mActivityType=undefined mAlwaysOnTop=undefined mRotation=undefined} ?fontWeightAdjustment}
+    mLastReportedActivityWindowInfo=ActivityWindowInfo{isEmbedded=false, taskBounds=Rect(0, 0 - 0, 0), taskFragmentBounds=Rect(0, 0 - 0, 0)}
+    mHasSurface=false isReadyForDisplay()=false mWindowRemovalAllowed=false
+    Frames: parent=[0,0][1080,2400] display=[0,0][1080,2400] frame=[0,0][1080,2400] last=[0,0][1080,2400] insetsChanged=false
+--
+  imeLayeringTarget in display# 0 Window{d961fd u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity}
+  imeInputTarget in display# 0 Window{d961fd u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity}
+  imeControlTarget in display# 0 Window{d961fd u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity}
+  Minimum task size of display#0 220  mBlurEnabled=true
+  mLastDisplayFreezeDuration=0 due to new-config
+  mDisableSecureWindows=false
+ mHighResSnapshotScale=0.8
+ mSnapshotEnabled=true
+ SnapshotCache Task
+ mHighResSnapshotScale=0.6
+ mSnapshotEnabled=true
+ SnapshotCache Activity
+   UserSavedFile userId=0
+  mInputMethodWindow=Window{3135345 u0 InputMethod}
+  mTraversalScheduled=false
+  mSystemBooted=true mDisplayEnabled=true
+  mTransactionSequence=1662
+  mDisplayFrozen=false windows=0 client=false apps=0
+  mRotation=0
+  mLastOrientation=-1
+  mWaitingForConfig=false
+  mWindowsInsetsChanged=0
+  mDisplayRotationWatchers: [ 10179->0]
+  Animation settings: disabled=false window=0.0 transition=0.0 animator=0.0
+RequestedLayerState{WindowedMagnification:0:31#1 parentId=1505}
+RequestedLayerState{HideDisplayCutout:0:14#2 parentId=1}
+RequestedLayerState{OneHanded:0:14#3 parentId=2}
+RequestedLayerState{FullscreenMagnification:0:12#4 parentId=3}
+RequestedLayerState{Leaf:0:1#5 parentId=4}
+RequestedLayerState{ba6e679 ActivityRecordInputSink com.google.android.apps.nexuslauncher/.NexusLauncherActivity#86 parentId=79 z=-2147483648}
+RequestedLayerState{Leaf:3:12#7 parentId=4 z=2}
+RequestedLayerState{ImePlaceholder:13:14#8 parentId=3 z=1}
+RequestedLayerState{ImeContainer#9 parentId=1466 relativeParentId=1477 z=1}
+RequestedLayerState{OneHanded:15:15#10 parentId=1 z=1}
+RequestedLayerState{FullscreenMagnification:15:15#11 parentId=10}
+RequestedLayerState{Leaf:15:15#12 parentId=11}
+RequestedLayerState{HideDisplayCutout:16:16#13 parentId=1 z=2}
+RequestedLayerState{OneHanded:16:16#14 parentId=13}
+RequestedLayerState{FullscreenMagnification:16:16#15 parentId=14}
+RequestedLayerState{Leaf:16:16#16 parentId=15}
+RequestedLayerState{OneHanded:17:17#17 parentId=1 z=3}
+RequestedLayerState{FullscreenMagnification:17:17#18 parentId=17}
+RequestedLayerState{Leaf:17:17#19 parentId=18}
+RequestedLayerState{HideDisplayCutout:18:23#20 parentId=1 z=4}
+RequestedLayerState{OneHanded:18:23#21 parentId=20}
+RequestedLayerState{FullscreenMagnification:18:23#22 parentId=21}
+RequestedLayerState{Leaf:18:23#23 parentId=22}
+RequestedLayerState{Leaf:24:25#24 parentId=1 z=5}
+RequestedLayerState{HideDisplayCutout:26:31#25 parentId=1 z=6}
+RequestedLayerState{OneHanded:26:31#26 parentId=25}
+RequestedLayerState{FullscreenMagnification:26:27#27 parentId=26}
+RequestedLayerState{Leaf:26:27#28 parentId=27}
+RequestedLayerState{Leaf:28:28#29 parentId=26 z=1}
+RequestedLayerState{FullscreenMagnification:29:31#30 parentId=26 z=2}
+RequestedLayerState{Leaf:29:31#31 parentId=30}
+RequestedLayerState{HideDisplayCutout:32:35#32 parentId=1505 z=1}
+RequestedLayerState{OneHanded:32:32#33 parentId=32}
+RequestedLayerState{Leaf:32:32#34 parentId=33}
+RequestedLayerState{FullscreenMagnification:33:33#35 parentId=32 z=1}
+RequestedLayerState{Leaf:33:33#36 parentId=35}
+RequestedLayerState{OneHanded:34:35#37 parentId=32 z=2}
+RequestedLayerState{FullscreenMagnification:34:35#38 parentId=37}
+RequestedLayerState{Leaf:34:35#39 parentId=38}
+RequestedLayerState{Leaf:36:36#40 parentId=1505 z=2}
+RequestedLayerState{Display 0 name="Built-in Screen"#1505}
+RequestedLayerState{Display Overlays#42 parentId=1505 z=2147483647}
+RequestedLayerState{Input Overlays#43 parentId=1505 z=2147483646}
+RequestedLayerState{Accessibility Overlays#44 parentId=1505 z=2147483645}
+RequestedLayerState{ActivityRecord{7921a0e u0 tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity#1466 parentId=1500}
+RequestedLayerState{WallpaperWindowToken{a919218 token=android.os.Binder@c5a51fb}#59 parentId=5}
+RequestedLayerState{WindowToken{2ddd870 type=2011 android.os.Binder@c9cdab3}#723 parentId=9}
+RequestedLayerState{Task=308#1457}
+RequestedLayerState{DefaultTaskDisplayArea#1506 parentId=4 z=1}
+RequestedLayerState{Task=310#1465}
+RequestedLayerState{Surface(name=3135345 InputMethod)/@0x28abfcb - animation-leash of insets_animation#1533 parentId=723}
+RequestedLayerState{ActivityRecord{adf2fbe u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity#79 parentId=78}
+RequestedLayerState{Task=165#78 parentId=1501}
+RequestedLayerState{Task=301#1400 z=1}
+RequestedLayerState{Task=309#1458 z=1}
+RequestedLayerState{Dim layer#1461 parentId=1457 !handle z=2147483647}
+RequestedLayerState{Task=307#1456 z=1}
+RequestedLayerState{Dim layer#1432 parentId=1428 !handle z=2147483647}
+RequestedLayerState{Dim layer#1357 parentId=1353 !handle z=2147483647}
+RequestedLayerState{Dim layer#1406 parentId=1402 !handle z=2147483647}
+RequestedLayerState{Dim layer#1405 parentId=1401 !handle z=2147483647}
+RequestedLayerState{Task=1#1501 parentId=1506}
+RequestedLayerState{IME Handwriting Surface#171 parentId=43 z=2}
+RequestedLayerState{Dim layer#1356 parentId=1352 !handle z=2147483647}
+RequestedLayerState{3135345 InputMethod#785 parentId=1533}
+RequestedLayerState{Task=300#1363 z=2}
+RequestedLayerState{Dim layer#1462 parentId=1458 !handle z=2147483647}
+RequestedLayerState{Task=310#1500 parentId=1506 z=2}
+RequestedLayerState{Task=299#1353 z=1}
+RequestedLayerState{Dim layer#1433 parentId=1429 !handle z=2147483647}
+RequestedLayerState{Task=298#1352}
+RequestedLayerState{Task=297#1351 z=1}
+RequestedLayerState{Task=305#1428}
+RequestedLayerState{Task=303#1402 z=1}
+RequestedLayerState{Task=302#1401}
+RequestedLayerState{Task=304#1427 z=1}
+RequestedLayerState{Task=306#1429 z=1}
+RequestedLayerState{Dim layer#1485 parentId=1481 !handle z=2147483647}
+RequestedLayerState{d961fd tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity#1477 parentId=1466}
+RequestedLayerState{423183e com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity#1478 parentId=79}
+RequestedLayerState{Task=311#1479 z=3}
+RequestedLayerState{Task=312#1480}
+RequestedLayerState{Task=313#1481 z=1}
+RequestedLayerState{Dim layer#1484 parentId=1480 !handle z=2147483647}
+RequestedLayerState{home_task_overlay_container#1507 parentId=1501 z=2147483647}
+RequestedLayerState{Task=314#1508 parentId=1506 z=1}
+RequestedLayerState{Task=315#1509 parentId=1508}
+RequestedLayerState{Task=316#1510 parentId=1508 z=1}
+RequestedLayerState{WindowToken{dfb3e17 type=2038 android.os.BinderProxy@c995528}#1511 parentId=7}
+RequestedLayerState{7009db1 ShellDropTarget#1512 parentId=1511}
+RequestedLayerState{Dim layer#1513 parentId=1509 z=2147483647}
+RequestedLayerState{Dim layer#1514 parentId=1510 z=2147483647}
+RequestedLayerState{76ccd70 com.android.systemui.wallpapers.ImageWallpaper#1515 parentId=59}
+RequestedLayerState{com.android.systemui.wallpapers.ImageWallpaper#1516 parentId=1515}
+RequestedLayerState{Wallpaper BBQ wrapper#1517 parentId=1516}
+RequestedLayerState{WindowToken{e56a30 type=2024 android.os.BinderProxy@c249b73}#1518 z=1073741826}
+RequestedLayerState{635842e ScreenDecorOverlay#1519 parentId=1518}
+RequestedLayerState{Input Consumer recents_animation_input_consumer#1520}
+RequestedLayerState{WindowToken{5ddeb06 type=2024 android.os.BinderProxy@f19e1e1}#1521 z=1073741826}
+RequestedLayerState{7ddb192 ScreenDecorOverlayBottom#1522 parentId=1521}
+RequestedLayerState{ScreenDecorOverlay#1523 parentId=1519}
+RequestedLayerState{WindowToken{8b1c090 type=2019 android.os.BinderProxy@e9f27fb}#1524 parentId=24}
+RequestedLayerState{cb1a342 Taskbar#1525 parentId=1530}
+RequestedLayerState{[Gesture Monitor] swipe-up#1526 parentId=43 z=1}
+RequestedLayerState{Taskbar#1527 parentId=1525}
+RequestedLayerState{ScreenDecorOverlayBottom#1528 parentId=1522}
+RequestedLayerState{tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity#1529 parentId=1477}
+RequestedLayerState{Surface(name=cb1a342 Taskbar)/@0x3f67a73 - animation-leash of insets_animation#1530 parentId=1524}
+RequestedLayerState{f24c809 ActivityRecordInputSink tw.sysjust.xq.gpui/dev.gpui.mobile.GpuiInputActivity#1532 parentId=1466 z=-2147483648}

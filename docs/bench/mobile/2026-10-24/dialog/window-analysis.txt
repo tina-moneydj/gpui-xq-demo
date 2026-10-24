@@ -1,0 +1,6 @@
+{"file": "base-i1.log", "dialogSecs": 4.9, "framesInWindow": 0, "spanSecs": 3.1, "canDraw": [false, false, false, false]}
+{"file": "base-i2.log", "dialogSecs": 4.7, "framesInWindow": 0, "spanSecs": 2.0, "canDraw": [false, false, false]}
+{"file": "base-i3.log", "dialogSecs": 17.2, "framesInWindow": 0, "spanSecs": 14.2, "canDraw": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false]}
+{"file": "fix-i1.log", "dialogSecs": 19.4, "framesInWindow": 31, "spanSecs": 17.5, "canDraw": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]}
+{"file": "fix-i2.log", "dialogSecs": 3.9, "framesInWindow": 5, "spanSecs": 2.0, "canDraw": [true, true, true]}
+freeze/v-dialog/fix-i3.log window 2.2 s, too few PACER samples

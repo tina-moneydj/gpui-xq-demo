@@ -1,0 +1,4 @@
+{"iter": 1, "tag": "base-sysui", "result": "stall-visible", "secs": 243, "lastPhase": "crosshair", "frames": 16}
+{"iter": 2, "tag": "base-sysui", "result": "done", "secs": 96, "lastPhase": "zshot", "frames": 63}
+{"iter": 3, "tag": "base-sysui", "result": "timeout", "secs": 425, "lastPhase": null, "frames": null}
+{"iter": 4, "tag": "base-sysui", "result": "stall-hidden-keyguard", "secs": 163, "lastPhase": null, "frames": 0}
