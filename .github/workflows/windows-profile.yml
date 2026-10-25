@@ -7,7 +7,7 @@ name: windows-profile
 on:
   push:
     branches: ['claude/**']
-    paths: ['src/**', 'crates/**', 'Cargo.*', '.github/workflows/windows-profile.yml', 'scripts/prof-summary.py']
+    paths: ['src/**', 'crates/**', 'Cargo.*', '.github/workflows/windows-profile.yml', 'scripts/prof-summary.py', 'bench/windows/**']
   workflow_dispatch:
     inputs:
       envs:
@@ -33,12 +33,30 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
+      - name: 下載 egui-xq-demo（同名分支，沒有就用 main）
+        shell: pwsh
+        run: |
+          $b = "${{ github.ref_name }}"
+          git clone --depth 1 -b $b https://github.com/tina-moneydj/egui-xq-demo.git ..\egui 2>$null
+          if (-not (Test-Path ..\egui\Cargo.toml)) { git clone --depth 1 https://github.com/tina-moneydj/egui-xq-demo.git ..\egui }
+          git -C ..\egui log -1 --format="egui %h %s"
       - uses: Swatinem/rust-cache@v2
         with:
           key: profile
+          workspaces: |
+            . -> target
+            ../egui -> target
       - name: Build (release＋除錯符號)
         shell: pwsh
-        run: cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
+        run: |
+          cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
+          cargo build --release --manifest-path ..\egui\Cargo.toml
+      - name: 壓測包腳本語法檢查
+        shell: pwsh
+        run: |
+          $err = $null; [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD\bench\windows\bench-windows.ps1", [ref]$null, [ref]$err)
+          if ($err) { $err | ForEach-Object { Write-Host "$($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+          Write-Host "bench-windows.ps1 語法 OK"
       - name: 下載 samply
         shell: pwsh
         run: |
@@ -53,28 +71,38 @@ jobs:
           New-Item -ItemType Directory -Force prof, appdata | Out-Null
           $extra = @{}
           foreach ($kv in ("${{ github.event.inputs.envs }}" -split ';')) { if ($kv -match '^\s*([^=]+)=(.*)$') { $extra[$Matches[1].Trim()] = $Matches[2] } }
+          # app＝gpui／egui；egui 用 wgpu（DX12）跑，CI 沒有 GPU，OpenGL 只有軟體 1.1 跑不動
+          $ta = @{ XQ_METRICS = "1"; XQ_CHART_STRESS = "1"; XQ_WINDOWS = "4"; XQ_CHART_PHASES = "ticks,crosshair,pan"; XQ_CHART_DRAWINGS = "200"; XQ_CHART_PHASE_MS = "8000"; XQ_TOP_FRAC = "0.8" }
           $scen = [ordered]@{
-            main   = @{ XQ_METRICS = "1" }
-            stress = @{ XQ_METRICS = "1"; XQ_GROUP_STRESS = "1"; XQ_STRESS_COLS = "6"; XQ_STRESS_TICK_HZ = "3000"; XQ_STRESS_TICK_MS = "60000"; XQ_STRESS_SCROLL_MS = "1000" }
+            main   = @{ app = "gpui"; env = @{ XQ_METRICS = "1" } }
+            stress = @{ app = "gpui"; env = @{ XQ_METRICS = "1"; XQ_GROUP_STRESS = "1"; XQ_STRESS_COLS = "6"; XQ_STRESS_TICK_HZ = "3000"; XQ_STRESS_TICK_MS = "60000"; XQ_STRESS_SCROLL_MS = "1000" } }
+            # 技術分析：4 個視窗各一張滿指標 K 線（同壓測包 ta 情境；段落拉長到蓋滿 25 秒取樣）。
+            # WARP（d3d10warp.dll）是軟體 GPU：它吃的 CPU 約等於「GPU 要做的工作量」，兩個 app 可以直接比
+            ta     = @{ app = "gpui"; env = $ta }
+            "ta-egui-wgpu" = @{ app = "egui"; env = ($ta + @{ XQ_RENDERER = "wgpu" }) }
           }
+          $exe = @{ gpui = "$bin\gpui-xq-demo.exe"; egui = "$PWD\..\egui\target\release\egui-xq-demo.exe" }
           foreach ($name in $scen.Keys) {
+            $app = $scen[$name].app; $envs = $scen[$name].env; $pname = [IO.Path]::GetFileNameWithoutExtension($exe[$app])
             $feed = Start-Process "$bin\xq-demofeed.exe" -ArgumentList "--addr 127.0.0.1:47631" -PassThru -WindowStyle Hidden
             Start-Sleep 2
             $env:XQ_BENCH = "1"; $env:XQ_PERIOD = "D"; $env:APPDATA = "$PWD\appdata"; $env:XQ_GPUI_STATE = "$PWD\appdata\state-$name.json"
-            foreach ($k in $scen[$name].Keys) { Set-Item "env:$k" $scen[$name][$k] }
+            foreach ($k in $envs.Keys) { Set-Item "env:$k" $envs[$k] }
             foreach ($k in $extra.Keys) { Set-Item "env:$k" $extra[$k] }
             $out = "$PWD\prof\$name.json.gz"
-            $p = Start-Process $samply -ArgumentList "record --save-only --unstable-presymbolicate --symbol-dir `"$bin`" --symbol-dir `"$bin\deps`" -o `"$out`" -- `"$bin\gpui-xq-demo.exe`"" -PassThru -NoNewWindow -RedirectStandardOutput "prof\$name-app.log" -RedirectStandardError "prof\$name-samply.log"
+            $sd = Split-Path $exe[$app]
+            $p = Start-Process $samply -ArgumentList "record --save-only --unstable-presymbolicate --symbol-dir `"$sd`" --symbol-dir `"$sd\deps`" -o `"$out`" -- `"$($exe[$app])`"" -PassThru -NoNewWindow -RedirectStandardOutput "prof\$name-app.log" -RedirectStandardError "prof\$name-samply.log"
             Start-Sleep 28
-            Get-Process gpui-xq-demo -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
+            Get-Process $pname -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
             Start-Sleep 3
-            Get-Process gpui-xq-demo -ErrorAction SilentlyContinue | Stop-Process -Force
+            Get-Process $pname -ErrorAction SilentlyContinue | Stop-Process -Force
             $p.WaitForExit(120000) | Out-Null
             Stop-Process -Id $feed.Id -Force -ErrorAction SilentlyContinue
-            foreach ($k in $scen[$name].Keys) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
+            foreach ($k in $envs.Keys) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
             Write-Host "==== $name：app log 最後幾行"
             Get-Content "prof\$name-app.log" -Tail 8 -ErrorAction SilentlyContinue
             Get-Content "prof\$name-samply.log" -Tail 5 -ErrorAction SilentlyContinue
+            Select-String -Path "prof\$name-app.log" -Pattern "CHARTPERF" -ErrorAction SilentlyContinue | ForEach-Object { $_.Line.Substring(0, [math]::Min(260, $_.Line.Length)) }
           }
           Get-ChildItem prof | Format-Table Name, Length
           Get-ChildItem $bin -Filter *.pdb | Format-Table Name, Length
@@ -91,7 +119,9 @@ jobs:
           Write-Host "llvm-symbolizer: $sym"
           foreach ($f in Get-ChildItem prof -Filter *.json.gz) {
             Write-Host "################################ $($f.Name)"
-            python scripts/prof-summary.py $f.FullName --pid-name gpui-xq-demo --top 30 --exe "$PWD\target\release\gpui-xq-demo.exe" --symbolizer "$sym"
+            $exe = "$PWD\target\release\gpui-xq-demo.exe"
+            if ($f.Name -like "*egui*") { $exe = "$PWD\..\egui\target\release\egui-xq-demo.exe" }
+            python scripts/prof-summary.py $f.FullName --pid-name ([IO.Path]::GetFileNameWithoutExtension($exe)) --top 30 --exe $exe --symbolizer "$sym"
           }
       - uses: actions/upload-artifact@v4
         if: always()
