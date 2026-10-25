@@ -6,7 +6,7 @@
 //!
 //! 左側畫線工具列、上方週期／指標選單。XQ_CHART_STRESS=1 跑與 wry 版相同的重圖表壓測（見 stress.rs）。
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
 use crate::plat::Instant;
@@ -22,7 +22,7 @@ use crate::layers::ZOp;
 use crate::zstress::{ZMode, ZState};
 use crate::gfx::{self, hex, hexa, p, Tris, P};
 use crate::indicators::{OvSpec, SubKind, MAX_OVERLAYS, MAX_SUBS};
-use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, axis_w, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, time_h};
+use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, axis_w, DRAW, HEAD, LIVE, PLOT, QUOTE, SAVE, SEL, time_h};
 use crate::series::Period;
 use crate::store::{Entry, Store};
 use crate::theme::*;
@@ -684,6 +684,51 @@ fn paint_icon(icon: Icon, b: Bounds<Pixels>, color: Hsla, window: &mut Window, c
     let _ = window.paint_svg(b, key.into(), Some(svg.as_bytes()), gpui::TransformationMatrix::unit(), color, cx);
 }
 
+/// 標頭左半（代號名稱、價、漲跌、量、畫線提示）：自己一個 cached view。
+/// 報價每筆都會變，若放在 ChartView 裡，每筆都要重排整個走勢圖的元素樹（標頭按鈕、工具列、五層容器）；
+/// 拆出來後一筆報價只重排這 6 個節點。寬度由外層 flex_1 決定（cached view 不量內容）。
+pub struct QuoteHead {
+    m: M,
+    /// 上一次畫出的成交價（XQ_SYNC_CHECK 比對用）
+    shown: Rc<Cell<f64>>,
+}
+
+impl Render for QuoteHead {
+    fn render(&mut self, _w: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        let (title, price, change, volume, tool, n_draw) = {
+            let m = self.m.borrow();
+            (format!("{} {}", m.symbol(), m.name), m.price, m.change, m.volume, m.tool, m.drawings.len())
+        };
+        self.shown.set(price);
+        let color = dir_color(change);
+        let has = price > 0.0;
+        let hint = match tool {
+            Some(Tool::Text) => "點一下放文字".to_string(),
+            Some(Tool::Channel) => "拖出基準線，再點一下決定通道寬度".to_string(),
+            Some(t) if t.need() == 1 => format!("{}：點一下放置", t.label()),
+            Some(t) => format!("{}：按住拖曳（或點兩下）", t.label()),
+            None if n_draw > 0 => format!("畫線 {n_draw}"),
+            None => String::new(),
+        };
+        div()
+            .size_full()
+            .flex()
+            .flex_row()
+            .items_center()
+            .gap_3()
+            .overflow_hidden()
+            .child(div().text_size(px(tk().font.lg)).child(title))
+            .child(div().font_family(mono_font()).text_color(color).child(if has { format!("{price:.2}") } else { "--".into() }))
+            .child(div().font_family(mono_font()).text_color(color).child(if has {
+                format!("{} ({:+.2}%)", fmt_change(change), pct(price, change))
+            } else {
+                String::new()
+            }))
+            .child(div().text_color(dim()).child(if has { format!("量 {}", fmt_int(volume)) } else { String::new() }))
+            .child(div().text_color(dim()).text_size(px(tk().font.sm)).child(hint))
+    }
+}
+
 struct Tip(SharedString);
 impl Render for Tip {
     fn render(&mut self, _w: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -839,8 +884,9 @@ pub struct ChartView {
     #[cfg_attr(not(any(target_os = "android", target_os = "ios")), allow(dead_code))]
     pinch_acc: f32,
     total_steps: u64,
-    /// 上一次 render 標題列畫出的成交價（XQ_SYNC_CHECK 比對用）
-    pub shown_price: f64,
+    head: Entity<QuoteHead>,
+    /// 上一次標頭畫出的成交價（XQ_SYNC_CHECK 比對用；QuoteHead 寫入）
+    shown: Rc<Cell<f64>>,
     _subs: Vec<Subscription>,
 }
 
@@ -858,6 +904,8 @@ impl ChartView {
         let sel = cx.new(|_| SelLayer { m: m.clone() });
         let above = cx.new(|_| AboveLayer { m: m.clone() });
         let rail = cx.new(|_| Rail { tool: None, can_delete: false, can_clear: false });
+        let shown = Rc::new(Cell::new(0.0));
+        let head = cx.new(|_| QuoteHead { m: m.clone(), shown: shown.clone() });
         let subs = vec![cx.subscribe(&rail, |this: &mut Self, _, ev: &RailEvent, cx| {
             let f = {
                 let mut m = this.m.borrow_mut();
@@ -904,11 +952,16 @@ impl ChartView {
             tok_gen: xq_tokens::generation(),
             pinch_acc: 0.0,
             total_steps: 0,
-            shown_price: 0.0,
+            head,
+            shown,
             _subs: subs,
         };
         v.restore_saved();
         v
+    }
+
+    pub fn shown_price(&self) -> f64 {
+        self.shown.get()
     }
 
     pub fn symbol(&self) -> String {
@@ -948,6 +1001,9 @@ impl ChartView {
         }
         if f & LIVE != 0 {
             self.live.update(cx, |_, cx| cx.notify());
+        }
+        if f & (HEAD | QUOTE) != 0 {
+            self.head.update(cx, |_, cx| cx.notify());
         }
         if f & HEAD != 0 {
             let (tool, can_delete, can_clear) = {
@@ -1306,7 +1362,7 @@ impl ChartView {
         if let Mode::Z(z) = mode {
             let rb = self.m.borrow().stats.rebuild_us;
             let fl = self.zs.step(&mut self.m.borrow_mut(), z, f, rb);
-            return fl & !HEAD;
+            return fl & !(HEAD | QUOTE);
         }
         let mut m = self.m.borrow_mut();
         let mut fl = m.synth_tick(f);
@@ -1327,7 +1383,7 @@ impl ChartView {
             fl |= PLOT | DRAW | LIVE;
         }
         // 壓測只量走勢圖本身（wry `__perfContinuous` 也只重畫 canvas），不重繪標頭
-        fl & !HEAD
+        fl & !(HEAD | QUOTE)
     }
 }
 
@@ -1707,13 +1763,10 @@ impl Render for ChartView {
             self.stress_started = true;
             cx.on_next_frame(window, |this, window, cx| this.stress_frame(window, cx));
         }
-        let (title, price, change, volume, period, tool, n_draw) = {
+        let (period, tool) = {
             let m = self.m.borrow();
-            (format!("{} {}", m.symbol(), m.name), m.price, m.change, m.volume, m.period(), m.tool, m.drawings.len())
+            (m.period(), m.tool)
         };
-        self.shown_price = price;
-        let color = dir_color(change);
-        let has = price > 0.0;
         let period_btn = |p: Period, cx: &mut Context<Self>| {
             let on = p == period;
             div()
@@ -1732,14 +1785,6 @@ impl Render for ChartView {
         let full = || StyleRefinement::default().size_full();
         let me = cx.entity().downgrade();
         let menu_open = self.menu_open;
-        let hint = match tool {
-            Some(Tool::Text) => "點一下放文字".to_string(),
-            Some(Tool::Channel) => "拖出基準線，再點一下決定通道寬度".to_string(),
-            Some(t) if t.need() == 1 => format!("{}：點一下放置", t.label()),
-            Some(t) => format!("{}：按住拖曳（或點兩下）", t.label()),
-            None if n_draw > 0 => format!("畫線 {n_draw}"),
-            None => String::new(),
-        };
 
         div()
             .relative()
@@ -1760,16 +1805,7 @@ impl Render for ChartView {
                     .bg(header())
                     .border_b_1()
                     .border_color(border())
-                    .child(div().text_size(px(tk().font.lg)).child(title))
-                    .child(div().font_family(mono_font()).text_color(color).child(if has { format!("{price:.2}") } else { "--".into() }))
-                    .child(div().font_family(mono_font()).text_color(color).child(if has {
-                        format!("{} ({:+.2}%)", fmt_change(change), pct(price, change))
-                    } else {
-                        String::new()
-                    }))
-                    .child(div().text_color(dim()).child(if has { format!("量 {}", fmt_int(volume)) } else { String::new() }))
-                    .child(div().text_color(dim()).text_size(px(tk().font.sm)).child(hint))
-                    .child(div().flex_1())
+                    .child(self.head.clone().cached(StyleRefinement::default().flex_1().min_w_0().h_full()))
                     .children(Period::ALL.iter().map(|&p| period_btn(p, cx)))
                     .child(
                         div()

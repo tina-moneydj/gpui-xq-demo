@@ -551,7 +551,12 @@ impl Render for QuoteTable {
                     .text_color(dim())
                     .border_b_1()
                     .border_color(border())
-                    .children(COLS.iter().enumerate().map(|(i, (label, w))| cell(*w, i >= 2).child(*label))),
+                    // 欄名一個 canvas 畫完（原本每欄一個 div＋文字，報價表每次重畫都要重排 13 個節點）
+                    .child({
+                        let c: Hsla = dim().into();
+                        let cells: [(SharedString, Hsla); 6] = std::array::from_fn(|i| (SharedString::new_static(COLS[i].0), c));
+                        canvas(|_, _, _| (), move |b, _, window, cx| paint_row(b, &cells, None, window, cx)).size_full()
+                    }),
             )
             .child(
                 uniform_list("quotes", count, cx.processor(|this, range, _window, cx| this.render_rows(range, cx)))
