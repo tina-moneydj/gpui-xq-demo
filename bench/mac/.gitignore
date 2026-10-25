@@ -1,3 +1,4 @@
 bin/
 results/
 __pycache__/
+web/

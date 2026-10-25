@@ -31,7 +31,17 @@ wry 已經淘汰，不在這次的比較裡。
 
 > Mac 實機數字：第一份（2026-10-24 上午）在 `docs/bench/real-hw/2026-10-24-mac/`，第二份（2026-10-24 晚上，優化第 2 批）在 `docs/bench/real-hw/2026-10-25-mac/`。這一版工具包換成 **GPUI 優化第 3 批（gpui-opt3）**，請再重跑一次。
 
-### 最新（2026-10-25 下午）：只要跑「重圖表」
+### 最新（2026-10-25 晚上）：網頁版「一頁嵌多個元件」
+
+- **結論先講：** 新增 `web` 情境，看同一個網頁放好幾個看盤元件（左上報價表、右上和左下是一般網頁、右下 K 線），egui 和 GPUI 各跑一次，比記憶體、CPU、幀數、下載量，以及「關掉一格／一格當掉時其他格還會不會動」。**只跑這個大約 8 分鐘：**
+  ```
+  ./run-bench.command --scenarios web
+  ```
+- 需要 **Google Chrome**（沒有就用 Microsoft Edge；Safari 不能自動開關，不支援）。測試會自己開 Chrome 視窗、跑完自己關，用的是全新的暫存設定檔，不會動到你的書籤、登入或分頁；你平常開著的 Chrome 也不用關。
+- 第一次可能跳出「是否允許接受連入網路連線」，按「允許」或「拒絕」都可以（只用本機 127.0.0.1）。
+- 完整跑（不加參數）也會在最後跑這一項。
+
+### 2026-10-25 下午：只要跑「重圖表」
 
 - **結論先講：** 上次 GPUI 重圖表比 egui 多約 200 MB，原因是 macOS 的 malloc 把用完的大塊留著沒還。這一版 GPUI 一啟動就設 `MallocLargeCache=0`（蘋果正式的環境變數），用完的大塊馬上還給系統。**這次只要跑重圖表，大約 15 分鐘：**
   ```
@@ -70,7 +80,8 @@ Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列�
 
 | 模式 | 指令 | 時間 | 內容 |
 |---|---|---|---|
-| 完整（預設） | `./run-bench.command` | 約 80 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境全跑；10k 高頻和 4 視窗多跑一次 GPUI 舊設定（gpui-nofix） |
+| 完整（預設） | `./run-bench.command` | 約 90 分鐘 | 3 輪中位數、三種跑法（GPUI、egui wgpu、egui glow）、五大情境＋網頁全跑；10k 高頻和 4 視窗多跑一次 GPUI 舊設定（gpui-nofix） |
+| 只跑網頁 | `./run-bench.command --scenarios web` | 約 8 分鐘 | egui、GPUI 網頁版：穿插版面、4 個元件、1 個元件，各 3 輪 |
 | 快速 | `./run-bench.command --quick` | 約 20 分鐘 | 1 輪；高頻只跑 10k、100k、爆量 |
 | 只比兩個 | `./run-bench.command --apps gpui,egui-wgpu` | 約 50 分鐘 | 只跑 GPUI 和 egui（Metal） |
 
@@ -86,6 +97,7 @@ Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列�
 | 5 萬列 | 報價表 5 萬列 × 6 欄，每秒 3000 筆跳價 30 秒，接著邊跳價邊捲動 10 秒 |
 | 重圖表＋100 層畫線 | 圖表上有 20 條疊加線、8 個副圖、1000 筆畫線，畫線分成 100 層。依序跑七段：<br>跳價 → 十字線 → 平移 → 拖曳畫線 → 選取 → 調整上下順序 → 正確性檢查 |
 | 高頻進價 | 每秒 1k、10k、50k、100k 筆，再加開盤爆量。量延遲 p50/p99、遺失筆數、積壓、CPU、FPS |
+| 網頁（一頁嵌多個元件） | 用 Chrome 開同一個網頁，裡面放好幾個看盤元件，egui 和 GPUI 各跑三種版面：<br>• 穿插：左上報價表、右上網頁、左下網頁、右下 K 線<br>• 4 個元件：報價表、K 線、兩個計數器<br>• 1 個元件：只有報價表（記憶體基準）<br>每格各自的幀數、記憶體、整個瀏覽器的記憶體和 CPU、下載量；再關掉一格、讓報價表故意當掉，看其他格還會不會動 |
 | 多視窗 | 開 1 個和 4 個看盤視窗，行情每秒 1 萬筆：<br>• 螢幕有 4 個以上：一個螢幕放一個視窗<br>• 螢幕不夠：平均分配到各螢幕再格狀鋪滿<br>每個螢幕的縮放（Retina ×2）和更新率（ProMotion 120Hz）都會記錄 |
 
 各項數字的意思：
@@ -206,7 +218,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
 - 編譯完會自動開始測試。畫面上會顯示預估時間，測試視窗會自己開、自己關。
 - 測試期間 Mac 不會進入睡眠，跑完就恢復原本的設定。
 
-從原始碼跑的話，第一次會先編譯三支程式，大約 10–20 分鐘，之後再跑就不用重新編譯。
+從原始碼跑的話，第一次會先編譯三支程式，大約 10–20 分鐘，之後再跑就不用重新編譯。網頁情境要另外把兩個 repo（main 分支）的 `examples/web-multi/build.sh` 產出放到 `bench/mac/web/egui`、`web/gpui`，沒有就自動略過。
 
 ---
 
@@ -219,7 +231,9 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   常用的有：
   - `--apps gpui,gpui-nofix,egui-wgpu,egui`（預設）；另有 `gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表；`gpui-largecache`＝GPUI 保留 macOS malloc 大塊快取（`XQ_MALLOC_LARGE_CACHE=1`，修補前），只跑重圖表；`gpui-nofix`＝恢復 GPUI 預設的背景視窗限速（`XQ_INACTIVE_THROTTLE=1`）＋不申請延遲敏感模式（`XQ_MAC_ACTIVITY=0`），只跑 10k 高頻和 4 視窗
   - 停頓偵測門檻 `XQ_STALL_MS`（預設 120 毫秒，0＝關）；GPUI 內部 log 等級 `XQ_GPUI_LOG=off|warn|info|debug`
-  - `--scenarios main,stress,heavy,ticks,multi`
+  - `--scenarios main,stress,heavy,ticks,multi,web`
+  - `--web-dir`（網頁情境的網頁，預設 `web/`；裡面要有 `egui/`、`gpui/`，是兩個 repo `examples/web-multi/build.sh` 的產出）；`web_multi.py` 也可以單獨跑
+  - 網頁情境的開發者自測：`XQ_BROWSER`（瀏覽器路徑）、`XQ_BROWSER_ARGS`（例如 `--headless=new`）、`XQ_WEB_QUERY`（附加到網址，例如 `XQ_WEB_BACKEND=webgl`）
   - `--ticks s1k,s10k,s50k,s100k,burst`
   - `--windows 1,4`
   - `--layers 100`（設 1 是不分層，當對照組）
@@ -245,8 +259,8 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   - 兩邊都加了 `XQ_WIN_RECTS`。
 - **還沒做：** 高頻情境的「點報價列切換」反應時間。要自動點擊得開「輔助使用」權限，這版先略過。
 - **CI：** `.github/workflows/macos.yml`（gpui-xq-demo、egui-xq-demo 各一份，推 `mac-bench` 分支就會跑）：
-  - gpui-xq-demo：在 macos-26（Xcode 26）上編 GPUI＋`xq-tickgen`＋`xq-demofeed` 的 arm64＋x86_64 通用執行檔，預先編譯 Metal shader，ad-hoc 簽章，打包成 `xq-bench-mac-gpui.zip`，發佈公開預發行版 `mac-bench-latest`；並實際跑一輪 GPUI 主視窗＋重圖表當冒煙測試（artifact `smoke-mac-gpui`）。
-  - egui-xq-demo：編 egui（預設只編 arm64，省建置時間；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui，發佈公開預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
+  - gpui-xq-demo：在 macos-26（Xcode 26）上編 GPUI＋`xq-tickgen`＋`xq-demofeed` 的 arm64＋x86_64 通用執行檔，預先編譯 Metal shader，ad-hoc 簽章，打包成 `xq-bench-mac-gpui.zip`，發佈公開預發行版 `mac-bench-latest`；並實際跑一輪 GPUI 主視窗＋重圖表＋網頁當冒煙測試（artifact `smoke-mac-gpui`）。網頁版（`web/gpui`）是從 **main 分支**的 `examples/web-multi` 編的。
+  - egui-xq-demo：編 egui（預設只編 arm64，省建置時間；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui（含 main 分支 `examples/web-multi` 編的 `web/egui`），發佈公開預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
   - 兩個 repo 同時推時，egui 那邊可能拿到上一版 GPUI 包；要確定是最新的，等 gpui 的 run 跑完再推 egui（或手動重跑 egui 的 workflow）。
   - 下載的包會先清隔離標記（`xattr -dr com.apple.quarantine`）；`run-bench.command` 偵測到 `bin/` 已有執行檔就不會編譯。
 - **自行編譯：** `./build-mac.sh` 只編本機的架構；`./build-mac.sh --universal` 用 lipo 合成通用執行檔。
