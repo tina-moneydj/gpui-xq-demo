@@ -33,6 +33,7 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
+          rustup component add llvm-tools
       - uses: Swatinem/rust-cache@v2
         with:
           key: profile
@@ -86,9 +87,11 @@ jobs:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: '1'
         run: |
+          $sym = (Get-ChildItem "$(rustc --print sysroot)" -Recurse -Filter llvm-symbolizer.exe | Select-Object -First 1).FullName
+          Write-Host "llvm-symbolizer: $sym"
           foreach ($f in Get-ChildItem prof -Filter *.json.gz) {
             Write-Host "################################ $($f.Name)"
-            python scripts/prof-summary.py $f.FullName --pid-name gpui-xq-demo --top 45
+            python scripts/prof-summary.py $f.FullName --pid-name gpui-xq-demo --top 30 --exe "$PWD\target\release\gpui-xq-demo.exe" --symbolizer "$sym"
           }
       - uses: actions/upload-artifact@v4
         if: always()

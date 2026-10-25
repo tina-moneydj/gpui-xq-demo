@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """samply 取樣檔摘要（Windows CI／Linux 通用）：每條執行緒 CPU、主執行緒各階段（自身／含子呼叫）、最熱函式、各 DLL 自身時間。
 
-用法：python prof-summary.py profile.json.gz [--pid N | --pid-name 程式名] [--top 40]
+用法：python prof-summary.py profile.json.gz [--pid N | --pid-name 程式名] [--top 40] [--exe 本程式.exe --symbolizer llvm-symbolizer]
 要搭配 `samply record --save-only --unstable-presymbolicate`（同目錄會有 profile.json.syms.json）。
 權重用 threadCPUDelta（實際 CPU µs），沒有的話用樣本數。
 """
@@ -20,6 +20,46 @@ def load(path):
                 syms = json.load(f)
             break
     return p, syms
+
+
+def pe_image_base(path):
+    """PE 檔的 ImageBase（llvm-symbolizer 要 VA＝ImageBase＋RVA）"""
+    import struct
+    with open(path, "rb") as f:
+        d = f.read(4096)
+    off = struct.unpack_from("<I", d, 0x3C)[0]
+    magic = struct.unpack_from("<H", d, off + 24)[0]
+    return struct.unpack_from("<Q", d, off + 24 + 24)[0] if magic == 0x20B else struct.unpack_from("<I", d, off + 24 + 28)[0]
+
+
+class ExeSymbolizer:
+    """samply 沒解出來的本程式位址，改用 llvm-symbolizer（讀 PDB／DWARF）。--exe 路徑；--symbolizer 指定執行檔。"""
+
+    def __init__(self, exe, tool, lib_names):
+        self.exe, self.tool = exe, tool
+        self.lib_names = {n.lower() for n in lib_names}
+        self.base = pe_image_base(exe) if exe.lower().endswith(".exe") else 0
+        self.cache = {}
+
+    def wants(self, lib):
+        return (lib or "").lower() in self.lib_names
+
+    def resolve(self, addrs):
+        import subprocess
+        todo = sorted({a for a in addrs if a not in self.cache})
+        if not todo:
+            return
+        inp = "\n".join(hex(self.base + a) for a in todo) + "\n"
+        out = subprocess.run([self.tool, "--obj=" + self.exe, "--no-inlines", "--demangle"], input=inp,
+                             capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        blocks = [b for b in out.split("\n\n")]
+        for a, b in zip(todo, blocks):
+            lines = [x for x in b.strip().splitlines() if x.strip()]
+            name = lines[0] if lines and lines[0] != "??" else None
+            self.cache[a] = name
+
+    def lookup(self, addr):
+        return self.cache.get(addr)
 
 
 class Symbolizer:
@@ -118,6 +158,29 @@ def main():
     p, syms = load(path)
     sy = Symbolizer(syms)
     libs = p.get("libs", [])
+    exe_sy = None
+    if "--exe" in args:
+        exe = args[args.index("--exe") + 1]
+        tool = args[args.index("--symbolizer") + 1] if "--symbolizer" in args else "llvm-symbolizer"
+        base = os.path.splitext(os.path.basename(exe))[0]
+        exe_sy = ExeSymbolizer(exe, tool, [base + ".pdb", base.replace("-", "_") + ".pdb", os.path.basename(exe), base])
+        # 先把本程式所有用到的位址一次解完
+        want = []
+        for t in p["threads"]:
+            ft, fn, rt = t["frameTable"], t["funcTable"], t["resourceTable"]
+            for fi in range(ft["length"]):
+                res = fn["resource"][ft["func"][fi]]
+                if res is None or res < 0:
+                    continue
+                li = rt["lib"][res]
+                if li is None or li < 0 or li >= len(libs):
+                    continue
+                lname = libs[li].get("debugName") or libs[li].get("name")
+                a = ft["address"][fi]
+                if exe_sy.wants(lname) and a is not None and a >= 0 and not sy.lookup(lname, a):
+                    want.append(a)
+        exe_sy.resolve(want)
+        print(f"== llvm-symbolizer：本程式位址 {len(set(want))} 個，解出 {sum(1 for v in exe_sy.cache.values() if v)} 個")
     shared_strings = p.get("shared", {}).get("stringArray")
     dur_ms = None
     meta = p.get("meta", {})
@@ -165,6 +228,9 @@ def main():
             names = None
             if addr is not None and addr >= 0 and lib:
                 names = sy.lookup(lib, addr)
+                if not names and exe_sy and exe_sy.wants(lib):
+                    n = exe_sy.lookup(addr)
+                    names = [n] if n else None
             if not names:
                 nm = strings[fn["name"][func]] if fn["name"][func] is not None else "?"
                 if nm.startswith("0x") and lib:
