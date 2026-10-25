@@ -62,7 +62,7 @@ jobs:
         timeout-minutes: 40
         run: |
           cd xq-bench-mac
-          python3 xq_bench_mac.py --apps gpui,gpui-r100,gpui-norelief --scenarios heavy --runs 2 --no-zip --out "$GITHUB_WORKSPACE/smoke"; sysctl hw.memsize; sw_vers
+          python3 xq_bench_mac.py --apps gpui,gpui-largecache --scenarios main,heavy --runs 2 --no-zip --out "$GITHUB_WORKSPACE/smoke"; sysctl hw.memsize; sw_vers
           ls -la "$GITHUB_WORKSPACE/smoke"; head -60 "$GITHUB_WORKSPACE/smoke/summary.md" || true
       - uses: actions/upload-artifact@v4
         if: always()
