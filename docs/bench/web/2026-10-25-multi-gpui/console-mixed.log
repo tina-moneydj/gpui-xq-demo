@@ -1,0 +1,38 @@
+[error] panicked at src/lib.rs:238:13:
+[table] 驗證用：故意 panic
+
+Stack:
+
+Error
+    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[1128]:0x34c14e
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[5871]:0x8809dd
+
+
+[pageerror] unreachable
+[error] panicked at /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.7/src/app/async_context.rs:66:27:
+RefCell already borrowed
+
+Stack:
+
+Error
+    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12346]:0x9e940a
+    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[2628]:0x64ae08
+
+
+[pageerror] unreachable
