@@ -43,3 +43,8 @@ codegen-units = 4
 
 # 獨立 workspace（不跟桌面版共用 Cargo.lock）
 [workspace]
+
+# 修補（xq）：gpui-pre-wgpu 0.3.9 原封複製到 vendor/，只改 iOS 的 buffer 位移對齊（256），
+# 修 Xcode 27 模擬器 Metal 驗證中止（見 vendor/gpui-mobile/PATCHES.md §7）
+[patch.crates-io]
+gpui-pre-wgpu = { path = "vendor/gpui-pre-wgpu" }

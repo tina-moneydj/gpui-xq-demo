@@ -2,7 +2,7 @@
 
 來源：[longbridge/gpui-mobile](https://github.com/longbridge/gpui-mobile) `c24a130`（2026-10-14），授權沿用原專案
 （GPL-3.0-or-later OR AGPL-3.0-or-later OR Apache-2.0，見 LICENSE-*）。只複製 `src/`、`Cargo.toml`、授權與 README；
-`vendor/gpui-pre-wgpu`（只給 `offscreen` 功能用）沒帶，`offscreen` feature 與 `[patch.crates-io]` 也拿掉
+`vendor/gpui-pre-wgpu`（upstream 的，只給 `offscreen` 功能用）沒帶，`offscreen` feature 與 `[patch.crates-io]` 也拿掉
 （路徑依賴時 cargo 會檢查 feature 指向的套件，而那個 patch 只在本 crate 當 workspace 根時才生效）。
 
 所有修補都標了 `修補（xq）`，可用 `rg "修補（xq）"` 找到。
@@ -103,3 +103,25 @@ log 顯示 PingFang TC、Helvetica、Arial 的每個字面都 `Failed to read tr
   都是 0 就沿用舊值（UIScene 下 `mainScreen` 已淘汰）；`is_active` 改問 `view.window.isKeyWindow`，不用淘汰的 `UIApplication.keyWindow`。
 - `font_id`：家族載不到（或每個字面都被跳過）時不回錯（GPUI 收到錯誤會 panic），改用 CoreText 依名稱建字型，
   再退到 PingFang TC／Helvetica／系統 UI 字型。
+
+## 7. Xcode 27 模擬器：Metal 驗證「buffer 位移要是 256 的倍數」→ 中止 — `../gpui-pre-wgpu/src/wgpu_context.rs`
+
+**現象**：Xcode 27、iPhone 18 Pro 模擬器按 ▶，停在 `gpui_ios_request_frame`（hit program assert），主控台：
+`-[MTLDebugRenderCommandEncoder validateCommonDrawErrors:] … Fragment Function(fs_mono_sprite): the offset into the buffer
+gamma_params that is bound at Buffer index 1 must be a multiple of 256 but was set to 128.`
+§6 的 `catch_unwind` 接不到，因為這不是 Rust panic，是 Metal 的除錯層直接中止程式。
+
+**原因**：渲染器把三個 uniform（globals、path globals、gamma_params）放在同一塊 buffer，用
+`min_uniform_buffer_offset_alignment` 排位移。wgpu-hal 29 看「OS 是 iOS」就回報 64（只有 macOS／visionOS 回 256），
+所以 gamma_params 被放在 128。但模擬器實際跑在 Mac 的 GPU 上，Apple 規定模擬器的 buffer 位移要 256 對齊；
+Xcode 按 ▶ 預設會開 Metal API 驗證，iOS 27 模擬器就把它當錯誤中止。CI（Xcode 26、`simctl launch`
+沒開驗證）因此沒抓到。
+
+**修補**：把 `gpui-pre-wgpu` 0.3.9 原封複製到 `mobile/vendor/gpui-pre-wgpu/`（`mobile/Cargo.toml` 的
+`[patch.crates-io]` 指過去），只改建立 device 時的 limits：iOS（實機＋模擬器）把
+`min_uniform_buffer_offset_alignment`、`min_storage_buffer_offset_alignment` 至少調成 256。
+對齊要求只能往上調，256 是 64／16 的倍數，實機也合法，代價只是 buffer 裡多幾百 bytes 填充。
+gamma_params 改放在 512（globals 0、path globals 256）。Android／桌面不受影響（`cfg(target_os = "ios")`）。
+
+**CI**：`.github/workflows/ios.yml` 的模擬器冒煙測試加 `MTL_DEBUG_LAYER=1`（跟 Xcode 按 ▶ 一樣開驗證），
+log 裡出現 `failed assertion`／`Validation Error`／`validateCommon` 就算失敗（`Metal API Validation Enabled` 那行是正常訊息，不算），之後同類錯誤 CI 會先抓到。
