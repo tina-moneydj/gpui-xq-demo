@@ -29,26 +29,29 @@ class Symbolizer:
             return
         st = syms["string_table"]
         for d in syms["data"]:
-            tab = sorted(d.get("symbol_table", []), key=lambda e: e["rva"])
-            rvas = [e["rva"] for e in tab]
+            raw = d.get("symbol_table", [])
             names = []
-            for e in tab:
-                inl = [st[fr["function"]] for fr in e.get("frames", []) if "function" in fr]
+            for e in raw:
+                inl = [st[fr["function"]] for fr in e.get("frames", []) or [] if fr.get("function") is not None]
                 names.append((st[e["symbol"]], inl))
-            self.libs[d["debug_name"].lower()] = (rvas, tab, names)
+            known = {a: i for a, i in d.get("known_addresses", [])}
+            order = sorted(range(len(raw)), key=lambda i: raw[i]["rva"])
+            rvas = [raw[i]["rva"] for i in order]
+            self.libs[d["debug_name"].lower()] = (rvas, order, raw, names, known)
 
     def lookup(self, lib, addr):
         """回傳 [最外層函式, ...內聯函式（外→內）]"""
         ent = self.libs.get((lib or "").lower())
         if not ent:
             return None
-        rvas, tab, names = ent
-        i = bisect.bisect_right(rvas, addr) - 1
-        if i < 0:
-            return None
-        e = tab[i]
-        if addr >= e["rva"] + max(e.get("size", 0), 1) and e.get("size"):
-            return None
+        rvas, order, raw, names, known = ent
+        if addr in known:
+            i = known[addr]
+        else:
+            j = bisect.bisect_right(rvas, addr) - 1
+            if j < 0:
+                return None
+            i = order[j]
         sym, inl = names[i]
         # frames：samply 給的是「內→外」，最後一個是最外層
         if inl:
