@@ -79,6 +79,9 @@ jobs:
           Get-ChildItem prof | Format-Table Name, Length
       - name: 摘要
         shell: pwsh
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1'
         run: |
           foreach ($f in Get-ChildItem prof -Filter *.json.gz) {
             Write-Host "################################ $($f.Name)"
