@@ -10,9 +10,9 @@ pub fn rgba_tok(c: xq_tokens::Rgba) -> Rgba {
     gpui::rgba((c.rgb << 8) | (c.a.clamp(0.0, 1.0) * 255.0).round() as u32)
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", windows)))]
 pub fn ui_font() -> &'static str { font_sub(tk().font.ui, 0) }
-#[cfg(not(any(target_os = "android", target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "android", target_os = "macos", target_os = "ios", windows)))]
 pub fn mono_font() -> &'static str { font_sub(tk().font.mono, 1) }
 
 /// 字型替代（2026-10-25）：token 的 Noto Sans CJK 不是每台都有（Windows 預設沒有）。找不到時 GPUI 每排一段字都會
@@ -20,10 +20,10 @@ pub fn mono_font() -> &'static str { font_sub(tk().font.mono, 1) }
 /// 有設 RUST_BACKTRACE 時每個錯誤還抓一次 backtrace（Linux 實測主執行緒約 7 成時間在這，5 萬列捲動掉到 25 FPS）。
 /// 啟動時查一次，找不到就直接用 GPUI 本來就會退到的那個字型（畫面不變，只是不再每次走錯誤路徑）。
 /// 內容：[(token 名稱, 實際用的名稱); ui, mono]。token 熱更新換了名稱就不套用（回傳新名稱）。
-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", windows)))]
 static FONT_SUB: std::sync::OnceLock<[(&'static str, &'static str); 2]> = std::sync::OnceLock::new();
 
-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", windows)))]
 fn font_sub(name: &'static str, k: usize) -> &'static str {
     match FONT_SUB.get().and_then(|s| s.get(k)) {
         Some(&(orig, sub)) if orig == name => sub,
@@ -31,12 +31,12 @@ fn font_sub(name: &'static str, k: usize) -> &'static str {
     }
 }
 
-/// 蘋果系統用內建字型（上面），不需要替代
-#[cfg(any(target_os = "macos", target_os = "ios"))]
+/// 蘋果系統與 Windows 用內建字型，不需要替代
+#[cfg(any(target_os = "macos", target_os = "ios", windows))]
 pub fn resolve_fonts(_cx: &gpui::App) {}
 
 /// 啟動時（開視窗前）呼叫一次。每個名稱只查一次字型表，不列舉系統字型。
-#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", windows)))]
 pub fn resolve_fonts(cx: &gpui::App) {
     let ts = cx.text_system();
     let resolved = |name: &'static str| -> &'static str {
@@ -53,6 +53,11 @@ pub fn resolve_fonts(cx: &gpui::App) {
     let t = tk();
     let _ = FONT_SUB.set([(t.font.ui, resolved(t.font.ui)), (t.font.mono, resolved(t.font.mono))]);
 }
+/// Windows：系統內建的微軟正黑體；等寬用 Consolas（中文字由 DirectWrite 字型後援補上）。token 的 Noto Sans CJK 在 Windows 上沒有內建。
+#[cfg(windows)]
+pub fn ui_font() -> &'static str { "Microsoft JhengHei UI" }
+#[cfg(windows)]
+pub fn mono_font() -> &'static str { "Consolas" }
 /// macOS／iOS：系統內建的蘋方-繁（PingFang TC）；等寬用 Menlo（中文字由 CoreText 字型後援補上）。
 /// token 的 Noto Sans CJK 在蘋果系統上沒有內建。字型由 CoreText 依名稱按需開啟（檔案映射、系統共用），不整檔讀進記憶體。
 #[cfg(any(target_os = "macos", target_os = "ios"))]

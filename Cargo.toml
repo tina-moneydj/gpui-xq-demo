@@ -38,6 +38,9 @@ js-sys = "0.3"
 web-time = "1"
 web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType"] }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
+
 [profile.release]
 strip = true
 debug = false

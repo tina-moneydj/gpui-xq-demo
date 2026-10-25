@@ -1,0 +1,100 @@
+# Windows CPU 取樣剖析（找 GPUI 版在 Windows 上 CPU 比 egui 高的地方）
+# CI 機器沒有實體 GPU（DirectX 走 WARP 軟體繪圖），所以 WARP（d3d10warp.dll）會吃掉大部分 CPU、絕對數字不具參考性；
+# 要看的是主執行緒上 GPUI 每幀花在哪（排版、文字、組 scene、送繪圖指令），以及改前改後的相對變化。
+# 產出：job log 印出摘要（scripts/prof-summary.py）；artifact windows-profile 有完整取樣檔（可拖進 https://profiler.firefox.com）。
+name: windows-profile
+
+on:
+  push:
+    branches: ['claude/**']
+    paths: ['src/**', 'crates/**', 'Cargo.*', '.github/workflows/windows-profile.yml', 'scripts/prof-summary.py']
+  workflow_dispatch:
+    inputs:
+      envs:
+        description: '額外環境變數（分號分隔 K=V），例如 XQ_TABLE_DIVS=1'
+        required: false
+        default: ''
+
+concurrency:
+  group: windows-profile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
+      CARGO_PROFILE_RELEASE_STRIP: none
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: profile
+      - name: Build (release＋除錯符號)
+        shell: pwsh
+        run: cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
+      - name: 下載 samply
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://github.com/mstange/samply/releases/download/samply-v0.13.1/samply-x86_64-pc-windows-msvc.zip -OutFile samply.zip
+          Expand-Archive samply.zip -DestinationPath samply
+          Get-ChildItem samply -Recurse | Format-Table FullName
+      - name: 取樣（各情境 25 秒）
+        shell: pwsh
+        run: |
+          $samply = (Get-ChildItem samply -Recurse -Filter samply.exe | Select-Object -First 1).FullName
+          $bin = "$PWD\target\release"
+          New-Item -ItemType Directory -Force prof, appdata | Out-Null
+          $extra = @{}
+          foreach ($kv in ("${{ github.event.inputs.envs }}" -split ';')) { if ($kv -match '^\s*([^=]+)=(.*)$') { $extra[$Matches[1].Trim()] = $Matches[2] } }
+          $scen = [ordered]@{
+            main   = @{ XQ_METRICS = "1" }
+            stress = @{ XQ_METRICS = "1"; XQ_GROUP_STRESS = "1"; XQ_STRESS_COLS = "6"; XQ_STRESS_TICK_HZ = "3000"; XQ_STRESS_TICK_MS = "60000"; XQ_STRESS_SCROLL_MS = "1000" }
+          }
+          foreach ($name in $scen.Keys) {
+            $feed = Start-Process "$bin\xq-demofeed.exe" -ArgumentList "--addr 127.0.0.1:47631" -PassThru -WindowStyle Hidden
+            Start-Sleep 2
+            $env:XQ_BENCH = "1"; $env:XQ_PERIOD = "D"; $env:APPDATA = "$PWD\appdata"; $env:XQ_GPUI_STATE = "$PWD\appdata\state-$name.json"
+            foreach ($k in $scen[$name].Keys) { Set-Item "env:$k" $scen[$name][$k] }
+            foreach ($k in $extra.Keys) { Set-Item "env:$k" $extra[$k] }
+            $out = "$PWD\prof\$name.json.gz"
+            $p = Start-Process $samply -ArgumentList "record --save-only --unstable-presymbolicate --symbol-dir `"$bin`" --symbol-dir `"$bin\deps`" -o `"$out`" -- `"$bin\gpui-xq-demo.exe`"" -PassThru -NoNewWindow -RedirectStandardOutput "prof\$name-app.log" -RedirectStandardError "prof\$name-samply.log"
+            Start-Sleep 28
+            Get-Process gpui-xq-demo -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
+            Start-Sleep 3
+            Get-Process gpui-xq-demo -ErrorAction SilentlyContinue | Stop-Process -Force
+            $p.WaitForExit(120000) | Out-Null
+            Stop-Process -Id $feed.Id -Force -ErrorAction SilentlyContinue
+            foreach ($k in $scen[$name].Keys) { Remove-Item "env:$k" -ErrorAction SilentlyContinue }
+            Write-Host "==== $name：app log 最後幾行"
+            Get-Content "prof\$name-app.log" -Tail 8 -ErrorAction SilentlyContinue
+            Get-Content "prof\$name-samply.log" -Tail 5 -ErrorAction SilentlyContinue
+          }
+          Get-ChildItem prof | Format-Table Name, Length
+          Get-ChildItem $bin -Filter *.pdb | Format-Table Name, Length
+          python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); [print(x['debug_name'], len(x.get('symbol_table',[]))) for x in d['data']]" prof\main.json.syms.json
+      - name: 摘要
+        continue-on-error: true
+        shell: pwsh
+        env:
+          XQ_PROF_OTHERS: '0'
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: '1'
+        run: |
+          $sym = @("C:\Program Files\LLVM\bin\llvm-symbolizer.exe") + @(Get-ChildItem "$(rustc --print sysroot)" -Recurse -Filter llvm-symbolizer.exe | ForEach-Object FullName) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+          Write-Host "llvm-symbolizer: $sym"
+          foreach ($f in Get-ChildItem prof -Filter *.json.gz) {
+            Write-Host "################################ $($f.Name)"
+            python scripts/prof-summary.py $f.FullName --pid-name gpui-xq-demo --top 30 --exe "$PWD\target\release\gpui-xq-demo.exe" --symbolizer "$sym"
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-profile
+          path: prof/*

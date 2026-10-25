@@ -147,6 +147,9 @@ struct Stats {
     apply_us_avg: u64,
     chart_paints: u64,
     chart_paint_us_avg: u64,
+    /// 上一秒主執行緒／整個程序 CPU（%，100＝一顆核心）；量不到是 -1
+    cpu_main: f64,
+    cpu_proc: f64,
 }
 
 struct InfoPane {
@@ -276,6 +279,8 @@ struct Terminal {
     last_rows_in: u64,
     last_paints: u64,
     last_paint_us: u64,
+    /// 上次 sample() 的（時間、主執行緒 CPU 秒、程序 CPU 秒）
+    last_cpu: Option<(Instant, f64, f64)>,
     stats: Stats,
     metrics_log: bool,
     no_cache: bool,
@@ -437,6 +442,7 @@ impl Terminal {
             last_rows_in: 0,
             last_paints: 0,
             last_paint_us: 0,
+            last_cpu: None,
             stats: Stats::default(),
             metrics_log: crate::plat::var_os("XQ_METRICS").is_some(),
             no_cache: crate::plat::var_os("XQ_NO_VIEW_CACHE").is_some(),
@@ -769,6 +775,16 @@ impl Terminal {
             self.chart.read(cx).paint_totals()
         };
         let dp = paints - self.last_paints;
+        let now = Instant::now();
+        let cpu = cpu_secs();
+        let (cpu_main, cpu_proc) = match (cpu, self.last_cpu) {
+            (Some((m1, p1)), Some((t0, m0, p0))) => {
+                let el = now.duration_since(t0).as_secs_f64().max(1e-3);
+                ((m1 - m0) / el * 100.0, (p1 - p0) / el * 100.0)
+            }
+            _ => (-1.0, -1.0),
+        };
+        self.last_cpu = cpu.map(|(m, p)| (now, m, p));
         self.stats = Stats {
             fps: self.frames,
             rss_mb: rss_mb(),
@@ -778,12 +794,14 @@ impl Terminal {
             apply_us_avg: if self.applies > 0 { self.apply_us / self.applies as u64 } else { 0 },
             chart_paints: dp,
             chart_paint_us_avg: if dp > 0 { (paint_us - self.last_paint_us) / dp } else { 0 },
+            cpu_main,
+            cpu_proc,
         };
         if self.metrics_log {
             let s = &self.stats;
             eprintln!(
-                "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} conn={:?}",
-                s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, self.conn
+                "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} cpu_main={:.1} cpu_proc={:.1} conn={:?}",
+                s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, s.cpu_main, s.cpu_proc, self.conn
             );
         }
         if let Some(tb) = self.tick.as_mut() {
@@ -877,6 +895,61 @@ impl Terminal {
     }
 }
 
+/// 2026-10-25：CPU 拆解用——（這條執行緒、整個程序）累計 CPU 秒數。在 sample()（主執行緒、每秒一次）呼叫，
+/// metrics 行印 cpu_main／cpu_proc（100%＝一顆核心）：看得出多的 CPU 是主執行緒（GPUI＋我們）還是驅動／其他執行緒。
+/// Windows：GetThreadTimes／GetProcessTimes；Linux：/proc/thread-self/stat、/proc/self/stat；其他平台回 None。
+#[cfg(windows)]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    use windows_sys::Win32::Foundation::FILETIME;
+    use windows_sys::Win32::System::Threading::{GetCurrentProcess, GetCurrentThread, GetProcessTimes, GetThreadTimes};
+    let ft = |f: &FILETIME| (((f.dwHighDateTime as u64) << 32) | f.dwLowDateTime as u64) as f64 / 1e7;
+    unsafe {
+        let z = || FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+        let (mut c, mut e, mut k, mut u) = (z(), z(), z(), z());
+        if GetThreadTimes(GetCurrentThread(), &mut c, &mut e, &mut k, &mut u) == 0 {
+            return None;
+        }
+        let th = ft(&k) + ft(&u);
+        if GetProcessTimes(GetCurrentProcess(), &mut c, &mut e, &mut k, &mut u) == 0 {
+            return None;
+        }
+        Some((th, ft(&k) + ft(&u)))
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    // stat 第 14、15 欄 utime／stime（clock ticks，Linux 一律 100 Hz）；comm 可能含空白，從最後一個 ')' 之後切
+    let ticks = |path: &str| -> Option<f64> {
+        let s = std::fs::read_to_string(path).ok()?;
+        let rest = s.get(s.rfind(')')? + 2..)?;
+        let f: Vec<&str> = rest.split_whitespace().collect();
+        Some((f.get(11)?.parse::<f64>().ok()? + f.get(12)?.parse::<f64>().ok()?) / 100.0)
+    };
+    Some((ticks("/proc/thread-self/stat")?, ticks("/proc/self/stat")?))
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    None
+}
+
+/// Windows：目前程序的工作集（Working Set，相當於 RSS）
+#[cfg(windows)]
+pub fn rss_mb() -> f64 {
+    use windows_sys::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    unsafe {
+        let mut c: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+        c.cb = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+        if GetProcessMemoryInfo(GetCurrentProcess(), &mut c, c.cb) != 0 {
+            c.WorkingSetSize as f64 / (1024.0 * 1024.0)
+        } else {
+            0.0
+        }
+    }
+}
+
 /// 2026-10-25：記憶體拆解用——配置器（malloc）實際在用的量與向系統要來的量（MB），印在 CHARTPERF 行。
 /// RSS 減掉這個＝程式碼／字型檔對映＋GPU 驅動（Metal／wgpu 的緩衝區與貼圖）＋其他。
 /// macOS：malloc_zone_statistics（全部 zone）；Linux（glibc）：mallinfo2；其他平台不印。
@@ -921,7 +994,7 @@ pub fn rss_mb() -> f64 {
     plat::wasm_heap_mb()
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(windows, target_arch = "wasm32")))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -1265,6 +1338,16 @@ fn run(app: gpui::Application) {
         cx.on_window_closed(|cx, _| cx.quit()).detach();
         cx.activate(true);
     });
+}
+
+/// 設定檔根目錄：Windows %APPDATA%；其他 $XDG_DATA_HOME 或 ~/.local/share
+pub fn data_dir() -> Option<std::path::PathBuf> {
+    let env = |k: &str| crate::plat::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
+    #[cfg(windows)]
+    let base = env("APPDATA").or_else(|| env("LOCALAPPDATA"));
+    #[cfg(not(windows))]
+    let base = env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local/share")));
+    base
 }
 
 #[cfg(not(target_arch = "wasm32"))]
