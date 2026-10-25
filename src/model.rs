@@ -21,7 +21,9 @@ pub const HEAD: u8 = 8;
 pub const SAVE: u8 = 16;
 /// 選取的那條（三明治中間那片）：拖曳時只重畫這片＋live
 pub const SEL: u8 = 32;
-pub const ALL: u8 = PLOT | DRAW | LIVE | HEAD | SEL;
+/// 只有標頭的報價（代號名稱／價／漲跌／量）變了：只重畫標頭那個小 view，不重排整個走勢圖的元素樹
+pub const QUOTE: u8 = 64;
+pub const ALL: u8 = PLOT | DRAW | LIVE | HEAD | SEL | QUOTE;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct View {
@@ -392,7 +394,7 @@ impl Model {
             self.name = name.into();
         }
         if self.s.period == Period::Intraday {
-            return HEAD;
+            return QUOTE;
         }
         if !self.anchored {
             // 第一筆真實價：重鋪合成 K 讓最後一根對上實價（只發生一次），指標整段重算
@@ -410,9 +412,9 @@ impl Model {
         if self.s.apply_price(price, dv) {
             self.patch_last();
             self.touch();
-            return PLOT | LIVE | HEAD;
+            return PLOT | LIVE | QUOTE;
         }
-        HEAD
+        QUOTE
     }
 
     /// 壓測用合成 tick（與 wry `__perfContinuous` 相同：last.c + sin(f/7)·0.15、量 +1）
@@ -423,7 +425,7 @@ impl Model {
         self.price = price;
         self.patch_last();
         self.touch();
-        PLOT | LIVE | HEAD
+        PLOT | LIVE | QUOTE
     }
 
     pub fn set_intraday(&mut self, prev: f64, bars: &[xq_feed::Bar]) -> u8 {

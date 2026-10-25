@@ -4,6 +4,7 @@
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
+> - **5 萬列捲動卡頓（10-25 晚上）**：查到 Windows 卡頓主要是壓測用 16 ms 計時器推捲動（Windows 計時器刻度 15.6 ms，報價表每秒只拿到約 42 個新位置），改成每幀推進；另修字型找不到時每段字走錯誤路徑。說明與數字：[docs/bench/2026-10-25-scroll/](docs/bench/2026-10-25-scroll/README.md)。**Windows 待重跑確認。**
 > - **最新（10-25 晚上）**：「[4 視窗第 2～4 個視窗晚約 3 秒](#4-視窗第-24-個視窗晚約-3-秒才有報價查到原因並修好2026-10-25-晚上)」已修好。「[Mac 只跑重圖表](#mac-只跑重圖表記憶體修正確認2026-10-25-晚上)」確認記憶體修正有效，GPUI 重圖表 321 → 115 MB，變成最省。
 > - **選型最新結論（10-25 下午）**先看「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
 > - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
@@ -357,6 +358,12 @@
 
 gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第二個視窗／彈出視窗／浮動視窗（回 `WebWindowError`）、原生選單（`set_menus` 空實作）、
 檔案對話框（`prompt_for_paths` 回「not supported on the web」）、`reveal_path`、防休眠、結束程式。輸入法走隱藏 `<textarea>`（`ime_mirror.rs`）。
+
+### 一頁嵌多個元件（2026-10-25，和一般 HTML 穿插）
+
+**可行，但 GPUI 一個元件要一個 wasm instance**（gpui_web 一個 Application 只能開一個視窗）。同一個 html 頁面放：左上報價組合（GPUI）、右上公告與左下下單匣（一般 HTML）、右下技術分析（GPUI K 線），四格都會動、HTML 輸入正常、一格 panic 只停那一格。
+代價是記憶體：穿插版面 wasm 記憶體 GPUI **24.8 MB**、egui（共用一份）**8.9 MB**；下載 GPUI 約 6.4 MB、egui 4.2 MB（gzip）。已放進 Mac／Windows 實機壓測包的 `web` 情境。
+細節、數字、沒驗的事：[docs/web-multi.md](docs/web-multi.md)；範例：[`examples/web-multi/`](examples/web-multi/)。
 
 ### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
 
