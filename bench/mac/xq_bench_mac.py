@@ -70,6 +70,7 @@ APPDEF = {
                    "only": ("ticks", "multi"), "ticks": ("s10k",), "windows": (4,)},
     # 2026-10-25 下午：同一個 GPUI 執行檔關掉「每 0.5 秒 malloc_zone_pressure_relief」（src/memrelief.rs），看重圖表多的 ~200 MB 有沒有還回去
     "gpui-norelief": {"bin": "gpui-xq-demo", "label": "GPUI 未還記憶體（對照）", "env": {"XQ_DRAW_QUADS": "0", "XQ_MALLOC_RELIEF_MS": "0"}, "only": ("heavy",)},
+    "gpui-r100": {"bin": "gpui-xq-demo", "label": "GPUI relief 100ms", "env": {"XQ_DRAW_QUADS": "0", "XQ_MALLOC_RELIEF_MS": "100"}, "only": ("heavy",)},
     "egui-wgpu": {"bin": "egui-xq-demo", "label": "egui（wgpu／Metal）", "env": {"XQ_RENDERER": "wgpu"}},
     "egui":      {"bin": "egui-xq-demo", "label": "egui（glow／OpenGL）", "env": {"XQ_RENDERER": "glow"}},
 }
