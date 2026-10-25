@@ -53,9 +53,12 @@
 
 ## 下一步
 
-1. 重圖表：在 Mac 上把那 201 MB 還回去，請 Tina 只跑 `heavy` 情境確認。**10-25 下午已修，等 Mac 重跑**：背景執行緒每 0.5 秒呼叫 `malloc_zone_pressure_relief`（`src/memrelief.rs`）。
-   - 原因：這台 24 GB 的 Mac 沒開 malloc 的 medium 區，大於 small 上限的配置都各自 mmap；free 後進「death-row 快取」，最多 128 塊（正好是 vmmap 的 128 塊）。
-   - 這些大塊（推測）是重圖表每幀的 Path 頂點暫存，大多在 GPUI 裡：`paint_path` 內部 `scale()` 和 `Scene` 各複製一次，Metal renderer 每幀再把全部頂點組成一個新陣列。我們自己的畫線快取只有約 1 萬個頂點，所以無法只靠我們這層重用緩衝解決。
-   - 壓測包新增對照欄 `gpui-norelief`（`XQ_MALLOC_RELIEF_MS=0`，只跑重圖表）；CHARTPERF 多了 `mallocReliefN`／`mallocReliefMb`（呼叫次數、估計還回去的量）。
+1. 重圖表：在 Mac 上把那 201 MB 還回去，請 Tina 只跑 `heavy` 情境確認。**10-25 下午已修，等 Mac 重跑**（`src/memrelief.rs`）。
+   - 原因：這台 Mac 的 malloc 是新版 xzone malloc（vmmap 有「Deferred Reclaim」區）。大於 2 MB 的配置 free 後先進 huge 快取／延遲回收緩衝，等系統缺記憶體才由核心收回，期間還算在 RSS 和實體記憶體裡。
+   - 這些大塊（推測）是重圖表每幀的 Path 頂點暫存，大多在 GPUI 裡：快取子 view 每幀複製上一幀的 Path、`paint_path` 內部 `scale()` 再複製一次、Metal renderer 每幀再把全部頂點組成一個新陣列。我們自己的畫線快取只有約 1 萬個頂點，所以無法只靠我們這層重用緩衝解決。
+   - 第一版（每 0.5 秒 `malloc_zone_pressure_relief`）在 CI 的 macOS 26 上沒用：xzone malloc 的 pressure_relief 是空的（libmalloc 原始碼）。
+   - 第二版：程式一啟動就設蘋果正式的環境變數 `MallocLargeCache=0`（關掉 huge 快取與延遲回收），用同一個執行檔 exec 自己一次（同一個 PID）。正式 .app 改在 Info.plist 的 `LSEnvironment` 設。
+   - CI 的 Mac 虛擬機（Apple M1 Virtual）實測，同一個執行檔、各 2 輪：重圖表 RSS **259–271 → 88–93 MB**、結束時實體記憶體 **188 → 44 MB**、vmmap 的 MALLOC_LARGE (empty) 92 MB → 沒有；FPS 差不多，CPU 部分情境多 0–10 個百分點。虛擬機數字只當方向，要等 Tina 的 M4 確認。
+   - 壓測包新增對照欄 `gpui-largecache`（`XQ_MALLOC_LARGE_CACHE=1`＝修之前的系統預設，只跑重圖表）；CHARTPERF 多了 `mallocLargeCache`（0＝已關）。
 2. GPUI 多視窗第 2–4 個視窗第一筆報價晚約 3 秒（Mac、Windows 都有），要查。
 3. 壓測包修 vmmap 檔名。
