@@ -4,10 +4,10 @@
 //! 「Malloc Large (empty)」201 MB（128 塊，每塊約 2.6 MB），egui 是 0；我們程式真正在用的 heap 只有約 18 MB。
 //! - 原因：macOS 的 malloc（magazine zone）在 32 GB 以下的機器不開 medium 區，大於 small 上限的配置都走「large」＝
 //!   每塊各自 mmap。free 之後不馬上還給系統，而是放進「death-row 快取」等下次重用，最多 128 塊（就是 vmmap 那 128 塊）。
-//! - 重圖表每幀都有幾塊這種 2–3 MB 的暫存：1000 筆畫線三角化後的 Path 頂點陣列，GPUI 的 `paint_path` 要拿走一份
-//!   （我們 clone 一次）、內部 `scale()` 再複製一次、`Scene` 又 clone 一次；Metal renderer 每幀再組一次頂點緩衝。
-//!   這些都是 GPUI API 決定的，我們這層能省的只有自己那一次 clone，省不掉。大小每幀略有不同（平移、選取、換層），
-//!   快取重用不完，就一路累積到 128 塊上限。
+//! - 重圖表每幀都有幾塊這種 MB 級的暫存，大多在 GPUI 裡面（推測，Mac 上還沒逐一量）：`paint_path` 把每條 Path 的頂點
+//!   `scale()` 複製一份、`Scene` 再 clone 一份，Metal renderer 每幀把全部 path 頂點組成一個新的 Vec（主圖 20 疊加＋8 副圖＋
+//!   畫線，加倍成長）。我們自己只有畫線快取每幀 clone 一次（313 條、約 1 萬頂點，不大）。這些是 GPUI API 決定的，
+//!   我們這層重用緩衝省不掉。大小每幀略有不同（平移、選取、換層），快取重用不完，就一路累積到 128 塊上限。
 //! - Windows（HeapAlloc）和 Linux（glibc，大塊用 mmap、free 就 munmap）沒有這種快取，所以只有 Mac 會多 200 MB。
 //!
 //! **怎麼修（不改 GPUI）：** 背景執行緒每 `XQ_MALLOC_RELIEF_MS`（預設 500 ms）呼叫一次
