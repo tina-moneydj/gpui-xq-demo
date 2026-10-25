@@ -310,11 +310,26 @@ def main():
                     hit.add(pn)
             for pn in hit:
                 phase_c[pn] += wt
+        # taffy 從哪裡被叫：取第一個 taffy 呼叫之前、最近的 3 個 gpui／本程式框架（看是根排版、uniform_list 每列、還是哪個 view）
+        caller_c = collections.Counter()
+        key_rx = re.compile(r"gpui_xq_demo::|uniform_list|UniformList|layout_as_root|prepaint_as_root|Window>::draw|cached|AnyView|Deferred|Anchored|List>|list::")
+        for si, wt in zip(s["stack"], w):
+            if not wt:
+                continue
+            names = stack_list(si)
+            idx = next((i for i, n in enumerate(names) if re.search(r"<taffy::|taffy::compute|TaffyLayoutEngine", n)), None)
+            if idx is None:
+                continue
+            ctx = [short(n.split("!", 1)[-1]) for n in names[:idx] if key_rx.search(n)]
+            caller_c[" ← ".join(reversed(ctx[-3:])) or "（無）"] += wt
         print(f"\n######## {label}：{t.get('name')} tid={t.get('tid')}，CPU {tot/1000:.0f} ms")
         print("-- 階段（含子呼叫；%＝佔這條執行緒；ms＝整段取樣期間合計）")
         for pn, _ in PHASES:
             v = phase_c.get(pn, 0)
             print(f"  {v/tot*100:5.1f}%  {v/1000:8.0f} ms  {pn}")
+        print("-- taffy 呼叫來源（最近 3 層 gpui／本程式框架，由內到外）")
+        for k, v in caller_c.most_common(12):
+            print(f"  {v/tot*100:5.1f}%  {k[:300]}")
         print("-- 分桶（最內層命中；%＝佔這條執行緒）")
         for k, v in bucket_c.most_common():
             print(f"  {v/tot*100:5.1f}%  {k}")
