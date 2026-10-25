@@ -4,6 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -312,5 +316,78 @@ public static class XqBench {
             }
             PdhCloseQuery(q);
         } catch (Exception ex) { r.Error = ex.Message; }
+    }
+}
+
+// 網頁「一頁嵌多個元件」情境用的小網頁伺服器：只聽 127.0.0.1、gzip（壓好的內容快取起來）、
+// 計算送出的位元組、收頁面 POST 回來的 JSON（/__bench）。用 TcpListener，不需要系統管理員權限或 urlacl。
+public class XqWebPost { public double T; public string Json; }
+public class XqWeb {
+    TcpListener l; string root; Thread th; volatile bool on = true;
+    Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
+    public int Port; public long Sent; public List<XqWebPost> Posts = new List<XqWebPost>(); public List<string> Files = new List<string>();
+    public XqWeb(string root) {
+        this.root = Path.GetFullPath(root);
+        l = new TcpListener(IPAddress.Loopback, 0); l.Start(); Port = ((IPEndPoint)l.LocalEndpoint).Port;
+        th = new Thread(Loop); th.IsBackground = true; th.Start();
+    }
+    public void Reset() { lock (this) { Sent = 0; Posts.Clear(); Files.Clear(); } }
+    public XqWebPost[] Snapshot() { lock (this) { return Posts.ToArray(); } }
+    public string[] FileList() { lock (this) { return Files.ToArray(); } }
+    public void Stop() { on = false; try { l.Stop(); } catch { } }
+    void Loop() {
+        while (on) {
+            TcpClient c;
+            try { c = l.AcceptTcpClient(); } catch { return; }
+            var t = new Thread(() => Serve(c)); t.IsBackground = true; t.Start();
+        }
+    }
+    byte[] Body(string f, bool gz) {
+        string k = f + (gz ? "|gz" : "");
+        lock (cache) {
+            byte[] b;
+            if (cache.TryGetValue(k, out b)) return b;
+            byte[] raw = File.ReadAllBytes(f);
+            if (gz) { var ms = new MemoryStream(); using (var z = new GZipStream(ms, CompressionMode.Compress, true)) z.Write(raw, 0, raw.Length); b = ms.ToArray(); }
+            else b = raw;
+            cache[k] = b; return b;
+        }
+    }
+    static string ReadLine(Stream s) {
+        var sb = new StringBuilder(); int ch;
+        while ((ch = s.ReadByte()) >= 0) { if (ch == '\n') break; if (ch != '\r') sb.Append((char)ch); }
+        return ch < 0 && sb.Length == 0 ? null : sb.ToString();
+    }
+    void Serve(TcpClient c) {
+        try {
+            using (c) using (var s = c.GetStream()) {
+                while (true) {
+                    string req = ReadLine(s); if (string.IsNullOrEmpty(req)) return;
+                    var hdr = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); string h;
+                    while (!string.IsNullOrEmpty(h = ReadLine(s))) { int i = h.IndexOf(':'); if (i > 0) hdr[h.Substring(0, i).Trim()] = h.Substring(i + 1).Trim(); }
+                    var p = req.Split(' '); if (p.Length < 2) return;
+                    string path = Uri.UnescapeDataString(p[1].Split('?')[0]);
+                    if (p[0] == "POST") {
+                        int n = 0; string cl; if (hdr.TryGetValue("Content-Length", out cl)) int.TryParse(cl, out n);
+                        var buf = new byte[n]; int got = 0; while (got < n) { int r = s.Read(buf, got, n - got); if (r <= 0) break; got += r; }
+                        lock (this) Posts.Add(new XqWebPost { T = XqBench.Now(), Json = Encoding.UTF8.GetString(buf, 0, got) });
+                        var ok = Encoding.ASCII.GetBytes("HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n"); s.Write(ok, 0, ok.Length);
+                        continue;
+                    }
+                    string rel = path.TrimStart('/'); if (rel == "") rel = "index.html";
+                    string f = Path.GetFullPath(Path.Combine(root, rel.Replace('/', Path.DirectorySeparatorChar)));
+                    if (!f.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(f)) {
+                        var nf = Encoding.ASCII.GetBytes("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"); s.Write(nf, 0, nf.Length); continue;
+                    }
+                    string ae; bool gz = hdr.TryGetValue("Accept-Encoding", out ae) && ae.Contains("gzip");
+                    byte[] body = Body(f, gz);
+                    string ext = Path.GetExtension(f).ToLowerInvariant();
+                    string ct = ext == ".html" ? "text/html; charset=utf-8" : ext == ".js" ? "text/javascript; charset=utf-8" : ext == ".wasm" ? "application/wasm" : "application/octet-stream";
+                    var head = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Type: " + ct + "\r\nCache-Control: no-store\r\n" + (gz ? "Content-Encoding: gzip\r\n" : "") + "Content-Length: " + body.Length + "\r\n\r\n");
+                    s.Write(head, 0, head.Length); s.Write(body, 0, body.Length);
+                    lock (this) { Sent += body.Length; Files.Add(path + " " + body.Length); }
+                }
+            }
+        } catch { }
     }
 }
