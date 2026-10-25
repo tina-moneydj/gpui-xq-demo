@@ -1151,10 +1151,11 @@ fn run(app: gpui::Application) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
+    // macOS：先確定 malloc 的大塊快取已關（可能 exec 自己一次，見 memrelief.rs），再做任何事
+    memrelief::ensure_no_large_cache();
     gpuilog::init();
     #[cfg(target_os = "macos")]
     macos::begin_latency_critical_activity();
-    memrelief::start();
     run(gpui_platform::application());
 }
 

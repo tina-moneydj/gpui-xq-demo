@@ -1,107 +1,50 @@
-//! macOS：定期把 malloc「已 free、但還佔著實體記憶體」的大塊還給系統（2026-10-25）。
+//! macOS：讓 malloc 把 free 掉的大塊馬上還給系統（2026-10-25）。
 //!
-//! **為什麼要有這個：** Tina 的 M4 Mac（24 GB）重圖表情境，vmmap 看到 GPUI 版有一塊
-//! 「Malloc Large (empty)」201 MB（128 塊，每塊約 2.6 MB），egui 是 0；我們程式真正在用的 heap 只有約 18 MB。
-//! - 原因：macOS 的 malloc（magazine zone）在 32 GB 以下的機器不開 medium 區，大於 small 上限的配置都走「large」＝
-//!   每塊各自 mmap。free 之後不馬上還給系統，而是放進「death-row 快取」等下次重用，最多 128 塊（就是 vmmap 那 128 塊）。
-//! - 重圖表每幀都有幾塊這種 MB 級的暫存，大多在 GPUI 裡面（推測，Mac 上還沒逐一量）：`paint_path` 把每條 Path 的頂點
-//!   `scale()` 複製一份、`Scene` 再 clone 一份，Metal renderer 每幀把全部 path 頂點組成一個新的 Vec（主圖 20 疊加＋8 副圖＋
-//!   畫線，加倍成長）。我們自己只有畫線快取每幀 clone 一次（313 條、約 1 萬頂點，不大）。這些是 GPUI API 決定的，
-//!   我們這層重用緩衝省不掉。大小每幀略有不同（平移、選取、換層），快取重用不完，就一路累積到 128 塊上限。
-//! - Windows（HeapAlloc）和 Linux（glibc，大塊用 mmap、free 就 munmap）沒有這種快取，所以只有 Mac 會多 200 MB。
+//! **為什麼要有這個：** Tina 的 M4 Mac 重圖表情境，vmmap 看到 GPUI 版有一塊「Malloc Large (empty)」201 MB（128 塊、
+//! 每塊約 2.6 MB），egui 是 0；我們程式真正在用的 heap 只有約 18 MB。RSS 因此是 321 vs 131 MB。
+//! - 原因：新版 macOS 的 malloc（xzone malloc，vmmap 裡有「Deferred Reclaim」區）對大於 2 MB 的「huge」配置，
+//!   free 之後不馬上還，而是放進 huge 快取／延遲回收緩衝，等系統記憶體吃緊時才由核心收回。這些頁面還算在
+//!   RSS 和「活動監視器」的記憶體裡。
+//! - 重圖表每幀都有幾塊這種 2–3 MB 的暫存，大多在 GPUI 裡面（推測）：快取的子 view 每幀把上一幀的 Path 複製進新的
+//!   `Scene`、`paint_path` 內部 `scale()` 再複製一次、Metal renderer 每幀把全部 path 頂點組成一個新的 Vec。
+//!   我們自己的畫線快取只有約 1 萬個頂點，重用緩衝省不掉。egui 把整個畫面合成一份頂點緩衝重用，所以沒有這個現象。
+//! - Windows（HeapAlloc）和 Linux（glibc：大塊 mmap、free 就 munmap）沒有這種快取，所以只有 Mac 會多 200 MB。
+//! - 第一版（69b87bd）每 0.5 秒呼叫 `malloc_zone_pressure_relief`：CI 的 macOS 26 實測沒用——xzone malloc 的
+//!   pressure_relief 是空的 fallback（libmalloc 原始碼 xzone_malloc.c），舊的 magazine malloc 才有作用。
 //!
-//! **怎麼修（不改 GPUI）：** 背景執行緒每 `XQ_MALLOC_RELIEF_MS`（預設 500 ms）呼叫一次
-//! `malloc_zone_pressure_relief(NULL, 0)`——這就是系統記憶體吃緊時 libmalloc 自己會做的事：清空 death-row 快取、
-//! 把 tiny／small 的空頁 madvise 還回去。不在 UI 執行緒做（規則 1）；只影響 free 掉的記憶體，不碰在用的資料。
-//! 代價：清空之後下一幀那幾塊要重新 mmap（約 10 MB 的缺頁），每 0.5 秒一次。
-//! `XQ_MALLOC_RELIEF_MS=0` 關掉（A/B 對照用；Mac 壓測包的 gpui-norelief 欄就是這樣跑）。
-//!
-//! `malloc_zone_pressure_relief` 的回傳值不含 death-row 那部分（libmalloc 內部變數遮蔽），
-//! 所以「還了多少」用呼叫前後的常駐記憶體（mach task_info resident_size）差估算，印在 CHARTPERF 的 `mallocReliefMb`。
+//! **怎麼修（不改 GPUI）：** libmalloc 的正式環境變數 `MallocLargeCache=0` 會關掉 huge 快取和延遲回收
+//! （舊的 magazine malloc 則是關掉 large「death-row」快取）。它只在程式啟動時讀一次，所以 `main()` 一開始：
+//! 沒設過就設好、用同一個執行檔 exec 自己一次（同一個 PID，多花幾 ms 啟動）。正式產品打包成 .app 時，改在
+//! Info.plist 的 `LSEnvironment` 設同一個變數就不用 exec。
+//! 代價：free 掉的大塊立刻還給系統，下一幀重新要（多一些缺頁），CPU 稍高一點；Mac 壓測包有對照欄可以看。
+//! `XQ_MALLOC_LARGE_CACHE=1` 保留系統預設（不 exec，A/B 對照用；Mac 壓測包的 gpui-largecache 欄就是這樣跑）。
 
+/// 在 `main()` 最前面呼叫（還沒開任何視窗、執行緒之前）。macOS 以外什麼都不做。
 #[cfg(target_os = "macos")]
-mod imp {
-    use std::sync::atomic::{AtomicU64, Ordering};
-    use std::time::Duration;
-
-    /// 累計還回去的 KB（常駐記憶體差，估算）
-    static RELEASED_KB: AtomicU64 = AtomicU64::new(0);
-    static CALLS: AtomicU64 = AtomicU64::new(0);
-    static INTERVAL_MS: AtomicU64 = AtomicU64::new(0);
-
-    #[repr(C)]
-    #[derive(Default)]
-    struct TimeValue {
-        seconds: i32,
-        microseconds: i32,
+pub fn ensure_no_large_cache() {
+    use std::os::unix::process::CommandExt;
+    if std::env::var("XQ_MALLOC_LARGE_CACHE").ok().as_deref() == Some("1") {
+        return;
     }
-    #[repr(C)]
-    #[derive(Default)]
-    struct MachTaskBasicInfo {
-        virtual_size: u64,
-        resident_size: u64,
-        resident_size_max: u64,
-        user_time: TimeValue,
-        system_time: TimeValue,
-        policy: i32,
-        suspend_count: i32,
+    if std::env::var_os("MallocLargeCache").is_some() {
+        return; // 已經設過（exec 回來的這一次，或使用者自己設的）：照它的值跑
     }
-    const MACH_TASK_BASIC_INFO: u32 = 20;
-
-    extern "C" {
-        fn malloc_zone_pressure_relief(zone: *mut std::ffi::c_void, goal: usize) -> usize;
-        static mach_task_self_: u32;
-        fn task_info(task: u32, flavor: u32, info: *mut i32, count: *mut u32) -> i32;
-    }
-
-    fn resident_bytes() -> u64 {
-        let mut info = MachTaskBasicInfo::default();
-        let mut count = (std::mem::size_of::<MachTaskBasicInfo>() / std::mem::size_of::<i32>()) as u32;
-        // SAFETY: info 是正確大小的 repr(C) 結構，count 以 natural_t（4 bytes）為單位
-        let kr = unsafe { task_info(mach_task_self_, MACH_TASK_BASIC_INFO, &mut info as *mut _ as *mut i32, &mut count) };
-        if kr == 0 { info.resident_size } else { 0 }
-    }
-
-    pub fn start() {
-        let ms = std::env::var("XQ_MALLOC_RELIEF_MS").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(500);
-        if ms == 0 {
-            eprintln!("[memrelief] 關閉（XQ_MALLOC_RELIEF_MS=0）");
-            return;
-        }
-        let ms = ms.max(50);
-        INTERVAL_MS.store(ms, Ordering::Relaxed);
-        let r = std::thread::Builder::new().name("xq-malloc-relief".into()).spawn(move || loop {
-            std::thread::sleep(Duration::from_millis(ms));
-            let before = resident_bytes();
-            // SAFETY: NULL＝所有 zone、goal 0＝能還多少還多少；libmalloc 自己加鎖，任何執行緒都可呼叫
-            unsafe { malloc_zone_pressure_relief(std::ptr::null_mut(), 0) };
-            let after = resident_bytes();
-            RELEASED_KB.fetch_add(before.saturating_sub(after) / 1024, Ordering::Relaxed);
-            CALLS.fetch_add(1, Ordering::Relaxed);
-        });
-        match r {
-            Ok(_) => eprintln!("[memrelief] 每 {ms} ms 呼叫 malloc_zone_pressure_relief（XQ_MALLOC_RELIEF_MS=0 關閉）"),
-            Err(e) => eprintln!("[memrelief] 背景執行緒開不起來：{e}"),
-        }
-    }
-
-    /// CHARTPERF 用：`,"mallocReliefMs":500,"mallocReliefN":…,"mallocReliefMb":…`（關掉時 ms=0）
-    pub fn kv() -> String {
-        format!(
-            ",\"mallocReliefMs\":{},\"mallocReliefN\":{},\"mallocReliefMb\":{:.1}",
-            INTERVAL_MS.load(Ordering::Relaxed),
-            CALLS.load(Ordering::Relaxed),
-            RELEASED_KB.load(Ordering::Relaxed) as f64 / 1024.0
-        )
-    }
+    let Ok(exe) = std::env::current_exe() else { return };
+    let args: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
+    // exec 成功就不會回來；失敗（極少見）就照系統預設繼續跑
+    let err = std::process::Command::new(exe).args(args).env("MallocLargeCache", "0").exec();
+    eprintln!("[memrelief] 設定 MallocLargeCache=0 後重新啟動失敗，照系統預設繼續：{err}");
 }
 
-#[cfg(target_os = "macos")]
-pub use imp::{kv, start};
-
-/// 其他平台沒有 death-row 快取問題：什麼都不做
 #[cfg(not(target_os = "macos"))]
-pub fn start() {}
+pub fn ensure_no_large_cache() {}
+
+/// CHARTPERF 用：`,"mallocLargeCache":0`（0＝已關掉快取；1＝系統預設）
+#[cfg(target_os = "macos")]
+pub fn kv() -> String {
+    let off = std::env::var("MallocLargeCache").ok().as_deref() == Some("0");
+    format!(",\"mallocLargeCache\":{}", if off { 0 } else { 1 })
+}
 #[cfg(not(target_os = "macos"))]
 #[allow(dead_code)]
 pub fn kv() -> String {
