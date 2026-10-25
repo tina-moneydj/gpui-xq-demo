@@ -8,7 +8,14 @@ wry 已經淘汰，不在這次的比較裡。
 
 > 第一份 Windows 實機數字在 2026-10-23（i7-13700＋GTX 1650，見 docs/bench/real-hw）；2026-10-24 修正了重圖表逾時、勝負判定、egui 點選漏抓（見文末）。跑完後 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
-### 這一版多了什麼：GPUI 優化第 2 批＋GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
+### 最新（2026-10-25）：網頁版「一頁嵌多個元件」
+
+- **結論先講：** 新增 `web` 情境，看同一個網頁放好幾個看盤元件（左上報價表、右上和左下是一般網頁、右下 K 線），egui 和 GPUI 各跑一次，比記憶體、CPU、幀數、下載量，以及「關掉一格／一格當掉時其他格還會不會動」。**只跑這個大約 8 分鐘：** 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Scenarios web`。
+- 需要 **Google Chrome 或 Microsoft Edge**（Windows 內建 Edge，通常不用另外裝）。測試會自己開瀏覽器視窗、跑完自己關，用的是暫存的新設定檔，不會動到你的書籤、登入或分頁；平常開著的瀏覽器也不用關。
+- Windows 防火牆可能問要不要允許 PowerShell 連網：按「取消」也可以（只用本機 127.0.0.1）。
+- 完整跑（不加參數）也會在最後跑這一項。
+
+### 上一版：GPUI 優化第 2 批＋GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
 
 - **結論先講：** 這一版的 GPUI 是 gpui-opt2（多視窗報價同一幀到、報價表一列一次畫完、畫線可改用 quad）。請整套重跑一次，跟 2026-10-23 那份比；重圖表會多一欄「GPUI quad 畫線（XQ_DRAW_QUADS=1）」，拿它跟「GPUI」那欄比，就知道在 GTX 1650 上要不要打開這個優化。
 - `XQ_DRAW_QUADS` 是什麼：圖表上水平線、垂直線、矩形框這些「橫平豎直」的畫線，改用便宜的方塊（quad）畫，不走比較貴的路徑（path）。在我們沒有顯示卡的測試機上反而變慢約一半（GPU 批次被切碎），所以**預設關**；真的顯示卡上結果可能不同。
@@ -39,7 +46,8 @@ wry 已經淘汰，不在這次的比較裡。
 
 | 模式 | 時間 | 怎麼跑 |
 |---|---|---|
-| 完整（預設） | 約 95 分鐘（GPUI、egui glow、egui wgpu 三個 app；重圖表再加 GPUI quad） | 雙擊 `run-bench.cmd` |
+| 完整（預設） | 約 105 分鐘（GPUI、egui glow、egui wgpu 三個 app；重圖表再加 GPUI quad；最後是網頁） | 雙擊 `run-bench.cmd` |
+| 只跑網頁 | 約 8 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Scenarios web` |
 | 快速版 | 約 25 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Quick` |
 
 開始時畫面上會顯示這次的預估時間。
@@ -57,6 +65,7 @@ wry 已經淘汰，不在這次的比較裡。
 | 重圖表 | 20 個疊加、8 個副圖、1000 筆畫線（100 層）。依序跑 7 段：跳價、加十字線、再加平移、拖曳畫線、框選畫線、調整圖層順序（各 10 秒）、上下順序截圖（3 秒），每次約 75 秒 |
 | 高頻進價 | 每秒 1k、10k、50k、100k 筆，加上開盤爆量。量延遲 p50/p99、遺失、積壓、CPU/GPU/FPS，以及點報價列切換走勢圖的反應時間 |
 | 多視窗 | 開 1 個和 4 個看盤視窗，行情每秒 10k 筆。4 個以上螢幕時每個視窗佔滿一個螢幕；不夠時平均分到各螢幕再格狀鋪滿 |
+| 網頁（一頁嵌多個元件） | 用 Chrome（沒有就 Edge）開同一個網頁，egui 和 GPUI 各跑三種版面：穿插（左上報價表、右上網頁、左下網頁、右下 K 線）、4 個元件、1 個元件（記憶體基準）。量每格幀數、wasm 記憶體、整個瀏覽器的 Working Set 和 CPU、下載量；再關掉一格、讓報價表故意當掉，看其他格還會不會動。網頁由腳本內建的小伺服器提供（只聽 127.0.0.1，`XqWeb`） |
 
 每個數字是 3 輪的中位數（快速版 1 輪）。
 - **記憶體**：整棵程序樹，同時記 Working Set（≈ Linux RSS）、Working Set - Private（≈ 工作管理員「記憶體」欄）、Private Bytes。
@@ -93,7 +102,8 @@ run-bench.cmd -Build -SrcRoot D:\src      （D:\src 底下放 gpui-xq-demo、egu
 ```
 run-bench.cmd -Quick                          快速版
 run-bench.cmd -Runs 5                         5 輪中位數
-run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ticks,multi）
+run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ticks,multi,web）
+run-bench.cmd -Scenarios web                  只跑網頁版（網頁放在 web\egui、web\gpui；-WebDir 可改；環境變數 XQ_BROWSER 可指定瀏覽器）
 run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI（可選 gpui,gpui-quads,egui,egui-wgpu；gpui-quads 只跑重圖表）
 run-bench.cmd -Scenarios heavy                只重跑重圖表（4 欄 × 3 輪，約 17 分鐘）
 run-bench.cmd -Windows 1,2,4                  多視窗開幾個

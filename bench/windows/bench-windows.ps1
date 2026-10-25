@@ -1,6 +1,7 @@
 ﻿<#
 .SYNOPSIS
-  XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
+  XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）、
+  網頁版一頁嵌多個元件（web：用 Chrome／Edge 開 web\egui、web\gpui）。
 .DESCRIPTION
   與 Linux 版 scripts/bench-main-window.sh、bench-ticks.sh、bench-multi.sh 同情境、同量法（3 輪取中位數）。
   執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「windows-bench-latest」自動下載（兩個 repo 都公開，不用登入）。
@@ -9,12 +10,13 @@
   .\bench-windows.ps1                 # 全部（約 75 分鐘）
   .\bench-windows.ps1 -Quick          # 快速版（1 輪、少幾個情境，約 20 分鐘）
   .\bench-windows.ps1 -Scenarios ticks -Ticks s10k,s100k -Apps gpui,egui
+  .\bench-windows.ps1 -Scenarios web       # 只跑網頁版（約 8 分鐘）
 #>
 [CmdletBinding()]
 param(
     [string]$BinDir = "",
     [int]$Runs = 3,
-    [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi"),
+    [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi", "web"),
     [string[]]$Ticks = @("s1k", "s10k", "s50k", "s100k", "burst"),
     [string[]]$Apps = @("gpui", "gpui-quads", "egui", "egui-wgpu"),
     [string[]]$Windows = @("1", "4"),
@@ -24,6 +26,7 @@ param(
     [string]$SrcRoot = "",
     [switch]$Build,
     [string]$OutDir = "",
+    [string]$WebDir = "",
     [switch]$NoZip,
     [string]$Owner = "tina-moneydj",
     [string]$Tag = "windows-bench-latest"
@@ -852,6 +855,7 @@ function Write-Summary($S, $mi, $path) {
             if ($pl) { $Script:Body.Add("視窗擺放：" + ((@($pl) | ForEach-Object { "#$($_.win + 1)→$($_.monitor)（DPI $($_.dpi)，內容區 $($_.client)）" }) -join "；")); $Script:Body.Add("") }
         }
     }
+    if ($Scenarios -contains "web") { foreach ($l in @(Web-Md $all.web $Script:WebBrowser)) { $Script:Body.Add($l) } }
     $mons = (@($mi.monitors) | ForEach-Object { "$($_.width)×$($_.height) @$($_.scalePct)%$(if ($_.primary) { '（主）' })" }) -join "、"
     $gpus = (@($mi.gpus) | ForEach-Object { "$($_.name)（驅動 $($_.driver)）" }) -join "、"
     $tally = (@($Apps | Sort-Object { - $Script:WinCount[$_] }) | ForEach-Object { "$_ $($Script:WinCount[$_]) 項" }) -join "、"
@@ -886,6 +890,102 @@ function Write-Summary($S, $mi, $path) {
     [IO.File]::WriteAllText($path, (Anon (($md -join "`r`n") + "`r`n")), (New-Object Text.UTF8Encoding $true))
 }
 
+# ---------------------------------------------------------------- 網頁：一頁嵌多個元件（-Scenarios web）
+# 工具包的 web\egui、web\gpui 是 egui-xq-demo／gpui-xq-demo 的 examples/web-multi 建好的網頁（wasm＋index.html＋page.js）。
+# 本機開一個小網頁伺服器（XqWeb：只聽 127.0.0.1、會 gzip、收 /__bench），用全新的瀏覽器設定檔開頁面；
+# 頁面自己量完（暖機 3 秒 → 5 秒幀數 → 記憶體 → 移除一格 → 讓報價表 panic），把結果 POST 回來，再關掉瀏覽器。
+# 這裡另外量：頁面總下載量（gzip 後）、瀏覽器整棵程序樹的 Working Set 與 5 秒量測區間的 CPU。
+$WEB_CONFIGS = [ordered]@{ mixed = ""; canvas4 = "layout=canvas4"; single = "only=table&steps=basic" }
+$WEB_CONFIG_ZH = @{ mixed = "穿插（2 個元件＋2 個網頁格）"; canvas4 = "4 個元件"; single = "1 個元件（報價表）" }
+$WEB_FW_ZH = [ordered]@{ egui = "egui（WebGL2）"; gpui = "GPUI（WebGPU 優先）" }
+function Find-Browser {
+    $c = @()
+    if ($env:XQ_BROWSER) { $c += $env:XQ_BROWSER }
+    foreach ($b in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA)) {
+        if ($b) { $c += (Join-Path $b "Google\Chrome\Application\chrome.exe"); $c += (Join-Path $b "Microsoft\Edge\Application\msedge.exe") }
+    }
+    foreach ($x in $c) { if ($x -and (Test-Path $x)) { return $x } }
+    return $null
+}
+function Web-Wait($web, [scriptblock]$pred, $timeout) {
+    $end = [XqBench]::Now() + $timeout
+    while ([XqBench]::Now() -lt $end) {
+        foreach ($p in $web.Snapshot()) { try { $o = $p.Json | ConvertFrom-Json } catch { continue }; if (& $pred $o) { return @{ T = $p.T; O = $o } } }
+        Start-Sleep -Milliseconds 100
+    }
+    return $null
+}
+function Run-Web($web, $browser, $fw, $cfg, $run) {
+    $web.Reset()
+    $prof = Join-Path ([IO.Path]::GetTempPath()) ("xq-web-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
+    $q = "bench=1"; if ($WEB_CONFIGS[$cfg]) { $q += "&" + $WEB_CONFIGS[$cfg] }
+    $url = "http://127.0.0.1:$($web.Port)/$fw/index.html?$q"
+    $argline = "--user-data-dir=`"$prof`" --no-first-run --no-default-browser-check --disable-extensions --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --window-position=40,40 --window-size=1320,960 --new-window `"$url`""
+    $t0 = [XqBench]::Now()
+    $p = Start-Process -FilePath $browser -ArgumentList $argline -PassThru
+    try {
+        $s = Web-Wait $web { param($o) (Get-P $o "mark") -eq "fps-start" } 150
+        if (-not $s) { throw "等不到頁面開始量測（150 秒）；頁面可能載入失敗" }
+        $pids0 = [XqBench]::Tree($p.Id); $c0 = [XqBench]::CpuSum($pids0); $w0 = [XqBench]::Now()
+        $e = Web-Wait $web { param($o) (Get-P $o "mark") -eq "fps-end" } 30
+        $pids1 = Union-Tree $p.Id $pids0; $c1 = [XqBench]::CpuSum($pids1); $w1 = [XqBench]::Now()
+        $m = Mem $p.Id
+        $r = Web-Wait $web { param($o) ($null -ne (Get-P $o "result")) -or ($null -ne (Get-P $o "error")) } 60
+        if (-not $r) { throw "等不到頁面回傳結果" }
+        if ($null -ne (Get-P $r.O "error")) { throw "頁面回報錯誤：$(Get-P $r.O 'error')" }
+        return [ordered]@{ framework = $fw; config = $cfg; run = $run; url = $q; userAgent = (Get-P $r.O "userAgent")
+            loadToFpsStartS = R1 ($s.T - $t0); downloadBytes = $web.Sent; files = @($web.FileList() | Select-Object -First 20)
+            browserProcs = $m.nproc; browserWsMb = $m.ws_mb; browserPrivateMb = $m.private_mb; browserWsPrivateMb = $m.wsPrivate_mb
+            browserCpuPct = (Cpu-Pct $c0 $c1 ($w1 - $w0)); result = (Get-P $r.O "result") }
+    } finally {
+        foreach ($x in (@([XqBench]::Tree($p.Id)) | Sort-Object -Descending)) { Stop-Process -Id $x -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 1
+        Remove-Item $prof -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+function Web-Med($rs, [scriptblock]$get) { return R1 (Med @($rs | ForEach-Object { & $get $_ })) }
+function Web-Md($recs, $browser) {
+    $md = New-Object System.Collections.Generic.List[string]
+    $md.Add("## 網頁：一頁嵌多個元件（同一頁放 canvas 元件和一般 HTML）"); $md.Add("")
+    if (-not @($recs).Count) { $md.Add("- 沒有資料（$(if ($browser) { '全部失敗，見 failures' } else { '找不到 Chrome／Edge' })）。"); $md.Add(""); return $md }
+    $ua = [string](@($recs)[0].userAgent); if ($ua.Length -gt 160) { $ua = $ua.Substring(0, 160) }
+    $md.Add("- 瀏覽器：$(Split-Path $browser -Leaf)（全新設定檔、沒有擴充功能）。$ua")
+    $md.Add("- egui 共用一個 wasm instance；GPUI 每個元件各自一個 instance（同一份 wasm 只下載一次）。$Runs 輪中位數。")
+    $md.Add("- 「幀數」是每一格自己數的每秒畫面數（網頁格用 requestAnimationFrame）；只要 > 0 就代表那格有在動。")
+    $md.Add("- 瀏覽器記憶體／CPU 是整個瀏覽器（含 GPU、分頁程序）；CPU 100%＝一顆邏輯核心。"); $md.Add("")
+    $fws = @($WEB_FW_ZH.Keys | Where-Object { $f = $_; @($recs | Where-Object { $_.framework -eq $f }).Count })
+    foreach ($cfg in $WEB_CONFIGS.Keys) {
+        $rs = @($recs | Where-Object { $_.config -eq $cfg }); if (-not $rs.Count) { continue }
+        $ids = New-Object System.Collections.Generic.List[string]
+        foreach ($r in $rs) { $f = Get-P $r.result "fps"; if ($f) { foreach ($k in $f.PSObject.Properties.Name) { if (-not $ids.Contains($k)) { $ids.Add($k) } } } }
+        $md.Add("### $($WEB_CONFIG_ZH[$cfg])"); $md.Add("")
+        $md.Add("| 項目 | " + (($fws | ForEach-Object { $WEB_FW_ZH[$_] }) -join " | ") + " |"); $md.Add("|---|" + ("---|" * $fws.Count))
+        $row = {
+            param($label, [scriptblock]$get, $unit)
+            $cells = foreach ($f in $fws) { $v = Web-Med @($rs | Where-Object { $_.framework -eq $f }) $get; if ($null -eq $v) { "—" } else { "$v$unit" } }
+            $md.Add("| $label | $($cells -join ' | ') |")
+        }
+        & $row "啟動到元件都好（頁面自己量）" { param($r) Get-P $r.result "readyMs" } " ms"
+        foreach ($k in $ids) { & $row "幀數：$k" ([scriptblock]::Create("param(`$r) Get-P (Get-P `$r.result 'fps') '$k'")) " fps" }
+        & $row "JS heap（已用）" { param($r) Get-P (Get-P $r.result "memory") "jsHeapUsedMB" } " MB"
+        & $row "wasm 記憶體（全部 instance 加總）" { param($r) Get-P (Get-P $r.result "memory") "wasmMemoryMB" } " MB"
+        & $row "瀏覽器 Working Set" { param($r) $r.browserWsMb } " MB"
+        & $row "瀏覽器 Working Set - Private（≈ 工作管理員）" { param($r) $r.browserWsPrivateMb } " MB"
+        & $row "瀏覽器 CPU（5 秒量測區間）" { param($r) $r.browserCpuPct } " %"
+        & $row "頁面總下載量（gzip）" { param($r) [double]$r.downloadBytes / 1MB } " MB"
+        $removed = @($rs | ForEach-Object { Get-P $_.result "removed" } | Where-Object { $_ })
+        if ($removed.Count) {
+            foreach ($k in $ids) { & $row "移除 $($removed[0]) 後：$k" ([scriptblock]::Create("param(`$r) Get-P (Get-P `$r.result 'fpsAfterRemove') '$k'")) " fps" }
+            foreach ($k in $ids) { & $row "報價表 panic 後：$k" ([scriptblock]::Create("param(`$r) Get-P (Get-P `$r.result 'fpsAfterPanic') '$k'")) " fps" }
+        }
+        $md.Add("")
+    }
+    $md.Add("- 判讀：移除／panic 後，被移除或 panic 的那格應該是 0 或空白，其他格要 > 0；如果其他格也變 0，就是互相拖垮。")
+    $r0 = @($recs)[0].result
+    $md.Add("- WebGL 繪圖器（瀏覽器回報）：$(Get-P $r0 'webglRenderer')；navigator.gpu（WebGPU）：$(if (Get-P $r0 'gpu') { '有' } else { '沒有' })。"); $md.Add("")
+    return $md
+}
+
 # ================================================================ 主程式
 $startedAt = Get-Date
 $Script:Out = $OutDir
@@ -904,8 +1004,9 @@ if ($running.Count) { throw "這些程式正在執行，請先關掉再跑（會
 if (Port-Busy) { throw "127.0.0.1:$Port 已被其他程式佔用，請先關掉（例如 XQ 或上次沒結束的測試程式）" }
 
 $Bins = Resolve-Bins
+$native = @($Scenarios | Where-Object { $_ -ne "web" }).Count -gt 0   # 只跑 web 時不需要原生執行檔
 $missing = @(@("demofeed", "tickgen") | Where-Object { -not $Bins.ContainsKey($_) })
-if ($missing.Count) { throw "缺少 $(($missing | ForEach-Object { $EXES[$_].file }) -join '、')：請放進 $PSScriptRoot\bin 或用 -BinDir 指定" }
+if ($missing.Count -and $native) { throw "缺少 $(($missing | ForEach-Object { $EXES[$_].file }) -join '、')：請放進 $PSScriptRoot\bin 或用 -BinDir 指定" }
 $bad = @($Apps | Where-Object { -not $APP_BIN.ContainsKey($_) })
 if ($bad.Count) { throw "不認得的 app：$($bad -join '、')（可用 $(($APP_BIN.Keys | Sort-Object) -join '、')）" }
 $Apps = @($Apps | Where-Object {
@@ -913,14 +1014,14 @@ $Apps = @($Apps | Where-Object {
     if ($Bins.ContainsKey($k)) { $true } else {
         $hint = "（下載失敗：檢查網路，或把 exe 放進 bin\）"
         Say "⚠️ 找不到 $($EXES[$k].file)，這次不量 $_$hint" "Yellow"; $false } })
-if (-not $Apps.Count) { throw "一個 app 都沒有可以量" }
+if (-not $Apps.Count -and $native) { throw "一個 app 都沒有可以量" }
 $Script:BinInfo = @($Bins.Keys | Sort-Object | ForEach-Object {
     $f = Get-Item $Bins[$_]
     [ordered]@{ key = $_; file = $f.Name; mb = [math]::Round($f.Length / 1MB, 1); sha256 = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.Substring(0, 16); modified = $f.LastWriteTime.ToString("s") } })
 foreach ($b in $Script:BinInfo) { Say ("  {0,-18} {1,6} MB  {2}" -f $b.file, $b.mb, $b.sha256) }
 $buildInfo = [ordered]@{}
 foreach ($t in @("gpui-build.txt", "egui-build.txt")) {
-    foreach ($d in @((Split-Path $Bins.tickgen), (Split-Path $Bins.demofeed))) { $p = Join-Path $d $t; if ((Test-Path $p) -and -not $buildInfo.Contains($t)) { $buildInfo[$t] = (Get-Content $p -Raw).Trim(); Say "  $t：$($buildInfo[$t])" } }
+    foreach ($d in @($Bins.Values | ForEach-Object { Split-Path $_ } | Select-Object -Unique)) { $p = Join-Path $d $t; if ((Test-Path $p) -and -not $buildInfo.Contains($t)) { $buildInfo[$t] = (Get-Content $p -Raw).Trim(); Say "  $t：$($buildInfo[$t])" } }
 }
 
 $mi = Get-MachineInfo
@@ -934,9 +1035,11 @@ if ($Scenarios -contains "stress") { $est += $Runs * $na * 62 }
 if ($Scenarios -contains "heavy") { $est += $Runs * $nh * 85 }
 if ($Scenarios -contains "ticks") { $est += $Ticks.Count * $Runs * $na * 50 }
 if ($Scenarios -contains "multi") { $est += $Windows.Count * $Runs * $na * 54 }
+if ($Scenarios -contains "web") { $est += $Runs * $WEB_CONFIGS.Count * $WEB_FW_ZH.Count * 25 }
 Say ("預估 {0:0} 分鐘（{1} 輪；情境 {2}；app {3}）。測試中請不要動滑鼠鍵盤，視窗會自己開關。" -f ($est / 60), $Runs, ($Scenarios -join "/"), ($Apps -join "/")) "Cyan"
 
-$all = [ordered]@{ main = @(); stress = @(); heavy = @(); ticks = @(); multi = @() }
+$all = [ordered]@{ main = @(); stress = @(); heavy = @(); ticks = @(); multi = @(); web = @() }
+$Script:WebBrowser = $null
 function Try-Run($label, [scriptblock]$f) {
     for ($attempt = 1; $attempt -le 2; $attempt++) {
         try { return (& $f) }
@@ -991,6 +1094,27 @@ try {
             $r = Try-Run "multi/${n}w/$a" { Run-Multi $a $n ($i -eq $Runs) }
             if ($r) { $r.run = $i; $all.multi += $r; Say ("  延遲 p50/p99 {0}/{1} ms、最慢視窗 FPS {2}、CPU {3}%、GPU {4}%、Working Set {5} MB" -f $r.lat.p50, $r.lat.p99, $r.fpsMin, $r.cpu, $r.gpu.gpu3d, $r.mem.end.ws_mb) }
             Start-Sleep -Seconds 1 } } }
+    }
+    if ($Scenarios -contains "web") {
+        $webDir = $WebDir; if (-not $webDir) { $webDir = Join-Path $PSScriptRoot "web" }
+        $Script:WebBrowser = Find-Browser
+        $fws = @($WEB_FW_ZH.Keys | Where-Object { Test-Path (Join-Path $webDir "$_\index.html") })
+        if (-not $Script:WebBrowser) { Say "⚠️ 找不到 Chrome 或 Edge，略過網頁情境" "Yellow"; $failures.Add("web：找不到 Chrome／Edge") }
+        elseif (-not $fws.Count) { Say "⚠️ 工具包裡沒有網頁版（$webDir\egui、gpui），略過網頁情境" "Yellow"; $failures.Add("web：沒有 web 資料夾") }
+        else {
+            Say "網頁情境：$(Split-Path $Script:WebBrowser -Leaf)（會開瀏覽器視窗、跑完自動關；用暫存設定檔，不影響你平常的瀏覽器）" "Cyan"
+            $web = New-Object XqWeb $webDir
+            try {
+                for ($i = 1; $i -le $Runs; $i++) { foreach ($cfg in @($WEB_CONFIGS.Keys)) { foreach ($fw in $fws) {
+                    Say "網頁 $($WEB_CONFIG_ZH[$cfg]) $i/$Runs $fw …"
+                    $r = Try-Run "web/$fw/$cfg" { Run-Web $web $Script:WebBrowser $fw $cfg $i }
+                    if ($r) {
+                        $all.web += $r
+                        Say ("  wasm {0} MB、瀏覽器 Working Set {1} MB、CPU {2}%、下載 {3:0.00} MB、幀數 {4}" -f (Get-P (Get-P $r.result "memory") "wasmMemoryMB"), $r.browserWsMb, $r.browserCpuPct, ($r.downloadBytes / 1MB), ((Get-P $r.result "fps") | ConvertTo-Json -Compress))
+                    }
+                    Start-Sleep -Seconds 1 } } }
+            } finally { $web.Stop() }
+        }
     }
 } finally {
     Stop-Feed
