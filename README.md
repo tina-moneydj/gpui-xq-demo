@@ -4,7 +4,7 @@
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
-> - **選型最新結論**先看「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
+> - **選型最新結論（10-25 下午）**先看「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
 > - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
 > - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
 > - **GPUI 三項優化**（沒變的視窗不重畫、捲動卡頓、報價延遲）已在 main，數字見「[GPUI 優化](#gpui-優化2026-10-23)」。
@@ -17,6 +17,27 @@
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
+
+## Windows 重跑＋Mac 第三次（2026-10-25 下午）：GPUI vs egui 門檻判定
+
+### 結論先看
+
+- **判定：延遲過關、效率沒過 → 維持「GPUI 有條件」。** 不翻盤成 egui（多視窗已追平到差 2–3 ms），但 Windows 的 CPU 和捲動卡頓沒解決，也還不能正式定 GPUI。
+- 4 個視窗（Tina 的兩台電腦，3 輪中位數）：
+
+  | 項目 | GPUI | egui OpenGL | egui wgpu |
+  |---|---:|---:|---:|
+  | Windows 延遲 p99 | 36.0 ms（10-23：64.3） | **33.4 ms** 🏆 | **33.9 ms** 🏆 |
+  | Windows 最慢視窗 p99 | 37.3 ms | **33.9 ms** 🏆 | 44.8 ms |
+  | Windows CPU | 44.1 % | **27.7 %** 🏆 | 32.1 % |
+  | Windows GPU 3D | 21.7 % | **4.6 %** 🏆 | 8.7 % |
+  | Mac 延遲 p99 | 35.6 ms | **34.1 ms** 🏆 | **33.6 ms** 🏆 |
+  | Mac 最慢視窗 p99 | 36.4 ms | 36.9 ms | **34.5 ms** 🏆 |
+
+- **Windows 5 萬列捲動**：GPUI 51 FPS、卡頓 63 次（沒改善）；egui OpenGL 6 輪有 4 輪掉到約 12 FPS；🏆 egui wgpu 6 輪都 60 FPS、0 次。
+- **0.5 秒停頓結案**：不是 GPUI 卡住（Mac 看門狗「只有主執行緒卡住」0 次）。
+- **Mac 重圖表多 200 MB 找到原因**：不是 Metal，是 malloc 已 free 但沒還給系統的大塊（201 MB），可以在我們這層修。
+- 細節：[Windows](docs/bench/real-hw/2026-10-25-windows/README.md)、[Mac 第三次](docs/bench/real-hw/2026-10-25-mac-2/README.md)。
 
 ## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）
 
@@ -35,7 +56,7 @@
   - GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間（egui 版會主動排重畫，所以沒有）。已在 Linux 重現並修好。
   - 壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
   - p50／p99 不受影響。
-- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。多出來的在 GPUI／Metal 那一層，不是我們的資料，Linux 也重現不了。新版壓測包會把記憶體拆開記（malloc vs GPU 緩衝區），之後再決定怎麼減。
+- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。（10-25 下午更正：多出來的是 malloc 已 free 但沒還給系統的大塊，不是 Metal，見上一節。）
 - 新加的：
   - 所有視窗關掉 GPUI 的背景視窗限速（`inactive_frame_interval: None`）。
   - macOS 申請延遲敏感模式。

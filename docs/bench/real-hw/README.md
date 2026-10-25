@@ -1,12 +1,20 @@
 # 一般客戶電腦實測：GPUI vs egui（Mac／Windows，2026-10-23 由 Tina 執行）
 
+> **2026-10-25 下午更新（Windows 重跑＋Mac 第三次）：延遲過關、效率沒過 → 維持「GPUI 有條件」**。細節：[Windows](2026-10-25-windows/README.md)、[Mac 第三次](2026-10-25-mac-2/README.md)。
+> - **Windows 4 視窗也勉強通過**：GPUI p99 64.3→36.0 ms（egui OpenGL 33.4、wgpu 33.9），p50 43→31 ms，FPS 回到 60。Mac 這次 35.6 ms（egui 33.6–34.1），和上次一樣。
+> - **Windows 效率沒改善**：GPUI CPU 約 egui OpenGL 的 1.5–2.3 倍、GPU 3D 2.5–5 倍；5 萬列捲動 GPUI 還是 51 FPS、卡頓 63 次。egui OpenGL 捲動也不穩（6 輪有 4 輪掉到約 12 FPS）；只有 egui wgpu 6 輪都 60 FPS、0 卡頓。
+> - **0.5 秒停頓結案**：Mac 看門狗「只有主執行緒卡住」0 次，3 次都是壓測包 vmmap 暫停整個程式；高頻延遲最大 288–350→62–66 ms（egui 35–41）。
+> - **重圖表 200 MB 找到了，不是 Metal**：是 malloc 已 free 但沒還給系統的大塊（vmmap「Malloc Large (empty)」201 MB；我們實際在用的 heap 18 MB；GPU 分區三版都約 120–130 MB）。可以在我們這層修。Windows 沒有這個問題。
+> - 「不限速」（`inactive_frame_interval: None`）在 Mac、Windows 都量不出差別，留著當預防。
+> - 照 10-24 的規則：改 egui 要「效率差**而且**多視窗落後」，多視窗已追平到 2–3 ms，所以不翻盤；但 Windows CPU／捲動沒解決，也還不能正式定 GPUI。
+
 > **2026-10-25 更新（Mac 重跑，優化第 2 批）**：細節在 [2026-10-25-mac/](2026-10-25-mac/README.md)。
 > - **多視窗修好，Mac 勉強通過門檻**：4 視窗 p50 44.8→31.1 ms、p99 49.6→35.4 ms（egui 33.4–33.5）、最慢視窗 p99 50.1→35.8 ms（egui 35.3–35.9，平手）。**Windows 還沒重跑**，整體門檻待定。
 > - **下面第 6 點的 0.3–0.5 秒停頓已查明**：
 >   - 高頻／多視窗的那一筆，是 GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間。Linux 已重現並修好量法。
 >   - 主視窗／5 萬列／重圖表那一次，是壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
 >   - **畫面沒有真的卡住**，p50／p99 不受影響。
-> - 重圖表記憶體 GPUI 321 vs egui 131 MB 沒變；多出來的在 GPUI／Metal 那一層，新版壓測包會拆開記。
+> - 重圖表記憶體 GPUI 321 vs egui 131 MB 沒變；（10-25 下午更正：多出來的是 malloc 沒還給系統的空塊，不是 Metal，見 [Mac 第三次](2026-10-25-mac-2/README.md)）。
 > - A3（quad 畫線）在 M4 上沒有比較快、CPU 多 6–9 點，維持預設關。
 
 > 這是**第一次在一般客戶等級的電腦上測**（不是我們那台沒有顯示卡的 Linux box）。Mac 用**內建 GPU**，Windows 用**入門級獨立顯卡**，都不是高階顯卡機：
@@ -40,7 +48,7 @@
 |---|---|---|---|
 | F1 | Windows GPU 專用記憶體：1 視窗 79.2 → 4 視窗 161.1 MB（每多一個視窗約 +27 MB）；egui 32.2 → 57.6 MB（約 +8.5 MB）。4 視窗 Working Set GPUI 112.9 vs egui 90.4 MB | GPUI 每個視窗各有一套繪圖資源（交換鏈、圖集、畫線用的多重取樣暫存圖），不共用 | 強（和 Linux 上每視窗 ~80 MB 的結果一致） |
 | F2 | Windows GPU 3D 使用率：主視窗 11.2 vs 2.2%、高頻 7.2–7.4 vs 2.9–3.2%、1 視窗鋪滿 13.1 vs 2.6%、4 視窗 19.6 vs 5.1% | GPUI 的「路徑」（斜線、曲線）要先畫到多重取樣暫存圖再貼回，比 egui 把線切成三角形一次畫完貴 | 中（GPU 數字明確，原因是依 GPUI 設計推論，還沒用 GPU 剖析工具確認） |
-| F3 | Mac 重圖表 RSS GPUI 321–329 MB vs egui 131–141 MB；同一情境 Windows 只有 100–115 vs 78 MB | 推測是 Metal 版畫線暫存圖（Retina 2 倍解析度）和繪圖指令緩衝放大後不縮回 | 弱（只是推論，要用 Xcode Instruments 確認） |
+| F3 | Mac 重圖表 RSS GPUI 321–329 MB vs egui 131–141 MB；同一情境 Windows 只有 100–115 vs 78 MB | **10-25 查明**：不是 Metal。vmmap 顯示是 malloc 已 free 但沒還給系統的大塊（Malloc Large (empty) 201 MB），我們實際在用的 heap 18 MB | 強（vmmap 分區表，見 2026-10-25-mac-2） |
 | F4 | Mac 上 GPUI 的 CPU ≈ egui 的 wgpu（Metal）版（高頻 30–35% vs 23–35%），兩者大多比 egui OpenGL 版（6–7%，每秒 10 萬筆時 28%）高很多 | 一部分 CPU 是 Metal／wgpu 這類新式繪圖介面每幀的固定成本，不是 GPUI 獨有 | 中（Windows 沒有測 egui-wgpu，無法對照） |
 | F5 | Windows 開啟到第一筆報價 GPUI 316 vs egui 192 ms；執行緒 55 vs 12 | GPUI Windows 平台初始化（DirectX 11、DirectComposition、背景執行緒池）較重；Mac 上反而 GPUI 最快（190 ms） | 中 |
 
