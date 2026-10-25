@@ -50,8 +50,12 @@ class ExeSymbolizer:
         if not todo:
             return
         inp = "\n".join(hex(self.base + a) for a in todo) + "\n"
-        out = subprocess.run([self.tool, "--obj=" + self.exe, "--no-inlines", "--demangle"], input=inp,
-                             capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        try:
+            out = subprocess.run([self.tool, "--obj=" + self.exe, "--no-inlines", "--demangle"], input=inp,
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+        except OSError as e:
+            print(f"== llvm-symbolizer 跑不起來（{self.tool}）：{e}")
+            return
         blocks = [b for b in out.split("\n\n")]
         for a, b in zip(todo, blocks):
             lines = [x for x in b.strip().splitlines() if x.strip()]

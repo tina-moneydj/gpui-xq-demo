@@ -33,7 +33,6 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
-          rustup component add llvm-tools
       - uses: Swatinem/rust-cache@v2
         with:
           key: profile
@@ -87,7 +86,7 @@ jobs:
           PYTHONIOENCODING: utf-8
           PYTHONUTF8: '1'
         run: |
-          $sym = (Get-ChildItem "$(rustc --print sysroot)" -Recurse -Filter llvm-symbolizer.exe | Select-Object -First 1).FullName
+          $sym = @("C:\Program Files\LLVM\bin\llvm-symbolizer.exe") + @(Get-ChildItem "$(rustc --print sysroot)" -Recurse -Filter llvm-symbolizer.exe | ForEach-Object FullName) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
           Write-Host "llvm-symbolizer: $sym"
           foreach ($f in Get-ChildItem prof -Filter *.json.gz) {
             Write-Host "################################ $($f.Name)"
