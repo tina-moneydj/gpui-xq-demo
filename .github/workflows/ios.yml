@@ -103,7 +103,7 @@ jobs:
           path: out/
       - name: 冒煙測試有沒有過（app 有沒有開起來、有沒有 panic）
         run: |
-          if grep -hE "初始化失敗|panic|建立失敗|failed assertion|Validation" out/*.txt; then echo "::error::app 在模擬器上沒有正常啟動"; exit 1; fi
+          if grep -hE "初始化失敗|panic|建立失敗|failed assertion|Validation Error|validateCommon" out/*.txt; then echo "::error::app 在模擬器上沒有正常啟動"; exit 1; fi
           grep -h FRAMES out/stderr.txt | tail -1 || { echo "::error::沒有看到 FRAMES（沒有在畫）"; exit 1; }
       - name: 更新 ios-latest 預發行版（只有 main）
         if: github.ref == 'refs/heads/main'

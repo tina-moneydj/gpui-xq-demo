@@ -124,4 +124,4 @@ Xcode 按 ▶ 預設會開 Metal API 驗證，iOS 27 模擬器就把它當錯誤
 gamma_params 改放在 512（globals 0、path globals 256）。Android／桌面不受影響（`cfg(target_os = "ios")`）。
 
 **CI**：`.github/workflows/ios.yml` 的模擬器冒煙測試加 `MTL_DEBUG_LAYER=1`（跟 Xcode 按 ▶ 一樣開驗證），
-log 裡出現 `failed assertion`／`Validation` 就算失敗，之後同類錯誤 CI 會先抓到。
+log 裡出現 `failed assertion`／`Validation Error`／`validateCommon` 就算失敗（`Metal API Validation Enabled` 那行是正常訊息，不算），之後同類錯誤 CI 會先抓到。
