@@ -92,6 +92,8 @@ jobs:
             Write-Host "==== $name：app log 最後幾行"
             Get-Content "prof\$name-app.log" -Tail 8 -ErrorAction SilentlyContinue
             Get-Content "prof\$name-samply.log" -Tail 5 -ErrorAction SilentlyContinue
+            Write-Host "==== $name：每秒指標（fps／主執行緒 CPU）"
+            Select-String -Path "prof\$name-samply.log" -Pattern '\[metrics\]|GROUPPERF' -ErrorAction SilentlyContinue | Select-Object -Last 30 | ForEach-Object { $_.Line }
           }
           Get-ChildItem prof | Format-Table Name, Length
           Get-ChildItem $bin -Filter *.pdb | Format-Table Name, Length
