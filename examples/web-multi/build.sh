@@ -17,5 +17,5 @@ fi
 cp index.html page.js "$OUT/"
 ls -la "$OUT"
 for f in xq_web_multi_gpui_bg.noopt.wasm xq_web_multi_gpui_bg.wasm xq_web_multi_gpui.js index.html; do
-  echo "$f：原始 $(wc -c < "$OUT/$f") bytes，gzip -9 後 $(gzip -9 -c "$OUT/$f" | wc -c) bytes"
+  echo "${f}：原始 $(wc -c < "$OUT/$f") bytes，gzip -9 後 $(gzip -9 -c "$OUT/$f" | wc -c) bytes"
 done
