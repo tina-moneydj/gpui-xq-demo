@@ -612,7 +612,11 @@ fn android_main(app: android_activity::AndroidApp) {
 #[cfg(target_os = "ios")]
 #[unsafe(no_mangle)]
 pub extern "C" fn xq_ios_register_app() {
-    std::panic::set_hook(Box::new(|info| eprintln!("[xq] PANIC: {info}")));
+    // panic 訊息（含檔名行號）同時記給 gpui-mobile：FFI 入口接住 panic 後，殼程式會把它顯示在畫面上，不會直接閃退
+    std::panic::set_hook(Box::new(|info| {
+        eprintln!("[xq] PANIC: {info}");
+        gpui_mobile::ios::ffi::record_panic(info.to_string());
+    }));
     ios::init();
     gpui_mobile::ios::ffi::set_app_callback(Box::new(|cx: &mut App| {
         tick_tape::bind_keys(cx);

@@ -85,3 +85,21 @@ log 顯示 PingFang TC、Helvetica、Arial 的每個字面都 `Failed to read tr
 
 **修補**：不再跳過；`font_id` 改用 `lenient_properties()`（缺的鍵用預設值：一般粗細、正常寬度、不斜體；
 粗細換算跟 font-kit 同一張表）。缺哪些鍵用 `log::debug!` 記下。
+
+## 6. iOS 27（Xcode 27）：第一次畫畫面就中止 — `src/ios/ffi.rs`、`src/ios/window.rs`、`src/ios/text_system.rs`
+
+**現象**（Tina 的 Mac，Xcode 27、iPhone 18 Pro／iPhone Duo 模擬器）：app 一開就停住，Xcode 顯示
+`Thread 1: hit program assert`，堆疊 `viewDidLayoutSubviews → gpui_ios_request_frame → … → __pthread_kill`；
+行情執行緒（xq-feed、xq-demofeed）已經在跑。雲端 runner 只有 Xcode 26.6／iOS 26.2，同一份程式正常。
+
+**原因**：`gpui_ios_request_frame` 是 `extern "C"`，GPUI 畫第一幀時只要有任何 panic，Rust 不能讓它跨過 C 邊界，
+就直接 abort（所以只看到 assert，看不到哪裡錯）。確切的 panic 訊息在 Xcode 主控台，雲端重現不了，還沒拿到。
+
+**修補**：
+- `guarded()`／`catch_unwind`：`request_frame`、`layout_view`、`handle_touch`、四個生命週期入口、`run_demo` 的 panic 都接住；
+  訊息（app 的 panic hook 呼叫 `record_panic`，含檔名行號）由新的 `gpui_ios_fatal_error()` 取得，
+  Swift 外殼停掉 CADisplayLink、在畫面上顯示紅底訊息。`request_frame` 一定把 callback 放回去，連續 3 次 panic 才判定失敗。
+- `handle_layout_change` 的縮放倍率改用 `view.traitCollection.displayScale` → `view.window.screen.scale` → `UIScreen.mainScreen`，
+  都是 0 就沿用舊值（UIScene 下 `mainScreen` 已淘汰）；`is_active` 改問 `view.window.isKeyWindow`，不用淘汰的 `UIApplication.keyWindow`。
+- `font_id`：家族載不到（或每個字面都被跳過）時不回錯（GPUI 收到錯誤會 panic），改用 CoreText 依名稱建字型，
+  再退到 PingFang TC／Helvetica／系統 UI 字型。

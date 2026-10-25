@@ -130,8 +130,29 @@ impl PlatformTextSystem for IosTextSystem {
                 if let Some(font_ids) = lock.font_ids_by_font_key.get(&font_key) {
                     font_ids.clone()
                 } else {
-                    let font_ids =
-                        lock.load_family(&font.family, &font.features, font.fallbacks.as_ref())?;
+                    // 修補（xq）：字型家族載不到（或全部被跳過）時不回錯——GPUI 收到錯誤會 panic、app 直接閃退
+                    // （iOS 26 就發生過一次，見 PATCHES.md 第 5 點）。改用 CoreText 直接依名稱建字型，
+                    // 再不行用 PingFang TC／Helvetica／系統 UI 字型，至少畫得出字。
+                    let font_ids = match lock.load_family(
+                        &font.family,
+                        &font.features,
+                        font.fallbacks.as_ref(),
+                    ) {
+                        Ok(ids) if !ids.is_empty() => ids,
+                        other => {
+                            log::warn!(
+                                "font family {:?} not loadable ({}); using CoreText fallback",
+                                font.family,
+                                match &other {
+                                    Ok(_) => "no usable faces".to_string(),
+                                    Err(e) => format!("{e:#}"),
+                                }
+                            );
+                            let mut ids = SmallVec::new();
+                            ids.push(lock.coretext_fallback_font(&font.family));
+                            ids
+                        }
+                    };
                     lock.font_ids_by_font_key
                         .insert(font_key.clone(), font_ids.clone());
                     font_ids
@@ -301,6 +322,18 @@ impl IosTextSystemState {
 
     fn glyph_for_char(&self, font_id: FontId, ch: char) -> Option<GlyphId> {
         self.fonts[font_id.0].glyph_for_char(ch).map(GlyphId)
+    }
+
+    /// 修補（xq）：最後一道防線，一定回傳一個字型。
+    fn coretext_fallback_font(&mut self, family: &str) -> FontId {
+        let by_name = [family, "PingFangTC-Regular", "Helvetica"]
+            .into_iter()
+            .filter(|n| !n.is_empty() && !n.starts_with('.'))
+            .find_map(|n| core_text::font::new_from_name(n, 16.0).ok());
+        let ct = by_name.unwrap_or_else(|| {
+            core_text::font::new_ui_font_for_language(core_text::font::kCTFontSystemFontType, 16.0, None)
+        });
+        self.id_for_native_font(ct)
     }
 
     fn id_for_native_font(&mut self, requested_font: CTFont) -> FontId {

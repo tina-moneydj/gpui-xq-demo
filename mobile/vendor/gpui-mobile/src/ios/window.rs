@@ -1236,8 +1236,33 @@ impl IosWindow {
     pub fn handle_layout_change(&self) {
         unsafe {
             let view_bounds: ObjcCGRect = msg_send![self.view, bounds];
-            let screen: *mut AnyObject = msg_send![class!(UIScreen), mainScreen];
-            let scale: core_graphics::base::CGFloat = msg_send![screen, scale];
+            // 修補（xq）：iOS 27 SDK 起 UIScene 生命週期是必須的，`UIScreen.mainScreen` 已不建議用；
+            // 改用 view 自己的 traitCollection.displayScale → 所在 window 的 screen → mainScreen，
+            // 都拿不到（0）就沿用上一次的 scale，避免用 0 倍去設定繪圖面。
+            let scale: core_graphics::base::CGFloat = {
+                let traits: *mut AnyObject = msg_send![self.view, traitCollection];
+                let mut s: core_graphics::base::CGFloat =
+                    if traits.is_null() { 0.0 } else { msg_send![traits, displayScale] };
+                if !(s > 0.0) {
+                    let host_window: *mut AnyObject = msg_send![self.view, window];
+                    if !host_window.is_null() {
+                        let screen: *mut AnyObject = msg_send![host_window, screen];
+                        if !screen.is_null() {
+                            s = msg_send![screen, scale];
+                        }
+                    }
+                }
+                if !(s > 0.0) {
+                    let screen: *mut AnyObject = msg_send![class!(UIScreen), mainScreen];
+                    if !screen.is_null() {
+                        s = msg_send![screen, scale];
+                    }
+                }
+                if !(s > 0.0) {
+                    s = self.scale_factor.get().max(1.0) as core_graphics::base::CGFloat;
+                }
+                s
+            };
 
             let new_w = view_bounds.width as f32;
             let new_h = view_bounds.height as f32;
@@ -1456,10 +1481,12 @@ impl PlatformWindow for IosWindow {
 
     fn is_active(&self) -> bool {
         unsafe {
-            let app: *mut AnyObject = msg_send![class!(UIApplication), sharedApplication];
-            let key_window: *mut AnyObject = msg_send![app, keyWindow];
+            // 修補（xq）：不用已淘汰的 `UIApplication.keyWindow`（UIScene 下不可靠），直接問 view 所在的 window。
             let host_window: *mut AnyObject = msg_send![self.view, window];
-            !host_window.is_null() && host_window == key_window
+            !host_window.is_null() && {
+                let key: bool = msg_send![host_window, isKeyWindow];
+                key
+            }
         }
     }
 

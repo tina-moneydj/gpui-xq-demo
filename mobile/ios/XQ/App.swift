@@ -51,6 +51,7 @@ final class XQViewController: UIViewController {
         gpui_ios_run_demo()
         guard let w = gpui_ios_get_window(), let c = gpui_ios_view_controller(w) else {
             NSLog("[xq] GPUI 視窗建立失敗")
+            showFatal(fatalMessage() ?? "GPUI 視窗建立失敗")
             return
         }
         gpuiWindow = w
@@ -74,10 +75,11 @@ final class XQViewController: UIViewController {
         gpui_ios_layout_view(w)
         _ = gpui_ios_request_frame(w)
         CATransaction.commit()
+        checkFatal()
     }
 
     func startFrames() {
-        guard displayLink == nil, let w = gpuiWindow else { return }
+        guard displayLink == nil, fatalView == nil, let w = gpuiWindow else { return }
         let link = CADisplayLink(target: self, selector: #selector(tick))
         link.add(to: .main, forMode: .common)
         displayLink = link
@@ -96,7 +98,48 @@ final class XQViewController: UIViewController {
 
     @objc private func tick() {
         guard let w = gpuiWindow else { return }
-        if !gpui_ios_request_frame(w) { displayLink?.isPaused = true }
+        if !gpui_ios_request_frame(w) {
+            displayLink?.isPaused = true
+            checkFatal()
+        }
+    }
+
+    // ── GPUI 內部出錯（Rust panic）時：不閃退，停止畫面更新，把錯誤訊息顯示出來方便截圖回報 ──
+    private var fatalView: UITextView?
+
+    private func fatalMessage() -> String? {
+        guard let p = gpui_ios_fatal_error() else { return nil }
+        return String(cString: p)
+    }
+
+    private func checkFatal() {
+        guard fatalView == nil, let msg = fatalMessage() else { return }
+        stopFrames()
+        showFatal(msg)
+    }
+
+    private func showFatal(_ msg: String) {
+        guard fatalView == nil else { return }
+        NSLog("[xq] GPUI 錯誤：%@", msg)
+        let tv = UITextView()
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.backgroundColor = UIColor(red: 0.20, green: 0.05, blue: 0.05, alpha: 0.95)
+        tv.textColor = .white
+        tv.font = .systemFont(ofSize: 15)
+        tv.layer.cornerRadius = 10
+        tv.text = "GPUI 版出錯了（app 沒有閃退，錯誤已被攔下）\n請把這個畫面截圖傳回，或長按文字全選→拷貝。\n\n"
+            + "iOS \(UIDevice.current.systemVersion) · \(UIDevice.current.model)\n\n" + msg
+        view.addSubview(tv)
+        let g = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            tv.leadingAnchor.constraint(equalTo: g.leadingAnchor, constant: 12),
+            tv.trailingAnchor.constraint(equalTo: g.trailingAnchor, constant: -12),
+            tv.topAnchor.constraint(equalTo: g.topAnchor, constant: 12),
+            tv.bottomAnchor.constraint(equalTo: g.bottomAnchor, constant: -12),
+        ])
+        fatalView = tv
     }
 
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }

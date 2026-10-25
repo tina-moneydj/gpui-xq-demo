@@ -13,3 +13,4 @@ void gpui_ios_will_enter_foreground(void *app);
 void gpui_ios_did_become_active(void *app);
 void gpui_ios_will_resign_active(void *app);
 void gpui_ios_did_enter_background(void *app);
+const char *gpui_ios_fatal_error(void);

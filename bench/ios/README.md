@@ -149,7 +149,7 @@
 | 橫向 | 可以轉，但版面是照直向設計的 | 同左 |
 | 走勢圖上方工具列 | 正常 | 直向 iPhone 寬度不夠，「分時／週K／月K／指標」按鈕會壓到股價文字（共用的走勢圖程式碼照桌面寬度排版，Android 版同樣） |
 | 中文字型 | 蘋方（系統） | 冬青黑體（系統，日文字形）＋Noto Sans TC（app 內附 5.4 MB，OFL 授權）補字；字形跟蘋方略有不同 |
-| Xcode 27 | 有照 iOS 27 規定用 UIScene，但雲端只有 Xcode 26.6，**還沒用 Xcode 27 編過** | 同左 |
+| Xcode 27 | Tina 的 Mac（Xcode 27、iPhone 18 Pro 模擬器）上**一開就停住**：Xcode 顯示「Thread 1: hit program assert」、停在 `gpui_ios_request_frame`（GPUI 第一次畫畫面時內部出錯、整個 app 被中止；雲端只有 Xcode 26.6，重現不了）。已加三道防護：①出錯時**不再閃退**，改在畫面上顯示紅底錯誤訊息（請截圖回傳，我們就知道確切原因）②字型找不到時改用系統字型，不再中止 ③畫面縮放倍率改從畫面本身讀，不用 iOS 27 已淘汰的 `UIScreen.main`。**請重跑一行指令再按 ▶** | 還沒用 Xcode 27 編過 |
 
 其他技術備註（給開發的人）：
 
@@ -158,6 +158,7 @@
 - Bundle ID／Team 放在 `mobile/ios/Local.xcconfig`（每台 Mac 自己的，不進 git）；`XQ.xcconfig` 是預設值。
 - Xcode 專案由 XcodeGen 產生（`mobile/ios/project.yml`），產生好的 `.xcodeproj` 也放進 repo，所以不用裝 XcodeGen。
 - 在 Linux 上可以先 `cargo check --lib --target aarch64-apple-ios-sim` 快速檢查（不用 Mac）。
+- GPUI：`extern "C"` 入口（畫面、版面、觸控、生命週期）裡的 Rust panic 原本會直接 abort（Xcode 只看到 `hit program assert`／`__pthread_kill`，原因要翻主控台）。現在用 `catch_unwind` 接住，訊息（含檔名行號）經 `gpui_ios_fatal_error()` 給 Swift 外殼顯示；畫面連續 3 次 panic 才放棄（`PATCHES.md` §6）。
 - GPUI：vendored gpui-mobile 在 iOS 26 上每個字型都「Failed to read traits」被跳過、接著找不到字型 panic；已修（`mobile/vendor/gpui-mobile/PATCHES.md` §5）。
 - egui：wgpu 裝置要用顯示卡實際上限（模擬器 GPU 的 `max_inter_stage_shader_variables` 只有 15）；蘋方 `PingFangUI.ttc` 只有 `hvgl` 外框（沒有 glyf／CFF），egui 畫不出來，「華文黑體」也被系統導到同一個檔。
 - `mobile/src/lib.rs` 的 `bridge.taker().take()`：main 上 A1 合併後 `FeedBridge::take` 被拿掉，手機版（含 Android）在 main 上編不過，這個分支順便修了（GPUI）。
