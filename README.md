@@ -37,6 +37,7 @@
 - **Windows 5 萬列捲動**：GPUI 51 FPS、卡頓 63 次（沒改善）；egui OpenGL 6 輪有 4 輪掉到約 12 FPS；🏆 egui wgpu 6 輪都 60 FPS、0 次。
 - **0.5 秒停頓結案**：不是 GPUI 卡住（Mac 看門狗「只有主執行緒卡住」0 次）。
 - **Mac 重圖表多 200 MB 找到原因**：不是 Metal，是 malloc 已 free 但沒還給系統的大塊（201 MB），可以在我們這層修。
+  - **10-25 已修（等 Tina 在 Mac 上只跑重圖表確認）**：macOS 的 malloc 會把 free 掉的大塊（每塊約 2.6 MB，重圖表每幀的畫線頂點暫存）留在快取裡，最多 128 塊。現在背景執行緒每 0.5 秒呼叫一次 `malloc_zone_pressure_relief`，把這些空塊還給系統（`src/memrelief.rs`）。不改 GPUI；`XQ_MALLOC_RELIEF_MS=0` 可關掉做對照。Linux／Windows 沒有這個快取，所以在雲端量不出差別，實際省多少要等 Mac 數字。
 - 細節：[Windows](docs/bench/real-hw/2026-10-25-windows/README.md)、[Mac 第三次](docs/bench/real-hw/2026-10-25-mac-2/README.md)。
 
 ## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）

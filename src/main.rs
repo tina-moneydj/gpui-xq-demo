@@ -32,6 +32,8 @@ mod stall;
 mod gpuilog;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(not(target_arch = "wasm32"))]
+mod memrelief;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -833,7 +835,13 @@ pub fn heap_kv() -> String {
         let mut st = MallocStats::default();
         unsafe { malloc_zone_statistics(std::ptr::null_mut(), &mut st) };
         let mb = |v: usize| v as f64 / 1048576.0;
-        return format!(",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1},\"heapPeakMb\":{:.1}", mb(st.size_in_use), mb(st.size_allocated), mb(st.max_size_in_use));
+        return format!(
+            ",\"heapUseMb\":{:.1},\"heapAllocMb\":{:.1},\"heapPeakMb\":{:.1}{}",
+            mb(st.size_in_use),
+            mb(st.size_allocated),
+            mb(st.max_size_in_use),
+            memrelief::kv()
+        );
     }
     #[cfg(all(target_os = "linux", target_env = "gnu"))]
     {
@@ -1146,6 +1154,7 @@ fn main() {
     gpuilog::init();
     #[cfg(target_os = "macos")]
     macos::begin_latency_critical_activity();
+    memrelief::start();
     run(gpui_platform::application());
 }
 

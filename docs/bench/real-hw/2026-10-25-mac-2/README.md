@@ -53,6 +53,9 @@
 
 ## 下一步
 
-1. 重圖表：在 Mac 上把那 201 MB 還回去（重用緩衝或 `malloc_zone_pressure_relief`），請 Tina 只跑 `heavy` 情境確認。
+1. 重圖表：在 Mac 上把那 201 MB 還回去，請 Tina 只跑 `heavy` 情境確認。**10-25 下午已修，等 Mac 重跑**：背景執行緒每 0.5 秒呼叫 `malloc_zone_pressure_relief`（`src/memrelief.rs`）。
+   - 原因：這台 24 GB 的 Mac 沒開 malloc 的 medium 區，大於 small 上限的配置都各自 mmap；free 後進「death-row 快取」，最多 128 塊（正好是 vmmap 的 128 塊）。
+   - 這些大塊是重圖表每幀的畫線 Path 頂點陣列。GPUI 的 `paint_path` 要拿走一份、內部 `scale()` 和 `Scene` 各再複製一次，Metal renderer 也會再組一次，所以無法只靠重用緩衝解決。
+   - 壓測包新增對照欄 `gpui-norelief`（`XQ_MALLOC_RELIEF_MS=0`，只跑重圖表）；CHARTPERF 多了 `mallocReliefN`／`mallocReliefMb`（呼叫次數、估計還回去的量）。
 2. GPUI 多視窗第 2–4 個視窗第一筆報價晚約 3 秒（Mac、Windows 都有），要查。
 3. 壓測包修 vmmap 檔名。
