@@ -48,7 +48,7 @@ use gpui::{
 use std::sync::Arc;
 
 use bridge::{Conn, Counters, FeedBridge, Inbox, Taker};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use chart::{ChartEvent, ChartView};
 use series::Period;
@@ -113,6 +113,9 @@ struct Hub {
     tape: Option<Entity<TickTape>>,
     /// (視窗編號, 還沒套到這個視窗的批次)
     queues: RefCell<Vec<(usize, Vec<Rc<Applied>>)>>,
+    /// 2026-10-25：最近一次的連線狀態。GPUI 的 open_window 會先同步畫一幀，主視窗在第 2～4 個視窗註冊前就可能已取走
+    /// 「連線就緒」那一包；之後開的視窗從這裡接手，不必等下一包（壓測時要等約 3 秒後的快照）才離開「連線中…」。
+    conn: Cell<Option<Conn>>,
 }
 impl Hub {
     fn register(&self, win: usize) {
@@ -319,7 +322,7 @@ impl Terminal {
             None => {
                 let (bridge, wake_rx) = FeedBridge::start(tape_feed);
                 let counters = bridge.counters.clone();
-                let hub = Rc::new(Hub { taker: bridge.taker(), tape: tape.clone(), queues: RefCell::new(Vec::new()) });
+                let hub = Rc::new(Hub { taker: bridge.taker(), tape: tape.clone(), queues: RefCell::new(Vec::new()), conn: Cell::new(None) });
                 (Some(bridge), Some(wake_rx), cx.new(|cx| {
                     let mut t = QuoteTable::new(names::WATCH);
                     if crate::plat::search_enabled() {
@@ -454,6 +457,7 @@ impl Terminal {
             _subs: subs,
         };
         if !primary {
+            t.adopt_shared_state(cx);
             return t;
         }
         if t.tick.is_some() {
@@ -586,6 +590,26 @@ impl Terminal {
         self.resubscribe(cx);
     }
 
+    /// 後開的視窗：接手主視窗已經收到的連線狀態，並從共用報價表補上自己走勢圖／資訊格那一檔的現價
+    /// （這些在它註冊進 Hub 之前就被取走了，不會再出現在它的佇列裡）
+    fn adopt_shared_state(&mut self, cx: &mut Context<Self>) {
+        if let Some(c) = self.hub.conn.get() {
+            self.conn = c;
+        }
+        let sym = self.chart.read(cx).symbol();
+        let Some((price, change, volume, name)) =
+            self.table.read(cx).row(&sym).filter(|r| r.price > 0.0).map(|r| (r.price, r.change, r.volume, r.name.to_string()))
+        else {
+            return;
+        };
+        self.chart.update(cx, |c, cx| c.apply_quote(price, change, volume, &name, cx));
+        self.info.update(cx, |i, _| {
+            i.price = price;
+            i.change = change;
+            i.volume = volume;
+        });
+    }
+
     /// 行情一到：叫全部視窗畫（每個視窗在自己的 render 開頭 pump）
     fn notify_all(&mut self, cx: &mut Context<Self>) {
         let now = Instant::now();
@@ -617,6 +641,12 @@ impl Terminal {
             if let Some(tape) = &self.hub.tape {
                 // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不 notify
                 tape.update(cx, |t, cx| t.apply(cx));
+            }
+            if let Some(c) = ib.conn {
+                self.hub.conn.set(Some(c));
+            }
+            if !ib.quotes.is_empty() {
+                self.hub.conn.set(Some(Conn::Ready));
             }
             let a = Rc::new(Applied { ib, changed, us: t0.elapsed().as_micros() as u64 });
             for (_, q) in self.hub.queues.borrow_mut().iter_mut() {
