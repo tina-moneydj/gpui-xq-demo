@@ -1,0 +1,168 @@
+# iOS：在 GitHub 的 Mac 機器上編 GPUI 手機版（模擬器＋實機），在模擬器上真的開起來截圖，
+# 並把模擬器用的 .app 和產生好的 Xcode 專案放到「ios-latest」預發行版（公開 repo，下載不用登入）。
+# ios-latest 只由 main 更新（mobile-ios 只建置＋冒煙測試）。
+# TestFlight 那一段只有在 repo 設了 App Store Connect 的 secrets 才會跑（見 bench/ios/README.md 附錄）。
+name: ios
+on:
+  push:
+    branches: [main, mobile-ios]
+    paths: [".github/workflows/ios.yml", "mobile/**", "src/**", "crates/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode 版本（挑這台上最新的）
+        timeout-minutes: 5
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] && sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
+      - name: Rust targets
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim && rustc -V
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            mobile/target
+          key: ios-gpui-${{ hashFiles('mobile/Cargo.lock') }}
+          restore-keys: ios-gpui-
+      - name: XcodeGen → XQGPUI.xcodeproj
+        run: |
+          brew install xcodegen
+          cd mobile/ios && xcodegen generate && ls
+      - name: Rust 靜態庫（模擬器、實機）
+        working-directory: mobile
+        run: |
+          cargo rustc --lib --release --target aarch64-apple-ios-sim --crate-type staticlib
+          cargo rustc --lib --release --target aarch64-apple-ios --crate-type staticlib
+          ls -l target/aarch64-apple-ios-sim/release/*.a target/aarch64-apple-ios/release/*.a
+      - name: Xcode 建置（模擬器）
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -project XQGPUI.xcodeproj -scheme XQGPUI -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -40
+          ls build/Build/Products/Release-iphonesimulator/
+      - name: Xcode 建置（實機，不簽章，只確認編得過）
+        working-directory: mobile/ios
+        run: |
+          xcodebuild -project XQGPUI.xcodeproj -scheme XQGPUI -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build-dev CODE_SIGNING_ALLOWED=NO build | tail -20
+      - name: 模擬器冒煙測試（開 app、等 40 秒、截圖）
+        timeout-minutes: 15
+        working-directory: mobile/ios
+        run: |
+          set -x
+          DEV=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; c=[x for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]; print(c[-1]["udid"])')
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          APPP=build/Build/Products/Release-iphonesimulator/XQGPUI.app
+          xcrun simctl install "$DEV" "$APPP"
+          BID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APPP/Info.plist")
+          mkdir -p ../../smoke
+          SIMCTL_CHILD_XQ_METRICS=1 xcrun simctl launch --stdout=$PWD/../../smoke/stdout.txt --stderr=$PWD/../../smoke/stderr.txt "$DEV" "$BID"
+          sleep 40
+          xcrun simctl io "$DEV" screenshot ../../smoke/gpui-list.png
+          xcrun simctl terminate "$DEV" "$BID" || true
+          # 第二次：直接開走勢圖畫面（XQ_SCREEN=chart）
+          SIMCTL_CHILD_XQ_METRICS=1 SIMCTL_CHILD_XQ_SCREEN=chart xcrun simctl launch --stdout=$PWD/../../smoke/stdout-chart.txt --stderr=$PWD/../../smoke/stderr-chart.txt "$DEV" "$BID"
+          sleep 25
+          xcrun simctl io "$DEV" screenshot ../../smoke/gpui-chart.png
+          xcrun simctl terminate "$DEV" "$BID" || true
+          echo "── 報價表 log ──"; grep -v FRAMES ../../smoke/stderr.txt | head -40 || true
+          grep FRAMES ../../smoke/stderr.txt | tail -3 || true
+          echo "── 走勢圖 log ──"; grep -v FRAMES ../../smoke/stderr-chart.txt | head -20 || true
+          grep FRAMES ../../smoke/stderr-chart.txt | tail -3 || true
+      - name: 打包產物
+        run: |
+          mkdir -p out
+          (cd mobile/ios/build/Build/Products/Release-iphonesimulator && ditto -c -k --keepParent XQGPUI.app "$GITHUB_WORKSPACE/out/XQGPUI-simulator.zip")
+          (cd mobile/ios && zip -qr "$GITHUB_WORKSPACE/out/XQGPUI-xcodeproj.zip" XQGPUI.xcodeproj)
+          cp smoke/* out/ 2>/dev/null || true
+          # log 裡的使用者路徑匿名化
+          sed -i '' -e "s|$HOME|~|g" -e "s|/Users/[^/ ]*|/Users/<user>|g" out/*.txt 2>/dev/null || true
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: xq-gpui-ios
+          path: out/
+      - name: 冒煙測試有沒有過（app 有沒有開起來、有沒有 panic）
+        run: |
+          if grep -hE "初始化失敗|panic|建立失敗" out/*.txt; then echo "::error::app 在模擬器上沒有正常啟動"; exit 1; fi
+          grep -h FRAMES out/stderr.txt | tail -1 || { echo "::error::沒有看到 FRAMES（沒有在畫）"; exit 1; }
+      - name: 更新 ios-latest 預發行版（只有 main）
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view ios-latest >/dev/null 2>&1 || gh release create ios-latest --prerelease --target "$GITHUB_SHA" --title "iOS 測試包（最新）" --notes "main 分支自動產生。說明見 bench/ios/README.md。"
+          gh release upload ios-latest out/XQGPUI-simulator.zip out/XQGPUI-xcodeproj.zip out/*.png --clobber
+          gh release edit ios-latest --notes "main 分支 ${GITHUB_SHA::7} 自動產生（$(date -u +%Y-%m-%dT%H:%MZ)）。XQGPUI-simulator.zip＝模擬器用 app；說明見 bench/ios/README.md。"
+
+  # ── TestFlight（公司付費 Apple Developer 帳號才有）──
+  # 平常不會跑：要在 repo 的 Settings → Secrets and variables → Actions 設好下面這些，並把變數 XQ_TESTFLIGHT 設成 1。
+  #   變數 Variables：XQ_TESTFLIGHT=1、XQ_BUNDLE_ID_GPUI（例：tw.moneydj.xqdemo.gpui，要先在 App Store Connect 建好這個 app）
+  #   機密 Secrets：APPLE_TEAM_ID、ASC_KEY_ID、ASC_ISSUER_ID、ASC_KEY_P8（.p8 檔內容做 base64）
+  # 簽章用「雲端管理憑證」（-allowProvisioningUpdates＋API key），不用在 CI 放 .p12 憑證檔。說明見 bench/ios/README.md 附錄 B。
+  # 這段還沒有真的跑過（需要公司帳號的憑證）。
+  testflight:
+    needs: build
+    if: vars.XQ_TESTFLIGHT == '1' && github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      BUNDLE: ${{ vars.XQ_BUNDLE_ID_GPUI }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode／Rust／XcodeGen
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$X" ] && sudo xcode-select -s "$X/Contents/Developer"
+          rustup target add aarch64-apple-ios
+          brew install xcodegen && (cd mobile/ios && xcodegen generate)
+      - name: App Store Connect API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$ASC_KEY_P8" | base64 --decode > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+      - name: Archive（實機、Release、自動簽章）
+        run: |
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $HOME/private_keys/AuthKey_$ASC_KEY_ID.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -project mobile/ios/XQGPUI.xcodeproj -scheme XQGPUI -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/XQGPUI.xcarchive archive \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID XQ_BUNDLE_ID=$BUNDLE CURRENT_PROJECT_VERSION=${{ github.run_number }} $AUTH | tail -30
+      - name: 上傳到 TestFlight
+        run: |
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $HOME/private_keys/AuthKey_$ASC_KEY_ID.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/XQGPUI.xcarchive -exportOptionsPlist build/ExportOptions.plist -exportPath build/export $AUTH | tail -30
+      - name: 清掉 API key
+        if: always()
+        run: rm -rf ~/private_keys

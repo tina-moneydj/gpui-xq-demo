@@ -1,0 +1,81 @@
+# XcodeGen 規格：產生 XQGPUI.xcodeproj（已預先產生並放進 repo，Tina 不用裝 XcodeGen）。
+# 改了這個檔要重產：brew install xcodegen && xcodegen generate（或 CI 的 ios.yml 會產生並上傳）
+name: XQGPUI
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+configs:
+  Debug: debug
+  Release: release
+configFiles:
+  Debug: XQ.xcconfig
+  Release: XQ.xcconfig
+targets:
+  XQGPUI:
+    type: application
+    platform: iOS
+    sources:
+      - path: XQ
+      - path: build-rust.sh
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_NAME: XQGPUI
+        PRODUCT_BUNDLE_IDENTIFIER: $(XQ_BUNDLE_ID)
+        INFOPLIST_FILE: XQ/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        SWIFT_OBJC_BRIDGING_HEADER: XQ/Bridging.h
+        ENABLE_DEBUG_DYLIB: NO
+        DEAD_CODE_STRIPPING: NO
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # Rust 靜態庫（ios/build-rust.sh 編出來的；模擬器／實機各一份）
+        "XQ_RUST_LIB[sdk=iphonesimulator*]": $(PROJECT_DIR)/../target/aarch64-apple-ios-sim/release/libxq_mobile_gpui.a
+        "XQ_RUST_LIB[sdk=iphoneos*]": $(PROJECT_DIR)/../target/aarch64-apple-ios/release/libxq_mobile_gpui.a
+        OTHER_LDFLAGS:
+          - -force_load
+          - $(XQ_RUST_LIB)
+          - -lc++
+          - -ObjC
+          - -framework UIKit
+          - -framework Metal
+          - -framework MetalKit
+          - -framework QuartzCore
+          - -framework CoreGraphics
+          - -framework CoreText
+          - -framework CoreFoundation
+          - -framework Foundation
+          - -framework Security
+          - -framework SystemConfiguration
+          - -framework AudioToolbox
+          - -framework WebKit
+          - -framework CoreMedia
+          - -framework AVFoundation
+          - -framework LocalAuthentication
+          - -framework Contacts
+          - -framework EventKit
+          - -framework StoreKit
+          - -framework CoreMotion
+          - -framework CoreLocation
+          - -framework UserNotifications
+          - -framework Photos
+    preBuildScripts:
+      - name: Build Rust (cargo)
+        script: /bin/bash "${PROJECT_DIR}/build-rust.sh"
+        basedOnDependencyAnalysis: false
+schemes:
+  XQGPUI:
+    build:
+      targets:
+        XQGPUI: all
+    run:
+      config: Release
+    archive:
+      config: Release

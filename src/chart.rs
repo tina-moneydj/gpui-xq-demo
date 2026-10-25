@@ -836,7 +836,7 @@ pub struct ChartView {
     /// 上次看到的設計 token 版本（換主題／熱更新後清畫線快取）
     tok_gen: u64,
     /// 手機雙指縮放累積量（ln）
-    #[cfg_attr(not(target_os = "android"), allow(dead_code))]
+    #[cfg_attr(not(any(target_os = "android", target_os = "ios")), allow(dead_code))]
     pinch_acc: f32,
     total_steps: u64,
     /// 上一次 render 標題列畫出的成交價（XQ_SYNC_CHECK 比對用）
@@ -1837,9 +1837,9 @@ impl Render for ChartView {
                             .on_mouse_down(MouseButton::Left, cx.listener(Self::on_down))
                             .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, _, cx| {
                                 // 手機：單指拖曳被 GPUI 轉成帶 touch_phase 的捲動（含放開後的慣性）→ 水平平移；縮放改用雙指（on_pinch）
-                                #[cfg(target_os = "android")]
+                                #[cfg(any(target_os = "android", target_os = "ios"))]
                                 let f = this.m.borrow_mut().pan_by(f32::from(ev.delta.pixel_delta(px(20.)).x));
-                                #[cfg(not(target_os = "android"))]
+                                #[cfg(not(any(target_os = "android", target_os = "ios")))]
                                 let f = this.m.borrow_mut().wheel(f32::from(ev.delta.pixel_delta(px(20.)).y));
                                 this.refresh(f, cx);
                             }))
@@ -1868,7 +1868,7 @@ impl Render for ChartView {
                                             }
                                         });
                                         // 手機：長按＝十字線（手指移動只移十字線，放開消失）
-                                        #[cfg(target_os = "android")]
+                                        #[cfg(any(target_os = "android", target_os = "ios"))]
                                         {
                                             let me3 = me.clone();
                                             window.on_mouse_event(move |ev: &gpui::LongPressEvent, phase, window, cx| {
@@ -1908,7 +1908,7 @@ impl Render for ChartView {
 }
 
 /// 手機：雙指縮放（gpui-pre 0.3.9 的 PinchEvent）；桌面版 gpui 0.3.7 沒有這個事件，原樣回傳
-#[cfg(target_os = "android")]
+#[cfg(any(target_os = "android", target_os = "ios"))]
 fn touch_pinch(d: gpui::Stateful<gpui::Div>, cx: &mut Context<ChartView>) -> gpui::Stateful<gpui::Div> {
     d.on_pinch(
 cx.listener(|this, ev: &gpui::PinchEvent, _, cx| {
@@ -1929,7 +1929,7 @@ cx.listener(|this, ev: &gpui::PinchEvent, _, cx| {
     )
 }
 
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn touch_pinch(d: gpui::Stateful<gpui::Div>, _cx: &mut Context<ChartView>) -> gpui::Stateful<gpui::Div> {
     d
 }

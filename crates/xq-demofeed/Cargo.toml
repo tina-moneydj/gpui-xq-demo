@@ -1,0 +1,8 @@
+[package]
+name = "xq-demofeed"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "app 內建的合成行情服務（WryFeedHost --demo-ticks 協議）：手機上沒有電腦的行情服務時用"
+
+[dependencies]
