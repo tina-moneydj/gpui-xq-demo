@@ -147,6 +147,9 @@ struct Stats {
     apply_us_avg: u64,
     chart_paints: u64,
     chart_paint_us_avg: u64,
+    /// 上一秒主執行緒／整個程序 CPU（%，100＝一顆核心）；量不到是 -1
+    cpu_main: f64,
+    cpu_proc: f64,
 }
 
 struct InfoPane {
@@ -276,6 +279,8 @@ struct Terminal {
     last_rows_in: u64,
     last_paints: u64,
     last_paint_us: u64,
+    /// 上次 sample() 的（時間、主執行緒 CPU 秒、程序 CPU 秒）
+    last_cpu: Option<(Instant, f64, f64)>,
     stats: Stats,
     metrics_log: bool,
     no_cache: bool,
@@ -289,6 +294,10 @@ struct Terminal {
     last_frame: Option<Instant>,
     jank_n: u64,
     jank_ms: f64,
+    /// 捲動時每幀的幀間隔（ms），算 p50／p95／p99；捲動開始時一次配好 FRAME_SAMPLES 格，滿了就不再記
+    frame_ms: Vec<f32>,
+    /// 捲動壓測（預設）：每一幀在 root render 開頭推進一次捲動位置；None＝沒在捲
+    scroll_drive: Option<ScrollDrive>,
     /// XQ_TICK_BENCH=1：高頻進價壓測量測（預設 None，熱路徑不多做事）
     tick: Option<tickbench::TickBench>,
     /// 主視窗：行情在 root render 開頭套用（預設）；false＝舊的「喚醒就套用＋睡 16ms」（XQ_APPLY=timer）
@@ -337,7 +346,12 @@ impl Terminal {
         let window_id = window.window_handle().window_id();
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = crate::plat::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
-        let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
+        let chart = cx.new(|cx| {
+            let mut c = ChartView::new(sym, name, period, cx);
+            // 其他視窗也跑走勢圖壓測（XQ_CHART_STRESS＋XQ_WINDOWS＝技術分析情境），事件只由主視窗印
+            c.stress_quiet = win != 0;
+            c
+        });
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
             name: name.into(),
@@ -433,6 +447,7 @@ impl Terminal {
             last_rows_in: 0,
             last_paints: 0,
             last_paint_us: 0,
+            last_cpu: None,
             stats: Stats::default(),
             metrics_log: crate::plat::var_os("XQ_METRICS").is_some(),
             no_cache: crate::plat::var_os("XQ_NO_VIEW_CACHE").is_some(),
@@ -444,6 +459,8 @@ impl Terminal {
             last_frame: None,
             jank_n: 0,
             jank_ms: 0.0,
+            frame_ms: Vec::new(),
+            scroll_drive: None,
             tick: crate::plat::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
             render_apply,
             last_render: None,
@@ -515,45 +532,66 @@ impl Terminal {
             let Ok(b) = this.update(cx, snap) else { return };
             eprintln!("GROUPPERF|{{\"phase\":\"tick-end\",\"elapsedMs\":{:.0},{}}}", secs * 1000.0, stats(a, b, secs));
 
-            let _ = this.update(cx, |t, _| {
+            let s0 = Instant::now();
+            let frame_driven = scroll_driver_frame();
+            let _ = this.update(cx, |t, cx| {
                 t.track_jank = true;
                 t.last_frame = None;
                 t.jank_n = 0;
                 t.jank_ms = 0.0;
-            });
-            let s0 = Instant::now();
-            let mut last_tick = Instant::now();
-            while s0.elapsed() < Duration::from_millis(scroll_ms) {
-                let f = s0.elapsed().as_secs_f64() / (scroll_ms as f64 / 1000.0);
-                let frac = (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5;
-                let tick = last_tick.elapsed() >= Duration::from_millis(33);
-                if tick {
-                    last_tick = Instant::now();
+                t.frame_ms = Vec::with_capacity(FRAME_SAMPLES);
+                if frame_driven {
+                    t.scroll_drive = Some(ScrollDrive { s0, secs: scroll_ms as f64 / 1000.0, last_tick: s0, batch, rng, updates: 0 });
+                    cx.notify();
                 }
-                let _ = this.update(cx, |t, cx| {
-                    t.table.update(cx, |tb, cx| {
-                        tb.scroll_frac(frac, cx);
-                        if tick {
-                            tb.synth_ticks(batch, &mut rng, cx);
-                        }
-                    })
-                });
-                cx.background_executor().timer(Duration::from_millis(16)).await;
+            });
+            let mut updates = 0u64;
+            if frame_driven {
+                // 位置每幀由 render 推進；這裡只等時間到（結束時間差一個計時器刻度沒關係）
+                cx.background_executor().timer(Duration::from_millis(scroll_ms)).await;
+            } else {
+                // 舊做法（XQ_SCROLL_DRIVER=timer）：背景計時器每 16 ms 推一次。Windows 計時器刻度約 15.6 ms，
+                // 實際常變成 31 ms 才推一次，報價表每秒只更新約 42 次，畫面看起來就是一頓一頓
+                let mut last_tick = Instant::now();
+                while s0.elapsed() < Duration::from_millis(scroll_ms) {
+                    let frac = scroll_pos(s0.elapsed().as_secs_f64() / (scroll_ms as f64 / 1000.0));
+                    let tick = last_tick.elapsed() >= Duration::from_millis(33);
+                    if tick {
+                        last_tick = Instant::now();
+                    }
+                    let _ = this.update(cx, |t, cx| {
+                        t.table.update(cx, |tb, cx| {
+                            tb.scroll_frac(frac, cx);
+                            if tick {
+                                tb.synth_ticks(batch, &mut rng, cx);
+                            }
+                        })
+                    });
+                    updates += 1;
+                    cx.background_executor().timer(Duration::from_millis(16)).await;
+                }
             }
             let secs = s0.elapsed().as_secs_f64();
             let Ok(c) = this.update(cx, |t, cx| {
                 t.track_jank = false;
-                (snap(t, cx), t.jank_n, t.jank_ms)
+                if let Some(d) = t.scroll_drive.take() {
+                    updates = d.updates;
+                }
+                let ft = frame_stats(&mut t.frame_ms);
+                t.frame_ms = Vec::new();
+                (snap(t, cx), t.jank_n, t.jank_ms, ft)
             }) else {
                 return;
             };
-            let (c, jn, jms) = c;
+            let (c, jn, jms, ft) = c;
             eprintln!(
-                "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},{}}}",
+                "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},\"scrollDriver\":\"{}\",\"scrollUpdatesPerSec\":{:.1},{ft},{}}}",
                 c.4,
                 (b.0 - a.0) as f64 / (tick_ms as f64 / 1000.0),
                 (c.0 - b.0) as f64 / secs,
                 if jn > 0 { jms / jn as f64 } else { 0.0 },
+                if frame_driven { "frame" } else { "timer" },
+                updates as f64 / secs,
                 stats(b, c, secs)
             );
         }))
@@ -742,6 +780,16 @@ impl Terminal {
             self.chart.read(cx).paint_totals()
         };
         let dp = paints - self.last_paints;
+        let now = Instant::now();
+        let cpu = cpu_secs();
+        let (cpu_main, cpu_proc) = match (cpu, self.last_cpu) {
+            (Some((m1, p1)), Some((t0, m0, p0))) => {
+                let el = now.duration_since(t0).as_secs_f64().max(1e-3);
+                ((m1 - m0) / el * 100.0, (p1 - p0) / el * 100.0)
+            }
+            _ => (-1.0, -1.0),
+        };
+        self.last_cpu = cpu.map(|(m, p)| (now, m, p));
         self.stats = Stats {
             fps: self.frames,
             rss_mb: rss_mb(),
@@ -751,12 +799,14 @@ impl Terminal {
             apply_us_avg: if self.applies > 0 { self.apply_us / self.applies as u64 } else { 0 },
             chart_paints: dp,
             chart_paint_us_avg: if dp > 0 { (paint_us - self.last_paint_us) / dp } else { 0 },
+            cpu_main,
+            cpu_proc,
         };
         if self.metrics_log {
             let s = &self.stats;
             eprintln!(
-                "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} conn={:?}",
-                s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, self.conn
+                "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} cpu_main={:.1} cpu_proc={:.1} conn={:?}",
+                s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, s.cpu_main, s.cpu_proc, self.conn
             );
         }
         if let Some(tb) = self.tick.as_mut() {
@@ -781,7 +831,7 @@ impl Terminal {
     fn sync_check(&mut self, cx: &mut Context<Self>) {
         let now = crate::plat::unix_us();
         let sym = self.chart.read(cx).symbol();
-        let shown = [self.info.read(cx).shown_price, self.chart.read(cx).shown_price];
+        let shown = [self.info.read(cx).shown_price, self.chart.read(cx).shown_price()];
         let row = self.table.read(cx).row(&sym).map(|r| (r.price, r.changed_us));
         let Some(sc) = self.sync.as_mut() else { return };
         sc.frames += 1;
@@ -861,6 +911,61 @@ pub fn rss_mb() -> f64 {
     }
 }
 
+/// 2026-10-25：CPU 拆解用——（這條執行緒、整個程序）累計 CPU 秒數。在 sample()（主執行緒、每秒一次）呼叫，
+/// metrics 行印 cpu_main／cpu_proc（100%＝一顆核心）：看得出多的 CPU 是主執行緒（GPUI＋我們）還是驅動／其他執行緒。
+/// Windows：GetThreadTimes／GetProcessTimes；Linux：/proc/thread-self/stat、/proc/self/stat；其他平台回 None。
+#[cfg(windows)]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    use windows_sys::Win32::Foundation::FILETIME;
+    use windows_sys::Win32::System::Threading::{GetCurrentProcess, GetCurrentThread, GetProcessTimes, GetThreadTimes};
+    let ft = |f: &FILETIME| (((f.dwHighDateTime as u64) << 32) | f.dwLowDateTime as u64) as f64 / 1e7;
+    unsafe {
+        let z = || FILETIME { dwLowDateTime: 0, dwHighDateTime: 0 };
+        let (mut c, mut e, mut k, mut u) = (z(), z(), z(), z());
+        if GetThreadTimes(GetCurrentThread(), &mut c, &mut e, &mut k, &mut u) == 0 {
+            return None;
+        }
+        let th = ft(&k) + ft(&u);
+        if GetProcessTimes(GetCurrentProcess(), &mut c, &mut e, &mut k, &mut u) == 0 {
+            return None;
+        }
+        Some((th, ft(&k) + ft(&u)))
+    }
+}
+
+#[cfg(target_os = "linux")]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    // stat 第 14、15 欄 utime／stime（clock ticks，Linux 一律 100 Hz）；comm 可能含空白，從最後一個 ')' 之後切
+    let ticks = |path: &str| -> Option<f64> {
+        let s = std::fs::read_to_string(path).ok()?;
+        let rest = s.get(s.rfind(')')? + 2..)?;
+        let f: Vec<&str> = rest.split_whitespace().collect();
+        Some((f.get(11)?.parse::<f64>().ok()? + f.get(12)?.parse::<f64>().ok()?) / 100.0)
+    };
+    Some((ticks("/proc/thread-self/stat")?, ticks("/proc/self/stat")?))
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
+pub fn cpu_secs() -> Option<(f64, f64)> {
+    None
+}
+
+/// Windows：目前程序的工作集（Working Set，相當於 RSS）
+#[cfg(windows)]
+pub fn rss_mb() -> f64 {
+    use windows_sys::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    unsafe {
+        let mut c: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+        c.cb = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+        if GetProcessMemoryInfo(GetCurrentProcess(), &mut c, c.cb) != 0 {
+            c.WorkingSetSize as f64 / (1024.0 * 1024.0)
+        } else {
+            0.0
+        }
+    }
+}
+
 /// 2026-10-25：記憶體拆解用——配置器（malloc）實際在用的量與向系統要來的量（MB），印在 CHARTPERF 行。
 /// RSS 減掉這個＝程式碼／字型檔對映＋GPU 驅動（Metal／wgpu 的緩衝區與貼圖）＋其他。
 /// macOS：malloc_zone_statistics（全部 zone）；Linux（glibc）：mallinfo2；其他平台不印。
@@ -905,7 +1010,7 @@ pub fn rss_mb() -> f64 {
     plat::wasm_heap_mb()
 }
 
-#[cfg(not(any(target_os = "macos", target_arch = "wasm32")))]
+#[cfg(not(any(windows, target_os = "macos", target_arch = "wasm32")))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -933,7 +1038,27 @@ impl Render for Terminal {
                     self.jank_n += 1;
                     self.jank_ms += dt;
                 }
+                if self.frame_ms.len() < self.frame_ms.capacity() {
+                    self.frame_ms.push(dt as f32);
+                }
             }
+        }
+        // 捲動壓測：這一幀的位置由經過時間算（跟著畫面幀走，不靠計時器），再要下一幀
+        if let Some(d) = self.scroll_drive.as_mut() {
+            let frac = scroll_pos(d.s0.elapsed().as_secs_f64() / d.secs);
+            let tick = d.last_tick.elapsed() >= Duration::from_millis(33);
+            if tick {
+                d.last_tick = Instant::now();
+            }
+            d.updates += 1;
+            let (batch, rng) = (d.batch, &mut d.rng);
+            self.table.update(cx, |tb, cx| {
+                tb.scroll_frac(frac, cx);
+                if tick {
+                    tb.synth_ticks(batch, rng, cx);
+                }
+            });
+            window.request_animation_frame();
         }
         beat(1);
         let r0 = Instant::now();
@@ -1092,6 +1217,46 @@ impl Render for Terminal {
     }
 }
 
+/// 捲動壓測一次最多記幾個幀間隔（60 fps × 2 分鐘多）
+const FRAME_SAMPLES: usize = 8192;
+
+/// 捲動壓測（XQ_GROUP_STRESS）每幀推進用的狀態；跳價跟 egui 版一樣「這一幀距上次跳價 ≥ 33 ms 才跳」
+struct ScrollDrive {
+    s0: Instant,
+    secs: f64,
+    last_tick: Instant,
+    batch: usize,
+    rng: u64,
+    /// 推進了幾次捲動位置（＝報價表收到幾個新位置）
+    updates: u64,
+}
+
+/// 預設每幀推進；XQ_SCROLL_DRIVER=timer 切回舊的「背景每 16 ms 推一次」（A/B 對照用）
+fn scroll_driver_frame() -> bool {
+    crate::plat::var("XQ_SCROLL_DRIVER").as_deref() != Ok("timer")
+}
+
+/// 捲動位置：經過比例 f（0..1）→ 上下正弦兩趟（同 wry／egui 版）
+fn scroll_pos(f: f64) -> f64 {
+    (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5
+}
+
+/// 幀間隔分布（ms）→ GROUPPERF 的 JSON 片段；會就地排序
+fn frame_stats(ms: &mut [f32]) -> String {
+    ms.sort_unstable_by(f32::total_cmp);
+    let q = |p: f64| -> f32 {
+        if ms.is_empty() {
+            return 0.0;
+        }
+        let i = ((ms.len() - 1) as f64 * p).round() as usize;
+        ms.get(i).copied().unwrap_or(0.0)
+    };
+    format!(
+        "\"frameMsP50\":{:.1},\"frameMsP95\":{:.1},\"frameMsP99\":{:.1},\"frameMsMax\":{:.1},\"frameSamples\":{}",
+        q(0.5), q(0.95), q(0.99), ms.last().copied().unwrap_or(0.0), ms.len()
+    )
+}
+
 /// XQ_WINDOWS=N（預設 1，最多 8）：開 N 個看盤視窗（各自走勢圖＝WATCH[k]），
 /// 共用同一條行情連線、同一個報價表 entity（同一份 5 萬列資料，只合併一次），每個視窗自己的 view／走勢圖。
 fn window_count() -> usize {
@@ -1151,6 +1316,7 @@ fn run(app: gpui::Application) {
     app.run(|cx: &mut App| {
         #[cfg(target_arch = "wasm32")]
         web_fonts(cx);
+        theme::resolve_fonts(cx);
         tick_tape::bind_keys(cx);
         search::bind_keys(cx);
         // 設計 token：F8 切換深色／淺色；refresh_windows 會略過 view 快取整個重畫
@@ -1212,6 +1378,16 @@ fn run(app: gpui::Application) {
     });
 }
 
+/// 設定檔根目錄：Windows %APPDATA%；其他 $XDG_DATA_HOME 或 ~/.local/share
+pub fn data_dir() -> Option<std::path::PathBuf> {
+    let env = |k: &str| crate::plat::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
+    #[cfg(windows)]
+    let base = env("APPDATA").or_else(|| env("LOCALAPPDATA"));
+    #[cfg(not(windows))]
+    let base = env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local/share")));
+    base
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
     // macOS：先確定 malloc 的大塊快取已關（可能 exec 自己一次，見 memrelief.rs），再做任何事
@@ -1241,4 +1417,26 @@ fn main() {
     eprintln!("BENCH wasm-start");
     let platform = std::rc::Rc::new(gpui_web::WebPlatform::new(false));
     run(gpui::Application::with_platform(platform));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{frame_stats, scroll_pos};
+
+    #[test]
+    fn frame_stats_percentiles() {
+        let mut ms: Vec<f32> = (1..=100).map(|v| v as f32).collect();
+        ms.reverse();
+        let s = frame_stats(&mut ms);
+        assert_eq!(s, "\"frameMsP50\":51.0,\"frameMsP95\":95.0,\"frameMsP99\":99.0,\"frameMsMax\":100.0,\"frameSamples\":100");
+        assert_eq!(frame_stats(&mut []), "\"frameMsP50\":0.0,\"frameMsP95\":0.0,\"frameMsP99\":0.0,\"frameMsMax\":0.0,\"frameSamples\":0");
+    }
+
+    #[test]
+    fn scroll_pos_two_round_trips() {
+        assert!((scroll_pos(0.0) - 0.5).abs() < 1e-9);
+        assert!((scroll_pos(0.125) - 1.0).abs() < 1e-9);
+        assert!(scroll_pos(0.375).abs() < 1e-9);
+        assert!((0.0..=1.0).contains(&scroll_pos(0.7)));
+    }
 }

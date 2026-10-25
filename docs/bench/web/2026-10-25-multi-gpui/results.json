@@ -1,0 +1,395 @@
+{
+  "browser": "153.0.8010.12",
+  "when": "2026-10-25T16:12:22.117Z",
+  "extra": "XQ_WEB_BACKEND=webgl",
+  "framework": "gpui",
+  "mixed": {
+    "boot": {
+      "readyMs": 1191.5,
+      "framework": "gpui"
+    },
+    "alive": {
+      "webA": {
+        "before": 59,
+        "after": 79,
+        "moving": true
+      },
+      "webB": {
+        "before": 59,
+        "after": 79,
+        "moving": true
+      },
+      "table": {
+        "before": 39,
+        "after": 59,
+        "moving": true
+      },
+      "chart": {
+        "before": 37,
+        "after": 57,
+        "moving": true
+      }
+    },
+    "consoleBad": [],
+    "typed": "已送出（模擬）：2330 × 1 張",
+    "aliveAfterInput": {
+      "webA": {
+        "before": 99,
+        "after": 117,
+        "moving": true
+      },
+      "webB": {
+        "before": 99,
+        "after": 117,
+        "moving": true
+      },
+      "table": {
+        "before": 76,
+        "after": 94,
+        "moving": true
+      },
+      "chart": {
+        "before": 74,
+        "after": 92,
+        "moving": true
+      }
+    },
+    "afterRemoveWebB": {
+      "webA": {
+        "before": 118,
+        "after": 135,
+        "moving": true
+      },
+      "webB": {
+        "before": 118,
+        "after": 118,
+        "moving": false
+      },
+      "table": {
+        "before": 95,
+        "after": 112,
+        "moving": true
+      },
+      "chart": {
+        "before": 93,
+        "after": 110,
+        "moving": true
+      }
+    },
+    "afterPanicTable": {
+      "webA": {
+        "before": 139,
+        "after": 168,
+        "moving": true
+      },
+      "webB": {
+        "before": 118,
+        "after": 118,
+        "moving": false
+      },
+      "table": {
+        "before": 112,
+        "after": 112,
+        "moving": false
+      },
+      "chart": {
+        "before": 114,
+        "after": 143,
+        "moving": true
+      }
+    },
+    "consoleAfterPanic": [
+      "[error] panicked at src/lib.rs:238:13:\n[table] 驗證用：故意 panic\n\nStack:\n\nError\n    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[1128]:0x34c14e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[5871]:0x8809dd\n\n",
+      "[pageerror] unreachable",
+      "[error] panicked at /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.7/src/app/async_context.rs:66:27:\nRefCell already borrowed\n\nStack:\n\nError\n    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12346]:0x9e940a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[2628]:0x64ae08\n\n",
+      "[pageerror] unreachable"
+    ]
+  },
+  "canvas4": {
+    "boot": {
+      "readyMs": 2566.4000000001397,
+      "framework": "gpui"
+    },
+    "alive": {
+      "table": {
+        "before": 26,
+        "after": 40,
+        "moving": true
+      },
+      "chart": {
+        "before": 26,
+        "after": 40,
+        "moving": true
+      },
+      "c1": {
+        "before": 28,
+        "after": 42,
+        "moving": true
+      },
+      "c2": {
+        "before": 28,
+        "after": 42,
+        "moving": true
+      }
+    },
+    "consoleBad": [],
+    "afterRemoveC2": {
+      "table": {
+        "before": 40,
+        "after": 56,
+        "moving": true
+      },
+      "chart": {
+        "before": 40,
+        "after": 56,
+        "moving": true
+      },
+      "c1": {
+        "before": 42,
+        "after": 58,
+        "moving": true
+      },
+      "c2": {
+        "before": 42,
+        "after": 42,
+        "moving": false
+      }
+    },
+    "afterPanicC1": {
+      "table": {
+        "before": 58,
+        "after": 79,
+        "moving": true
+      },
+      "chart": {
+        "before": 58,
+        "after": 79,
+        "moving": true
+      },
+      "c1": {
+        "before": 58,
+        "after": 58,
+        "moving": false
+      },
+      "c2": {
+        "before": 42,
+        "after": 42,
+        "moving": false
+      }
+    },
+    "afterSecondPanicTable": {
+      "table": {
+        "before": 79,
+        "after": 79,
+        "moving": false
+      },
+      "chart": {
+        "before": 83,
+        "after": 116,
+        "moving": true
+      },
+      "c1": {
+        "before": 58,
+        "after": 58,
+        "moving": false
+      },
+      "c2": {
+        "before": 42,
+        "after": 42,
+        "moving": false
+      }
+    },
+    "consoleAfterPanic": [
+      "[error] panicked at src/lib.rs:238:13:\n[counter] 驗證用：故意 panic\n\nStack:\n\nError\n    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=c1:1462:25)\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[1128]:0x34c14e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[5871]:0x8809dd\n\n",
+      "[pageerror] unreachable",
+      "[error] panicked at src/lib.rs:238:13:\n[table] 驗證用：故意 panic\n\nStack:\n\nError\n    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[1128]:0x34c14e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[5871]:0x8809dd\n\n",
+      "[pageerror] unreachable",
+      "[error] panicked at /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.7/src/app/async_context.rs:66:27:\nRefCell already borrowed\n\nStack:\n\nError\n    at __wbg_new_227d7c05414eb861 (http://127.0.0.1:39175/xq_web_multi_gpui.js?inst=table:1462:25)\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[4736]:0x7f511f\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14341]:0x9f684e\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[8690]:0x964467\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[10685]:0x9c1e29\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[14239]:0x9f647a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12456]:0x9ea8bc\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12187]:0x9e6e61\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[12346]:0x9e940a\n    at http://127.0.0.1:39175/xq_web_multi_gpui_bg.wasm:wasm-function[2628]:0x64ae08\n\n",
+      "[pageerror] unreachable"
+    ]
+  },
+  "removeNoDestroy": {
+    "boot": {
+      "readyMs": 3521.600000000093,
+      "framework": "gpui"
+    },
+    "after": {
+      "table": {
+        "before": 14,
+        "after": 32,
+        "moving": true
+      },
+      "chart": {
+        "before": 14,
+        "after": 32,
+        "moving": true
+      },
+      "c1": {
+        "before": 15,
+        "after": 33,
+        "moving": true
+      },
+      "c2": {
+        "before": 14,
+        "after": 32,
+        "moving": true
+      }
+    },
+    "consoleBad": []
+  },
+  "download": {
+    "1 個元件（報價表）": {
+      "totalBytes": 6485259,
+      "requests": [
+        {
+          "url": "/index.html?only=table&XQ_WEB_BACKEND=webgl",
+          "bytes": 2176
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi_gpui_bg.wasm",
+          "bytes": 6456041
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=table",
+          "bytes": 23180
+        }
+      ]
+    },
+    "穿插版面（2 個元件＋2 個網頁格）": {
+      "totalBytes": 6508439,
+      "requests": [
+        {
+          "url": "/index.html?XQ_WEB_BACKEND=webgl",
+          "bytes": 2176
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi_gpui_bg.wasm",
+          "bytes": 6456041
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=table",
+          "bytes": 23180
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=chart",
+          "bytes": 23180
+        }
+      ]
+    },
+    "4 個元件": {
+      "totalBytes": 6554799,
+      "requests": [
+        {
+          "url": "/index.html?layout=canvas4&XQ_WEB_BACKEND=webgl",
+          "bytes": 2176
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi_gpui_bg.wasm",
+          "bytes": 6456041
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=table",
+          "bytes": 23180
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=chart",
+          "bytes": 23180
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=c1",
+          "bytes": 23180
+        },
+        {
+          "url": "/xq_web_multi_gpui.js?inst=c2",
+          "bytes": 23180
+        }
+      ]
+    }
+  },
+  "memory": {
+    "1 個元件（報價表）": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 2.3,
+          "jsHeapTotalMB": 3.3,
+          "wasmMemoryMB": 11.3
+        },
+        {
+          "jsHeapUsedMB": 2.3,
+          "jsHeapTotalMB": 3.3,
+          "wasmMemoryMB": 11.4
+        },
+        {
+          "jsHeapUsedMB": 2.3,
+          "jsHeapTotalMB": 3.3,
+          "wasmMemoryMB": 11.5
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 2.3,
+        "jsHeapTotalMB": 3.3,
+        "wasmMemoryMB": 11.4
+      }
+    },
+    "穿插版面（2 個元件＋2 個網頁格）": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 3.2,
+          "jsHeapTotalMB": 3.8,
+          "wasmMemoryMB": 24.9
+        },
+        {
+          "jsHeapUsedMB": 3.2,
+          "jsHeapTotalMB": 3.8,
+          "wasmMemoryMB": 24.4
+        },
+        {
+          "jsHeapUsedMB": 3.2,
+          "jsHeapTotalMB": 3.8,
+          "wasmMemoryMB": 24.8
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 3.2,
+        "jsHeapTotalMB": 3.8,
+        "wasmMemoryMB": 24.8
+      }
+    },
+    "4 個元件": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 4.7,
+          "jsHeapTotalMB": 5.3,
+          "wasmMemoryMB": 40.4
+        },
+        {
+          "jsHeapUsedMB": 4.7,
+          "jsHeapTotalMB": 5.3,
+          "wasmMemoryMB": 40.3
+        },
+        {
+          "jsHeapUsedMB": 4.7,
+          "jsHeapTotalMB": 5.3,
+          "wasmMemoryMB": 40.4
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 4.7,
+        "jsHeapTotalMB": 5.3,
+        "wasmMemoryMB": 40.4
+      }
+    }
+  }
+}

@@ -6,6 +6,8 @@
   main    主視窗 1200×720（邏輯點）＋ xq-demofeed（= WryFeedHost --demo-ticks 的 Rust 版）：啟動、記憶體、CPU、FPS
   stress  5 萬列 × 6 欄報價表，每秒 3000 筆跳價 30 秒，再邊跳價邊捲動 10 秒
   heavy   重圖表：20 疊加＋8 副圖＋1000 筆畫線分 100 層（XQ_CHART_LAYERS），跳價／十字線／平移／拖曳／選取／換層順序／正確性
+  ta      技術分析：4 個視窗各一張 K 線加滿指標（20 疊加＋8 副圖：斜線、曲線）＋200 筆畫線，跳價／十字線／平移各 10 秒，
+          每段分開量 CPU 與整機 GPU（看 GPU 用量是不是 GPUI 畫路徑比較貴）
   ticks   高頻進價（xq-tickgen）：每秒 1k、10k、50k、100k 筆＋開盤爆量；延遲 p50/p99、遺失、積壓、CPU、FPS
   multi   1 個與 4 個看盤視窗（每秒 10k 筆），分到各螢幕（Retina／外接螢幕各自的縮放與更新率都記錄下來）
   web     網頁版：同一頁嵌多個元件（穿插版面／4 個元件／1 個元件）× egui、GPUI，用 Chrome（沒有就 Edge）開，見 web_multi.py
@@ -14,7 +16,7 @@
 只在量測區間外取，因為 vmmap 會暫停目標程式一下）、ioreg（整機 GPU 使用率）、osascript JXA（螢幕資訊、視窗位置）、
 sysctl／sw_vers／system_profiler（機器資訊）。不需要 sudo，也不需要「輔助使用」或「螢幕錄製」權限。
 
-用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,gpui-quads,egui-wgpu,egui] [--scenarios main,stress,heavy,ticks,multi,web]
+用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,gpui-quads,egui-wgpu,egui] [--scenarios main,stress,heavy,ta,ticks,multi,web]
                              [--ticks s1k,s10k,s50k,s100k,burst] [--windows 1,4] [--layers 100] [--bin-dir DIR] [--port 47631]
 在 Linux 上也能跑（開發者自測流程用；記憶體/CPU 改讀 /proc，螢幕假設單一 1920×1080）。
 """
@@ -32,7 +34,7 @@ ap.add_argument("--apps", default="gpui,gpui-nofix,egui-wgpu,egui",
                 help="gpui-nofix＝同一個 GPUI 執行檔關掉 10/25 的兩個修補（XQ_INACTIVE_THROTTLE=1、XQ_MAC_ACTIVITY=0），只跑高頻 s10k 與 4 視窗，A/B 對照用；"
                      "gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表（10/24 實測沒有比較快、CPU 還多 6–9 點，預設不跑）；"
                      "gpui-largecache＝GPUI 保留 macOS malloc 大塊快取（XQ_MALLOC_LARGE_CACHE=1，10/25 下午修補前的狀態），只跑重圖表，A/B 對照用")
-ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi,web")
+ap.add_argument("--scenarios", default="main,stress,heavy,ta,ticks,multi,web")
 ap.add_argument("--web-dir", default=os.path.join(HERE, "web"), help="網頁情境用的網頁（web/egui、web/gpui）")
 ap.add_argument("--ticks", default=None)
 ap.add_argument("--windows", default="1,4")
@@ -63,6 +65,11 @@ STRESS_ENV = {"XQ_GROUP_STRESS": "1", "XQ_STRESS_COLS": "6", "XQ_STRESS_TICK_HZ"
               "XQ_STRESS_TICK_MS": "30000", "XQ_STRESS_SCROLL_MS": "10000"}
 HEAVY_ENV = {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": "0.8", "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000",
              "XQ_CHART_DRAWINGS": "1000", "XQ_CHART_LAYERS": A.layers}
+# 2026-10-26 技術分析：4 個視窗都跑走勢圖壓測（事件只由第一個視窗印），只跑跳價／十字線／平移（同 Windows 版 ta）
+TA_PHASES = ("ticks", "crosshair", "pan")
+TA_WIN = 4
+TA_ENV = {"XQ_CHART_STRESS": "1", "XQ_TOP_FRAC": "0.8", "XQ_CHART_WARM_MS": "3000", "XQ_CHART_PHASE_MS": "10000",
+          "XQ_CHART_DRAWINGS": "200", "XQ_CHART_PHASES": ",".join(TA_PHASES), "XQ_WINDOWS": str(TA_WIN)}
 TITLE_BAR = 28.0  # macOS 標準標題列高度（點）；視窗內容區往下讓這麼多
 APPDEF = {
     "gpui":      {"bin": "gpui-xq-demo", "label": "GPUI（Metal）", "env": {"XQ_DRAW_QUADS": "0"}},
@@ -562,6 +569,28 @@ def run_heavy(app, SCR):
     finally:
         st.stop("%s-heavy.log" % app, "heavy")
 
+def run_ta(app, SCR):
+    restart_feed(); reset_state()
+    rects, place = multi_rects(SCR, TA_WIN)
+    st = Proc([bin_path(APPDEF[app]["bin"])], app_env(app, dict(TA_ENV), rects), app); st.scen = "ta"
+    try:
+        _, setup = st.wait_ev("cp:setup", 60)
+        out = {"app": app, "windows": TA_WIN, "setup": setup, "placement": place, "phases": {}}
+        for ph in TA_PHASES:
+            st.wait_ev("ph:%s:start" % ph, 30)
+            pids = tree(st.pid); c0 = cpu_secs(pids); ta = time.monotonic(); GPU.start()
+            while time.monotonic() - ta < 5: time.sleep(0.02)
+            m = mem(st.pid)
+            st.wait_ev("ph:%s:end" % ph, 30)
+            c1 = cpu_secs(pids); tb = time.monotonic(); g = GPU.stop()
+            _, perf = st.wait_ev("cp:%s" % ph, 5)
+            out["phases"][ph] = {"cpu_pct": r1((c1 - c0) / (tb - ta) * 100), "gpu_util": g, "mem": m, "perf": perf}
+        st.wait_ev("cp:done", 10)
+        out["mem_end"] = mem(st.pid, footprint=True)
+        return out
+    finally:
+        st.stop("%s-ta.log" % app, "ta")
+
 def counters(j):
     return {"recv": float(j.get("rowsIn", 0)), "toUi": float(j.get("inboxRows", 0)),
             "applied": float(j.get("applied", 0)), "batches": float(j.get("applies", 0))}
@@ -719,6 +748,13 @@ def heavy_metrics():
     m.append(("footprint_mb", "mem_end.footprint_mb", "MB", False, "實體記憶體（結束時）"))
     return m
 METRICS["heavy"] = heavy_metrics()
+METRICS["ta"] = [m for ph in TA_PHASES for m in (
+    ("%s_cpu" % ph, "phases.%s.cpu_pct" % ph, "%", False, "%s：CPU（4 視窗合計）" % ph),
+    ("%s_gpu" % ph, "phases.%s.gpu_util" % ph, "%", False, "%s：整機 GPU" % ph),
+    ("%s_fps" % ph, "phases.%s.perf.fps" % ph, "fps", True, "%s：FPS（第一個視窗）" % ph),
+    ("%s_paint_ms" % ph, "phases.%s.perf.avgPaintMs" % ph, "ms", False, "%s：每幀圖表繪製（第一個視窗）" % ph),
+    ("%s_rss_mb" % ph, "phases.%s.mem.rss_mb" % ph, "MB", False, "%s：RSS" % ph))] + \
+    [("footprint_mb", "mem_end.footprint_mb", "MB", False, "實體記憶體（結束時）")]
 TICK_METRICS = [("lat_p50", "latOldest.p50", "ms", False, "延遲 p50"), ("lat_p99", "latOldest.p99", "ms", False, "延遲 p99"),
                 ("lat_max", "latOldest.max", "ms", False, "延遲最大"), ("loss", "ticks.lossFinal", "筆", False, "遺失"),
                 ("backlog_ms", "trend.backlog_ms", "ms", False, "積壓（後 5 秒−前 5 秒延遲）"), ("cpu", "cpu", "%", False, "CPU"),
@@ -737,6 +773,7 @@ def groups():
     if "main" in SCEN: g.append(("main", "主視窗（1200×720 點、xq-demofeed 約 40Hz）", "main", None, METRICS["main"]))
     if "stress" in SCEN: g.append(("stress", "5 萬列報價表（每秒 3000 筆跳價＋捲動）", "stress", None, METRICS["stress"]))
     if "heavy" in SCEN: g.append(("heavy", "重圖表（20 疊加＋8 副圖＋1000 筆畫線／%s 層）" % A.layers, "heavy", None, METRICS["heavy"]))
+    if "ta" in SCEN: g.append(("ta", "技術分析（%d 視窗 × 20 疊加＋8 副圖＋200 畫線）" % TA_WIN, "ta", None, METRICS["ta"]))
     if "ticks" in SCEN:
         for sc in TICKS: g.append(("ticks-" + sc, "高頻進價 %s" % sc, "ticks", ("scenario", sc), TICK_METRICS))
     if "multi" in SCEN:
@@ -858,9 +895,9 @@ def stall_md(ALL, lab):
           "在量測區間外、不影響表格數字）；**只有主執行緒卡住**＝背景收行情照常、畫面停住（這才是要找的問題）。",
           "- 只有主執行緒卡住時，會自動用 macOS 內建的 sample 記下卡住當下的呼叫堆疊（stalls 資料夾），請一起傳回。", "",
           "| 情境 | app | 停頓次數（3 輪合計） | 壓測包 vmmap 造成 | 只有主執行緒卡住 | 最長 | 卡住前的階段 |", "|---|---|---|---|---|---|---|"]
-    names = {"main": "主視窗", "stress": "5 萬列", "heavy": "重圖表", "ticks": "高頻", "multi": "多視窗"}
+    names = {"main": "主視窗", "stress": "5 萬列", "heavy": "重圖表", "ta": "技術分析", "ticks": "高頻", "multi": "多視窗"}
     any_row = False
-    for key in ("main", "stress", "heavy", "ticks", "multi"):
+    for key in ("main", "stress", "heavy", "ta", "ticks", "multi"):
         for app in APPS:
             rs = [r for r in ALL.get(key, []) if r and r.get("app") == app and r.get("diag")]
             if not rs or not APPDEF[app]["bin"].startswith("gpui"): continue
@@ -912,13 +949,13 @@ def main():
     try: build = json.load(open(os.path.join(A.bin_dir, "build-info.json")))
     except Exception: pass
     if info.get("rosetta"): say("！目前的終端機在 Rosetta（Intel 轉譯）下執行，數字會偏慢。請用原生終端機重跑。")
-    per_app = (62 if "main" in SCEN else 0) + (45 if "stress" in SCEN else 0) + (70 if "heavy" in SCEN else 0) + \
+    per_app = (62 if "main" in SCEN else 0) + (45 if "stress" in SCEN else 0) + (70 if "heavy" in SCEN else 0) + (45 if "ta" in SCEN else 0) + \
               (42 * len(TICKS) if "ticks" in SCEN else 0) + (42 * len(NWIN) if "multi" in SCEN else 0)
     say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if x in ("gpui-quads", "gpui-largecache")]) + 85 * len([x for x in APPS if x == "gpui-nofix"])) * RUNS * 1.1 / 60)))
     say("螢幕：" + "；".join("%s %dx%d 點 ×%s（%s Hz）" % (s.get("name"), s["w"], s["h"], s.get("scale"), s.get("maxFps")) for s in SCR))
     say("測試期間請不要動滑鼠鍵盤、不要把終端機蓋在測試視窗上面。結果：%s" % OUT)
     if "web" in SCEN: say("網頁情境約 %d 分鐘（會開 Chrome 視窗，跑完自動關）。" % round(6 * 25 * RUNS / 60))
-    ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": [], "web": []}
+    ALL = {"main": [], "stress": [], "heavy": [], "ta": [], "ticks": [], "multi": [], "web": []}
     try:
         for run in range(1, RUNS + 1):
             for app in APPS:  # 每一輪 app 交錯跑，降低背景負載變化的影響
@@ -934,6 +971,10 @@ def main():
                     say("第 %d/%d 輪 %s 重圖表（%s 層）…" % (run, RUNS, app, A.layers)); r = attempt(run_heavy, app, SCR)
                     if r: r["diag"] = LAST_DIAG[0]
                     if r: r["run"] = run; ALL["heavy"].append(r); say("  " + "、".join("%s %s fps" % (p, Q(r, "phases.%s.perf.fps" % p)) for p in HEAVY_PHASES))
+                if "ta" in SCEN and runs_in(app, "ta"):
+                    say("第 %d/%d 輪 %s 技術分析（%d 視窗）…" % (run, RUNS, app, TA_WIN)); r = attempt(run_ta, app, SCR)
+                    if r: r["diag"] = LAST_DIAG[0]
+                    if r: r["run"] = run; ALL["ta"].append(r); say("  " + "、".join("%s CPU %s%%／GPU %s%%" % (p, Q(r, "phases.%s.cpu_pct" % p), Q(r, "phases.%s.gpu_util" % p)) for p in TA_PHASES))
                 if "ticks" in SCEN and runs_in(app, "ticks"):
                     for sc in TICKS:
                         if not runs_sub(app, sc): continue

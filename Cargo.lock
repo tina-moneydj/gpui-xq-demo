@@ -2473,6 +2473,7 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "web-time",
+ "windows-sys 0.59.0",
  "xq-feed",
  "xq-tape",
  "xq-tokens",
