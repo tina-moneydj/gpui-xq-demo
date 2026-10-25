@@ -29,7 +29,7 @@ ap.add_argument("--quick", action="store_true", help="1 輪；高頻只跑 10k�
 ap.add_argument("--apps", default="gpui,gpui-nofix,egui-wgpu,egui",
                 help="gpui-nofix＝同一個 GPUI 執行檔關掉 10/25 的兩個修補（XQ_INACTIVE_THROTTLE=1、XQ_MAC_ACTIVITY=0），只跑高頻 s10k 與 4 視窗，A/B 對照用；"
                      "gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表（10/24 實測沒有比較快、CPU 還多 6–9 點，預設不跑）；"
-                     "gpui-norelief＝GPUI 關掉 10/25 下午的 malloc 還記憶體修補（XQ_MALLOC_RELIEF_MS=0），只跑重圖表，A/B 對照用")
+                     "gpui-largecache＝GPUI 保留 macOS malloc 大塊快取（XQ_MALLOC_LARGE_CACHE=1，10/25 下午修補前的狀態），只跑重圖表，A/B 對照用")
 ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi")
 ap.add_argument("--ticks", default=None)
 ap.add_argument("--windows", default="1,4")
@@ -68,8 +68,8 @@ APPDEF = {
     # 2026-10-25：同一個 GPUI 執行檔，關掉「全部視窗不節流」與「macOS latency-critical（關 App Nap）」兩個修補，A/B 看停頓有沒有變
     "gpui-nofix": {"bin": "gpui-xq-demo", "label": "GPUI 未修補（對照）", "env": {"XQ_DRAW_QUADS": "0", "XQ_INACTIVE_THROTTLE": "1", "XQ_MAC_ACTIVITY": "0"},
                    "only": ("ticks", "multi"), "ticks": ("s10k",), "windows": (4,)},
-    # 2026-10-25 下午：同一個 GPUI 執行檔關掉「每 0.5 秒 malloc_zone_pressure_relief」（src/memrelief.rs），看重圖表多的 ~200 MB 有沒有還回去
-    "gpui-norelief": {"bin": "gpui-xq-demo", "label": "GPUI 未還記憶體（對照）", "env": {"XQ_DRAW_QUADS": "0", "XQ_MALLOC_RELIEF_MS": "0"}, "only": ("heavy",)},
+    # 2026-10-25 下午：同一個 GPUI 執行檔保留 macOS malloc 的大塊快取（XQ_MALLOC_LARGE_CACHE=1，不設 MallocLargeCache=0），看重圖表多的 ~200 MB 有沒有還回去
+    "gpui-largecache": {"bin": "gpui-xq-demo", "label": "GPUI 未修記憶體（對照）", "env": {"XQ_DRAW_QUADS": "0", "XQ_MALLOC_LARGE_CACHE": "1"}, "only": ("heavy",)},
     "egui-wgpu": {"bin": "egui-xq-demo", "label": "egui（wgpu／Metal）", "env": {"XQ_RENDERER": "wgpu"}},
     "egui":      {"bin": "egui-xq-demo", "label": "egui（glow／OpenGL）", "env": {"XQ_RENDERER": "glow"}},
 }
@@ -907,7 +907,7 @@ def main():
     if info.get("rosetta"): say("！目前的終端機在 Rosetta（Intel 轉譯）下執行，數字會偏慢。請用原生終端機重跑。")
     per_app = (62 if "main" in SCEN else 0) + (45 if "stress" in SCEN else 0) + (70 if "heavy" in SCEN else 0) + \
               (42 * len(TICKS) if "ticks" in SCEN else 0) + (42 * len(NWIN) if "multi" in SCEN else 0)
-    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if x in ("gpui-quads", "gpui-norelief")]) + 85 * len([x for x in APPS if x == "gpui-nofix"])) * RUNS * 1.1 / 60)))
+    say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if x in ("gpui-quads", "gpui-largecache")]) + 85 * len([x for x in APPS if x == "gpui-nofix"])) * RUNS * 1.1 / 60)))
     say("螢幕：" + "；".join("%s %dx%d 點 ×%s（%s Hz）" % (s.get("name"), s["w"], s["h"], s.get("scale"), s.get("maxFps")) for s in SCR))
     say("測試期間請不要動滑鼠鍵盤、不要把終端機蓋在測試視窗上面。結果：%s" % OUT)
     ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": []}

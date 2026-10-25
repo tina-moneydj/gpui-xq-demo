@@ -33,11 +33,11 @@ wry 已經淘汰，不在這次的比較裡。
 
 ### 最新（2026-10-25 下午）：只要跑「重圖表」
 
-- **結論先講：** 上次 GPUI 重圖表比 egui 多約 200 MB，原因是 macOS 的 malloc 把用完的大塊留著沒還。這一版 GPUI 會每 0.5 秒把它們還給系統。**這次只要跑重圖表，大約 15 分鐘：**
+- **結論先講：** 上次 GPUI 重圖表比 egui 多約 200 MB，原因是 macOS 的 malloc 把用完的大塊留著沒還。這一版 GPUI 一啟動就設 `MallocLargeCache=0`（蘋果正式的環境變數），用完的大塊馬上還給系統。**這次只要跑重圖表，大約 15 分鐘：**
   ```
-  ./run-bench.command --apps gpui,gpui-norelief,egui-wgpu,egui --scenarios heavy
+  ./run-bench.command --apps gpui,gpui-largecache,egui-wgpu,egui --scenarios heavy
   ```
-- 新的對照欄 **「GPUI 未還記憶體（gpui-norelief）」**：同一個 GPUI 執行檔，關掉這個修補（`XQ_MALLOC_RELIEF_MS=0`），只跑重圖表，用來看前後差多少。
+- 新的對照欄 **「GPUI 未修記憶體（gpui-largecache）」**：同一個 GPUI 執行檔，保留系統預設（`XQ_MALLOC_LARGE_CACHE=1`），只跑重圖表，用來看前後差多少。
 - `vmmap/` 的檔名現在會帶情境名稱（例如 `gpui-heavy-67s.txt`），不會再互相覆蓋。
 - 跑完照樣把 `results/` 裡的結果 zip 傳回來（`vmmap/`、`stalls/` 都在裡面）。
 
@@ -217,7 +217,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   python3 xq_bench_mac.py --help
   ```
   常用的有：
-  - `--apps gpui,gpui-nofix,egui-wgpu,egui`（預設）；另有 `gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表；`gpui-norelief`＝GPUI 關掉 malloc 還記憶體修補（`XQ_MALLOC_RELIEF_MS=0`），只跑重圖表；`gpui-nofix`＝恢復 GPUI 預設的背景視窗限速（`XQ_INACTIVE_THROTTLE=1`）＋不申請延遲敏感模式（`XQ_MAC_ACTIVITY=0`），只跑 10k 高頻和 4 視窗
+  - `--apps gpui,gpui-nofix,egui-wgpu,egui`（預設）；另有 `gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表；`gpui-largecache`＝GPUI 保留 macOS malloc 大塊快取（`XQ_MALLOC_LARGE_CACHE=1`，修補前），只跑重圖表；`gpui-nofix`＝恢復 GPUI 預設的背景視窗限速（`XQ_INACTIVE_THROTTLE=1`）＋不申請延遲敏感模式（`XQ_MAC_ACTIVITY=0`），只跑 10k 高頻和 4 視窗
   - 停頓偵測門檻 `XQ_STALL_MS`（預設 120 毫秒，0＝關）；GPUI 內部 log 等級 `XQ_GPUI_LOG=off|warn|info|debug`
   - `--scenarios main,stress,heavy,ticks,multi`
   - `--ticks s1k,s10k,s50k,s100k,burst`
