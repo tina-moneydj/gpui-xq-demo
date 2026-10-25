@@ -346,7 +346,12 @@ impl Terminal {
         let window_id = window.window_handle().window_id();
         // XQ_PERIOD=D：啟動就開日線（基準測試用，和 wry 版同畫面）；預設分時
         let period = crate::plat::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
-        let chart = cx.new(|cx| ChartView::new(sym, name, period, cx));
+        let chart = cx.new(|cx| {
+            let mut c = ChartView::new(sym, name, period, cx);
+            // 其他視窗也跑走勢圖壓測（XQ_CHART_STRESS＋XQ_WINDOWS＝技術分析情境），事件只由主視窗印
+            c.stress_quiet = win != 0;
+            c
+        });
         let info = cx.new(|_| InfoPane {
             symbol: sym.into(),
             name: name.into(),

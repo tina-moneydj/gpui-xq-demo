@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
+  XQ 壓測 Windows 版：GPUI vs egui（wry 已淘汰，不比）：主視窗、5 萬列、重圖表、技術分析（4 張滿指標 K 線）、高頻 1k/10k/50k/100k/爆量、多視窗（1、4 個跨螢幕）。
 .DESCRIPTION
   與 Linux 版 scripts/bench-main-window.sh、bench-ticks.sh、bench-multi.sh 同情境、同量法（3 輪取中位數）。
   執行檔來源依序：-BinDir、本資料夾 bin\、GitHub release「windows-bench-latest」自動下載（兩個 repo 都公開，不用登入）。
@@ -9,12 +9,13 @@
   .\bench-windows.ps1                 # 全部（約 75 分鐘）
   .\bench-windows.ps1 -Quick          # 快速版（1 輪、少幾個情境，約 20 分鐘）
   .\bench-windows.ps1 -Scenarios ticks -Ticks s10k,s100k -Apps gpui,egui
+  .\bench-windows.ps1 -Scenarios ta -Apps gpui,egui,egui-wgpu   # 只跑技術分析（約 9 分鐘）
 #>
 [CmdletBinding()]
 param(
     [string]$BinDir = "",
     [int]$Runs = 3,
-    [string[]]$Scenarios = @("main", "stress", "heavy", "ticks", "multi"),
+    [string[]]$Scenarios = @("main", "stress", "heavy", "ta", "ticks", "multi"),
     [string[]]$Ticks = @("s1k", "s10k", "s50k", "s100k", "burst"),
     [string[]]$Apps = @("gpui", "gpui-quads", "egui", "egui-wgpu"),
     [string[]]$Windows = @("1", "4"),
@@ -50,6 +51,9 @@ $T_IDLE = 10.0; $T_CPU0 = 30.0; $T_END = 60.0
 $DUR = 30; $SETTLE = 3; $WARMUP = 3; $TAIL = 4
 # 重圖表 7 段（app 端 chart.rs／zstress.rs：每段 10 秒，zshot 3 秒，共約 67 秒＋暖機 3 秒）
 $HEAVY_PHASES = @("ticks", "crosshair", "pan", "drag", "select", "reorder", "zshot")
+# 技術分析（ta）：XQ_WINDOWS=4 個視窗，每個一張 K 線（20 疊加＋8 副圖＋200 筆畫線），只跑跳價／十字線／平移 3 段各 10 秒。
+# 指標線、畫線都是斜線／曲線（GPUI 走 path、egui 切三角形），分開量 CPU 與 GPU，看 GPUI 的 GPU 用量是不是卡在這裡
+$TA_PHASES = @("ticks", "crosshair", "pan"); $TA_WIN = 4; $TA_DRAWINGS = 200
 $TICK_ARGS = @{ s1k = "--rate 1000"; s10k = "--rate 10000"; s50k = "--rate 50000"; s100k = "--rate 100000"; burst = "--burst 150000,3,5000" }
 # 報價表 2330／2317 兩列的點擊座標（內容區邏輯像素，同 Linux 1200×720 校正值）；可用環境變數覆寫
 function EnvInt($k, $d) { $v = [Environment]::GetEnvironmentVariable($k); if ($v) { return [int]$v } return $d }
@@ -501,6 +505,34 @@ function Run-Heavy($name, $shot) {
     } finally { Stop-Proc $st; Save-Log $st "$name-heavy.log" "heavy" }
 }
 
+# ---------------------------------------------------------------- 情境：技術分析（4 個視窗各一張滿指標 K 線）
+function Run-Ta($name, $shot) {
+    Restart-Feed; Reset-State $name
+    $x = @{ XQ_CHART_STRESS = "1"; XQ_CHART_WARM_MS = "3000"; XQ_CHART_PHASE_MS = "10000"; XQ_CHART_DRAWINGS = "$TA_DRAWINGS"
+            XQ_CHART_PHASES = ($TA_PHASES -join ","); XQ_WINDOWS = "$TA_WIN"; XQ_TOP_FRAC = "0.8" }
+    $st = Start-Proc $Bins[$APP_BIN[$name]] "" (New-Env $name $x)
+    try {
+        $wins = @(Find-Wins $st $TA_WIN 30 $name); $pl = Place-Multi $wins
+        $setup = Wait-Ev $st "cp:setup" 60 $name
+        [void](Wait-Ev $st "heavy-frame" 30 $name)
+        $out = [ordered]@{ app = $name; run = 0; windows = $TA_WIN; heavy_frame_ms = (EvMs $st "heavy-frame"); setup = $setup.J; phases = [ordered]@{}; placement = $pl; screenshot = $null }
+        foreach ($ph in $TA_PHASES) {
+            [void](Wait-Ev $st "ph:${ph}:start" 30 $name)
+            $p0 = [XqBench]::Tree($st.Pid); $c0 = [XqBench]::CpuSum($p0); $ta = [XqBench]::Now(); [XqBench]::GpuStart($st.Pid)
+            while ([XqBench]::Now() -lt $ta + 5) { Pump $st; Start-Sleep -Milliseconds 50 }
+            $m = Mem $st.Pid
+            if ($shot -and $ph -eq "crosshair") { $out.screenshot = Shot (Join-Path $Script:Out "$name-ta.png") $true }
+            [void](Wait-Ev $st "ph:${ph}:end" 30 $name)
+            $c1 = [XqBench]::CpuSum((Union-Tree $st.Pid $p0)); $tb = [XqBench]::Now()
+            $g = Gpu-Stop
+            $perf = Wait-Ev $st "cp:$ph" 5 $name
+            $out.phases[$ph] = [ordered]@{ cpu_pct = (Cpu-Pct $c0 $c1 ($tb - $ta)); gpu = $g; mem = $m; perf = $perf.J }
+        }
+        [void](Wait-Ev $st "cp:done" 15 $name)
+        return $out
+    } finally { Stop-Proc $st; Save-Log $st "$name-ta.log" "ta" }
+}
+
 # ---------------------------------------------------------------- 情境：高頻進價（ticks）與多視窗（multi），行情＝xq-tickgen
 function Counters($name, $j) {
     return @{ recv = [double](Get-P $j "rowsIn"); toUi = [double](Get-P $j "inboxRows"); applied = [double](Get-P $j "applied"); batches = [double](Get-P $j "applies") }
@@ -694,6 +726,17 @@ function Summarize($all) {
             }
             $o.heavy = $h
         }
+        $rs = @($all.ta | Where-Object { $_.app -eq $name })
+        if ($rs.Count) {
+            $h = [ordered]@{ runs = $rs.Count; heavy_frame_ms = (G $rs "heavy_frame_ms"); windows = $TA_WIN
+                canvas = "$(Q $rs[-1] 'setup.cssW')x$(Q $rs[-1] 'setup.cssH')"; overlays = (Q $rs[-1] "setup.overlays"); subs = (Q $rs[-1] "setup.subs"); drawings = (Q $rs[-1] "setup.drawings") }
+            foreach ($ph in $TA_PHASES) {
+                $h[$ph] = [ordered]@{ fps = (G $rs "phases.$ph.perf.fps"); paint_ms = (G $rs "phases.$ph.perf.avgPaintMs"); cpu_pct = (G $rs "phases.$ph.cpu_pct")
+                    gpu3d = (G $rs "phases.$ph.gpu.gpu3d"); gpu3dMax = (G $rs "phases.$ph.gpu.gpu3dMax"); gpuDedicated_mb = (G $rs "phases.$ph.gpu.gpuDedicated_mb")
+                    ws_mb = (G $rs "phases.$ph.mem.ws_mb"); wsPrivate_mb = (G $rs "phases.$ph.mem.wsPrivate_mb") }
+            }
+            $o.ta = $h
+        }
         $tk = [ordered]@{}
         foreach ($sc in $Ticks) {
             $rs = @($all.ticks | Where-Object { $_.app -eq $name -and $_.scenario -eq $sc })
@@ -821,6 +864,21 @@ function Write-Summary($S, $mi, $path) {
         }
         Table "重圖表（20 個疊加＋8 副圖＋1000 筆畫線／100 層，走勢圖佔 80% 高；7 段各 10 秒，上下順序截圖 3 秒）" $rows
     }
+    if ($Scenarios -contains "ta") {
+        $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "ta" })
+        Conclude "技術分析 4 張 K 線＋十字線 CPU" "ta.crosshair.cpu_pct" "%" $true
+        Conclude "技術分析 4 張 K 線＋十字線 GPU 3D" "ta.crosshair.gpu3d" "%" $true
+        Conclude "技術分析 4 張 K 線＋平移 GPU 3D" "ta.pan.gpu3d" "%" $true
+        $rows = @(, @("到第一個滿指標幀（主視窗）", "ta.heavy_frame_ms", " ms", $true))
+        $pn = @{ ticks = "跳價"; crosshair = "＋十字線"; pan = "＋十字線＋平移" }
+        foreach ($ph in $TA_PHASES) {
+            $rows += , @("$($pn[$ph]) CPU", "ta.$ph.cpu_pct", "%", $true); $rows += , @("$($pn[$ph]) GPU 3D", "ta.$ph.gpu3d", "%", $true)
+            $rows += , @("$($pn[$ph]) GPU 3D 最高", "ta.$ph.gpu3dMax", "%", $true); $rows += , @("$($pn[$ph]) GPU 專用記憶體", "ta.$ph.gpuDedicated_mb", " MB", $true)
+            $rows += , @("$($pn[$ph]) FPS（主視窗）", "ta.$ph.fps", "", $false); $rows += , @("$($pn[$ph]) 繪圖耗時（主視窗）", "ta.$ph.paint_ms", " ms", $true)
+            $rows += , @("$($pn[$ph]) Working Set", "ta.$ph.ws_mb", " MB", $true)
+        }
+        Table "技術分析（$TA_WIN 個視窗各一張 K 線：20 個疊加＋8 副圖＋$TA_DRAWINGS 筆畫線，走勢圖佔 80% 高；跳價／十字線／平移 3 段各 10 秒，每段量後 5 秒）" $rows
+    }
     if ($Scenarios -contains "ticks") {
         $Script:CurApps = @($Apps | Where-Object { Runs-In $_ "ticks" })
         $sc = "s100k"; if ($Ticks -notcontains $sc) { $sc = $Ticks[-1] }
@@ -932,11 +990,12 @@ $est = 0; $na = @($Apps | Where-Object { $HEAVY_ONLY -notcontains $_ }).Count; $
 if ($Scenarios -contains "main") { $est += $Runs * $na * 72 }
 if ($Scenarios -contains "stress") { $est += $Runs * $na * 62 }
 if ($Scenarios -contains "heavy") { $est += $Runs * $nh * 85 }
+if ($Scenarios -contains "ta") { $est += $Runs * $na * 60 }
 if ($Scenarios -contains "ticks") { $est += $Ticks.Count * $Runs * $na * 50 }
 if ($Scenarios -contains "multi") { $est += $Windows.Count * $Runs * $na * 54 }
 Say ("預估 {0:0} 分鐘（{1} 輪；情境 {2}；app {3}）。測試中請不要動滑鼠鍵盤，視窗會自己開關。" -f ($est / 60), $Runs, ($Scenarios -join "/"), ($Apps -join "/")) "Cyan"
 
-$all = [ordered]@{ main = @(); stress = @(); heavy = @(); ticks = @(); multi = @() }
+$all = [ordered]@{ main = @(); stress = @(); heavy = @(); ta = @(); ticks = @(); multi = @() }
 function Try-Run($label, [scriptblock]$f) {
     for ($attempt = 1; $attempt -le 2; $attempt++) {
         try { return (& $f) }
@@ -972,6 +1031,14 @@ try {
             Say "重圖表 $i/$Runs $a …"
             $r = Try-Run "heavy/$a" { Run-Heavy $a ($i -eq $Runs) }
             if ($r) { $r.run = $i; $all.heavy += $r; foreach ($ph in $HEAVY_PHASES) { $v = $r.phases[$ph]; Say ("  {0,-9} FPS {1}、繪圖 {2} ms、CPU {3}%、GPU {4}%" -f $ph, (Get-P $v.perf "fps"), (Get-P $v.perf "avgPaintMs"), $v.cpu_pct, $v.gpu.gpu3d) } }
+            Start-Sleep -Seconds 2 } }
+    }
+    if ($Scenarios -contains "ta") {
+        for ($i = 1; $i -le $Runs; $i++) { foreach ($a in $Apps) {
+            if (-not (Runs-In $a "ta")) { continue }
+            Say "技術分析 ×$TA_WIN $i/$Runs $a …"
+            $r = Try-Run "ta/$a" { Run-Ta $a ($i -eq $Runs) }
+            if ($r) { $r.run = $i; $all.ta += $r; foreach ($ph in $TA_PHASES) { $v = $r.phases[$ph]; Say ("  {0,-9} CPU {1}%、GPU {2}%（最高 {3}%）、GPU 記憶體 {4} MB、主視窗 FPS {5}" -f $ph, $v.cpu_pct, $v.gpu.gpu3d, $v.gpu.gpu3dMax, $v.gpu.gpuDedicated_mb, (Get-P $v.perf "fps")) } }
             Start-Sleep -Seconds 2 } }
     }
     Stop-Feed

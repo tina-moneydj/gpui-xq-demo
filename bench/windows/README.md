@@ -8,7 +8,17 @@ wry 已經淘汰，不在這次的比較裡。
 
 > 第一份 Windows 實機數字在 2026-10-23（i7-13700＋GTX 1650，見 docs/bench/real-hw）；2026-10-24 修正了重圖表逾時、勝負判定、egui 點選漏抓（見文末）。跑完後 `summary.md` 會先寫結論，每一項的較佳者標 🏆。
 
-### 這一版多了什麼：GPUI 優化第 2 批＋GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
+### 最新（2026-10-26）：技術分析情境（ta）
+
+- **結論先講：** 新增「技術分析」情境，用來確認「GPUI 在 Windows 上 GPU 用量是 egui 的好幾倍，是不是因為畫斜線／曲線比較貴」。**只跑這個情境約 9 分鐘：**
+  ```
+  run-bench.cmd -Scenarios ta -Apps gpui,egui,egui-wgpu
+  ```
+- 畫面：開 **4 個視窗**（有幾個螢幕就分到幾個螢幕，只有一個螢幕就 2×2 鋪滿），每個視窗一張日 K，加滿指標（20 個疊加：均線、布林、SAR…，8 個副圖：KD、MACD、RSI…）和 200 筆畫線。K 線圖佔視窗 80% 高。
+- 三段各 10 秒：跳價 → 加十字線 → 再加平移。每段量 CPU、**GPU 3D 使用率（平均＋最高）、GPU 專用記憶體**、Working Set，另外記主視窗的 FPS 和每幀繪圖時間。
+- 完整版（雙擊 `run-bench.cmd`）也會跑這個情境，多約 9 分鐘。
+
+### 上一版：GPUI 優化第 2 批＋GPUI 跑兩次（XQ_DRAW_QUADS 關／開）
 
 - **結論先講：** 這一版的 GPUI 是 gpui-opt2（多視窗報價同一幀到、報價表一列一次畫完、畫線可改用 quad）。請整套重跑一次，跟 2026-10-23 那份比；重圖表會多一欄「GPUI quad 畫線（XQ_DRAW_QUADS=1）」，拿它跟「GPUI」那欄比，就知道在 GTX 1650 上要不要打開這個優化。
 - `XQ_DRAW_QUADS` 是什麼：圖表上水平線、垂直線、矩形框這些「橫平豎直」的畫線，改用便宜的方塊（quad）畫，不走比較貴的路徑（path）。在我們沒有顯示卡的測試機上反而變慢約一半（GPU 批次被切碎），所以**預設關**；真的顯示卡上結果可能不同。
@@ -39,7 +49,7 @@ wry 已經淘汰，不在這次的比較裡。
 
 | 模式 | 時間 | 怎麼跑 |
 |---|---|---|
-| 完整（預設） | 約 95 分鐘（GPUI、egui glow、egui wgpu 三個 app；重圖表再加 GPUI quad） | 雙擊 `run-bench.cmd` |
+| 完整（預設） | 約 105 分鐘（GPUI、egui glow、egui wgpu 三個 app；重圖表再加 GPUI quad） | 雙擊 `run-bench.cmd` |
 | 快速版 | 約 25 分鐘 | 在資料夾網址列輸入 `cmd` 按 Enter，再輸入 `run-bench.cmd -Quick` |
 
 開始時畫面上會顯示這次的預估時間。
@@ -54,6 +64,7 @@ wry 已經淘汰，不在這次的比較裡。
 |---|---|
 | 主視窗 | 1200×720 邏輯像素（會乘上螢幕縮放）。量啟動到第一幀與第一筆報價的時間、記憶體（10 秒、60 秒）、CPU／GPU／FPS（第 30–60 秒） |
 | 5 萬列 | 報價表 5 萬列 × 6 欄，每秒 3000 筆跳價 30 秒，接著邊跳價邊捲動 10 秒 |
+| 技術分析 | 4 個視窗，各一張 20 疊加＋8 副圖＋200 筆畫線的日 K；跳價、加十字線、再加平移各 10 秒，每次約 60 秒 |
 | 重圖表 | 20 個疊加、8 個副圖、1000 筆畫線（100 層）。依序跑 7 段：跳價、加十字線、再加平移、拖曳畫線、框選畫線、調整圖層順序（各 10 秒）、上下順序截圖（3 秒），每次約 75 秒 |
 | 高頻進價 | 每秒 1k、10k、50k、100k 筆，加上開盤爆量。量延遲 p50/p99、遺失、積壓、CPU/GPU/FPS，以及點報價列切換走勢圖的反應時間 |
 | 多視窗 | 開 1 個和 4 個看盤視窗，行情每秒 10k 筆。4 個以上螢幕時每個視窗佔滿一個螢幕；不夠時平均分到各螢幕再格狀鋪滿 |
@@ -93,7 +104,8 @@ run-bench.cmd -Build -SrcRoot D:\src      （D:\src 底下放 gpui-xq-demo、egu
 ```
 run-bench.cmd -Quick                          快速版
 run-bench.cmd -Runs 5                         5 輪中位數
-run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ticks,multi）
+run-bench.cmd -Scenarios ticks,multi          只跑高頻和多視窗（可選 main,stress,heavy,ta,ticks,multi）
+run-bench.cmd -Scenarios ta -Apps gpui,egui,egui-wgpu   只跑技術分析（3 欄 × 3 輪，約 9 分鐘）
 run-bench.cmd -Ticks s10k,s100k -Apps gpui    只測 GPUI（可選 gpui,gpui-quads,egui,egui-wgpu；gpui-quads 只跑重圖表）
 run-bench.cmd -Scenarios heavy                只重跑重圖表（4 欄 × 3 輪，約 17 分鐘）
 run-bench.cmd -Windows 1,2,4                  多視窗開幾個
