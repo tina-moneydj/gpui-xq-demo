@@ -23,11 +23,28 @@ jobs:
   profile:
     runs-on: windows-latest
     timeout-minutes: 60
+    # 實驗（gpui-fast 對照，不合併）：同一份程式碼編三個 GPUI 版本各取樣一次
+    #   main＝main 的 Cargo.toml/lock（gpui-pre 0.3.7）；pre039＝上游 gpui-pre 0.3.9；fast＝長橋 gpui-fast（patch 成 gpui-pre 0.3.9）
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [main, pre039, fast]
     env:
       CARGO_PROFILE_RELEASE_DEBUG: line-tables-only
       CARGO_PROFILE_RELEASE_STRIP: none
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 選 GPUI 版本（${{ matrix.variant }}）
+        shell: pwsh
+        run: |
+          switch ("${{ matrix.variant }}") {
+            "main"   { git show origin/main:Cargo.toml | Set-Content -Encoding utf8NoBOM Cargo.toml; git show origin/main:Cargo.lock | Set-Content -Encoding utf8NoBOM Cargo.lock }
+            "pre039" { $t = Get-Content Cargo.toml -Raw; $i = $t.IndexOf("[patch.crates-io]"); if ($i -ge 0) { Set-Content -Encoding utf8NoBOM Cargo.toml $t.Substring(0, $i) }; cargo update -p gpui-pre -p gpui-pre-platform -p gpui-pre-web }
+            "fast"   { }
+          }
+          Select-String -Path Cargo.lock -Pattern 'name = "gpui-pre"' -Context 0,2
       - name: Rust toolchain
         shell: pwsh
         run: |
@@ -35,10 +52,10 @@ jobs:
           rustup default stable
       - uses: Swatinem/rust-cache@v2
         with:
-          key: profile
+          key: profile-${{ matrix.variant }}
       - name: Build (release＋除錯符號)
         shell: pwsh
-        run: cargo build --release --locked -p gpui-xq-demo -p xq-feed --bins
+        run: cargo build --release -p gpui-xq-demo -p xq-feed --bins
       - name: 下載 samply
         shell: pwsh
         run: |
@@ -96,5 +113,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: windows-profile
+          name: windows-profile-${{ matrix.variant }}
           path: prof/*

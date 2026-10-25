@@ -14,7 +14,7 @@ publish = false
 xq-feed = { path = "crates/xq-feed" }
 xq-tape = { path = "crates/xq-tape" }
 xq-tokens = { path = "crates/xq-tokens" }
-gpui = { package = "gpui-pre", version = "=0.3.7", default-features = false }
+gpui = { package = "gpui-pre", version = "=0.3.9", default-features = false }
 futures = "0.3.34"
 parking_lot = "0.12"
 serde = { version = "1", features = ["derive"] }
@@ -25,13 +25,13 @@ log = "0.4"
 objc = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-gpui = { package = "gpui-pre", version = "=0.3.7" }
-gpui_platform = { package = "gpui-pre-platform", version = "=0.3.7", features = ["wayland", "x11"] }
+gpui = { package = "gpui-pre", version = "=0.3.9" }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.9", features = ["wayland", "x11"] }
 
 # 網頁版（wasm32-unknown-unknown）：gpui_web（Zed 2026-02 合併的瀏覽器平台，WebGPU 優先、WebGL2 備援）。
 # 不經過 gpui_platform：它會開 gpui_web 的預設 feature "multithreaded"（wasm_thread，要 nightly），這裡用單執行緒。
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-gpui_web = { package = "gpui-pre-web", version = "=0.3.7", default-features = false }
+gpui_web = { package = "gpui-pre-web", version = "=0.3.9", default-features = false }
 console_error_panic_hook = "0.1"
 wasm-bindgen = "0.2"
 js-sys = "0.3"
@@ -46,3 +46,9 @@ strip = true
 debug = false
 lto = "thin"
 codegen-units = 4
+
+# 實驗（不合併）：把 gpui-pre 換成長橋的 gpui-fast（compat 套件同名同版，公開 API 不變）
+[patch.crates-io]
+gpui-pre = { git = "https://github.com/longbridge/gpui-fast", rev = "124f79b0f14c688ae87877e370c015a9dc9d7ce5" }
+gpui-pre-platform = { git = "https://github.com/longbridge/gpui-fast", rev = "124f79b0f14c688ae87877e370c015a9dc9d7ce5" }
+gpui-pre-web = { git = "https://github.com/longbridge/gpui-fast", rev = "124f79b0f14c688ae87877e370c015a9dc9d7ce5" }
