@@ -265,7 +265,7 @@ def main():
     for w, t in main_rows[:1]:
         analyze(w, t, "主執行緒")
     others = [r for r in rows if r not in main_rows[:1]]
-    for w, t in others[:3]:
+    for w, t in others[:1]:
         if dur_ms and unit == "µs" and w / 1000 / dur_ms < 0.01:
             break
         analyze(w, t, "其他執行緒")

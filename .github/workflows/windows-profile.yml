@@ -64,7 +64,7 @@ jobs:
             foreach ($k in $scen[$name].Keys) { Set-Item "env:$k" $scen[$name][$k] }
             foreach ($k in $extra.Keys) { Set-Item "env:$k" $extra[$k] }
             $out = "$PWD\prof\$name.json.gz"
-            $p = Start-Process $samply -ArgumentList "record --save-only --unstable-presymbolicate -o `"$out`" -- `"$bin\gpui-xq-demo.exe`"" -PassThru -NoNewWindow -RedirectStandardOutput "prof\$name-app.log" -RedirectStandardError "prof\$name-samply.log"
+            $p = Start-Process $samply -ArgumentList "record --save-only --unstable-presymbolicate --symbol-dir `"$bin`" --symbol-dir `"$bin\deps`" -o `"$out`" -- `"$bin\gpui-xq-demo.exe`"" -PassThru -NoNewWindow -RedirectStandardOutput "prof\$name-app.log" -RedirectStandardError "prof\$name-samply.log"
             Start-Sleep 28
             Get-Process gpui-xq-demo -ErrorAction SilentlyContinue | ForEach-Object { $_.CloseMainWindow() | Out-Null }
             Start-Sleep 3
@@ -77,7 +77,10 @@ jobs:
             Get-Content "prof\$name-samply.log" -Tail 5 -ErrorAction SilentlyContinue
           }
           Get-ChildItem prof | Format-Table Name, Length
+          Get-ChildItem $bin -Filter *.pdb | Format-Table Name, Length
+          python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); [print(x['debug_name'], len(x.get('symbol_table',[]))) for x in d['data']]" prof\main.json.syms.json
       - name: 摘要
+        continue-on-error: true
         shell: pwsh
         env:
           PYTHONIOENCODING: utf-8
