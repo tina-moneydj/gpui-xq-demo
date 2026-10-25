@@ -31,7 +31,16 @@ wry 已經淘汰，不在這次的比較裡。
 
 > Mac 實機數字：第一份（2026-10-24 上午）在 `docs/bench/real-hw/2026-10-24-mac/`，第二份（2026-10-24 晚上，優化第 2 批）在 `docs/bench/real-hw/2026-10-25-mac/`。這一版工具包換成 **GPUI 優化第 3 批（gpui-opt3）**，請再重跑一次。
 
-### 最新（2026-10-25 晚上）：網頁版「一頁嵌多個元件」
+### 最新（2026-10-26）：技術分析情境（ta）
+
+- **目的：** 確認「GPUI 畫路徑（斜線、曲線）比較貴、GPU 用量比較高」的推測。4 個視窗各開一張 K 線，加滿指標（20 條疊加＋8 個副圖）和 200 筆畫線，跳價、十字線、平移各 10 秒，**每段分開量 CPU 和整機 GPU**。
+- **只跑這個情境，大約 9 分鐘：**
+  ```
+  ./run-bench.command --apps gpui,egui-wgpu,egui --scenarios ta
+  ```
+- 跑的時候不要動滑鼠鍵盤，也不要開其他吃 GPU 的程式（整機 GPU 使用率會算進去）。完整跑（不加參數）也會跑這一項。
+
+### 2026-10-25 晚上：網頁版「一頁嵌多個元件」
 
 - **結論先講：** 新增 `web` 情境，看同一個網頁放好幾個看盤元件（左上報價表、右上和左下是一般網頁、右下 K 線），egui 和 GPUI 各跑一次，比記憶體、CPU、幀數、下載量，以及「關掉一格／一格當掉時其他格還會不會動」。**只跑這個大約 8 分鐘：**
   ```
@@ -96,6 +105,7 @@ Intel Mac：完整版的 egui 執行檔目前只編了 Apple Silicon（M 系列�
 | 主視窗 | 1200×720 點的視窗（Retina 螢幕實際是 2400×1440 像素），行情約每秒 40 次。量三件事：<br>• 啟動到第一幀、啟動到第一筆報價的時間<br>• 記憶體（第 10 秒、第 60 秒）<br>• 第 30–60 秒的 CPU 和 FPS |
 | 5 萬列 | 報價表 5 萬列 × 6 欄，每秒 3000 筆跳價 30 秒，接著邊跳價邊捲動 10 秒 |
 | 重圖表＋100 層畫線 | 圖表上有 20 條疊加線、8 個副圖、1000 筆畫線，畫線分成 100 層。依序跑七段：<br>跳價 → 十字線 → 平移 → 拖曳畫線 → 選取 → 調整上下順序 → 正確性檢查 |
+| 技術分析 | 4 個視窗各一張 K 線：20 條疊加線（斜線、曲線）、8 個副圖、200 筆畫線。依序跑三段各 10 秒：<br>跳價 → 十字線 → 平移<br>每段量 CPU（4 個視窗合計）、整機 GPU、FPS、每幀繪製時間 |
 | 高頻進價 | 每秒 1k、10k、50k、100k 筆，再加開盤爆量。量延遲 p50/p99、遺失筆數、積壓、CPU、FPS |
 | 網頁（一頁嵌多個元件） | 用 Chrome 開同一個網頁，裡面放好幾個看盤元件，egui 和 GPUI 各跑三種版面：<br>• 穿插：左上報價表、右上網頁、左下網頁、右下 K 線<br>• 4 個元件：報價表、K 線、兩個計數器<br>• 1 個元件：只有報價表（記憶體基準）<br>每格各自的幀數、記憶體、整個瀏覽器的記憶體和 CPU、下載量；再關掉一格、讓報價表故意當掉，看其他格還會不會動 |
 | 多視窗 | 開 1 個和 4 個看盤視窗，行情每秒 1 萬筆：<br>• 螢幕有 4 個以上：一個螢幕放一個視窗<br>• 螢幕不夠：平均分配到各螢幕再格狀鋪滿<br>每個螢幕的縮放（Retina ×2）和更新率（ProMotion 120Hz）都會記錄 |
@@ -231,7 +241,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   常用的有：
   - `--apps gpui,gpui-nofix,egui-wgpu,egui`（預設）；另有 `gpui-quads`＝GPUI 加 `XQ_DRAW_QUADS=1`，只跑重圖表；`gpui-largecache`＝GPUI 保留 macOS malloc 大塊快取（`XQ_MALLOC_LARGE_CACHE=1`，修補前），只跑重圖表；`gpui-nofix`＝恢復 GPUI 預設的背景視窗限速（`XQ_INACTIVE_THROTTLE=1`）＋不申請延遲敏感模式（`XQ_MAC_ACTIVITY=0`），只跑 10k 高頻和 4 視窗
   - 停頓偵測門檻 `XQ_STALL_MS`（預設 120 毫秒，0＝關）；GPUI 內部 log 等級 `XQ_GPUI_LOG=off|warn|info|debug`
-  - `--scenarios main,stress,heavy,ticks,multi,web`
+  - `--scenarios main,stress,heavy,ta,ticks,multi,web`
   - `--web-dir`（網頁情境的網頁，預設 `web/`；裡面要有 `egui/`、`gpui/`，是兩個 repo `examples/web-multi/build.sh` 的產出）；`web_multi.py` 也可以單獨跑
   - 網頁情境的開發者自測：`XQ_BROWSER`（瀏覽器路徑）、`XQ_BROWSER_ARGS`（例如 `--headless=new`）、`XQ_WEB_QUERY`（附加到網址，例如 `XQ_WEB_BACKEND=webgl`）
   - `--ticks s1k,s10k,s50k,s100k,burst`
