@@ -53,6 +53,11 @@ use series::Period;
 use table::QuoteTable;
 use theme::*;
 
+/// store.rs 會呼叫；網頁沒有使用者資料夾，回 None（不讀不寫存檔）
+pub fn data_dir() -> Option<std::path::PathBuf> {
+    None
+}
+
 /// chart.rs 壓測紀錄會呼叫（同 main.rs 的網頁版）
 pub fn rss_mb() -> f64 {
     plat::wasm_heap_mb()
