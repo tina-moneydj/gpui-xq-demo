@@ -3,6 +3,7 @@
 #   - artifact xq-bench-mac-gpui（zip）
 #   - 預發行版 mac-bench-latest：xq-bench-mac-gpui.zip（只有 GPUI，公開）
 # egui-xq-demo（公開 repo）的 macOS workflow 會下載這個 zip、加進 egui 執行檔，發佈完整版 xq-bench-mac.zip（公開 release）。
+# 網頁情境（web）：從 main 分支的 examples/web-multi 編 GPUI 網頁版（wasm）放進 web/gpui；egui 那邊的 workflow 再加 web/egui。
 name: macos
 on:
   push:
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26          # Apple Silicon、Xcode 26
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Metal toolchain（Xcode 26 要另外下載；失敗就改用 runtime-shaders）
@@ -37,9 +38,26 @@ jobs:
           for T in aarch64-apple-darwin x86_64-apple-darwin; do
             cargo build --release --locked --target $T -p gpui-xq-demo -p xq-feed --bins ${{ steps.metal.outputs.feat }}
           done
+      - name: 網頁版範例原始碼（main 分支的 examples/web-multi）
+        uses: actions/checkout@v4
+        with: { ref: main, path: webmain }
+      - name: 編 GPUI 網頁版（一頁嵌多個元件；失敗就不放，壓測包的 web 情境會自動略過 GPUI）
+        id: web
+        continue-on-error: true
+        run: |
+          [ -f webmain/examples/web-multi/build.sh ] || { echo "main 還沒有 examples/web-multi"; exit 1; }
+          rustup target add wasm32-unknown-unknown
+          V=$(grep -A1 '^name = "wasm-bindgen"$' webmain/examples/web-multi/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')
+          echo "wasm-bindgen $V"
+          wasm-bindgen --version 2>/dev/null | grep -q " $V$" || cargo install wasm-bindgen-cli --version "$V" --locked
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install binaryen || true
+          (cd webmain/examples/web-multi && ./build.sh)
+          mkdir -p web-gpui && cp webmain/dist/web-multi/index.html webmain/dist/web-multi/page.js webmain/dist/web-multi/xq_web_multi_gpui.js webmain/dist/web-multi/xq_web_multi_gpui_bg.wasm web-gpui/
+          ls -la web-gpui
       - name: Universal + ad-hoc sign + kit zip
         run: |
           K=xq-bench-mac; mkdir -p $K/bin
+          if [ -d web-gpui ]; then mkdir -p $K/web && cp -R web-gpui $K/web/gpui; fi
           cp bench/mac/*.py bench/mac/*.sh bench/mac/*.command bench/mac/README.md $K/
           chmod +x $K/*.command $K/*.sh
           for b in gpui-xq-demo xq-tickgen xq-demofeed; do
@@ -57,12 +75,12 @@ jobs:
           file $K/bin/*
           ( $K/bin/xq-demofeed --addr 127.0.0.1:47631 & echo $! > /tmp/feed.pid; sleep 2; kill $(cat /tmp/feed.pid) ) || true
           python3 -m py_compile $K/xq_bench_mac.py
-      - name: 實際跑一輪（GPUI 主視窗＋重圖表；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情、量到數字）
+      - name: 實際跑一輪（GPUI 主視窗＋重圖表＋網頁；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情、量到數字）
         continue-on-error: true
         timeout-minutes: 15
         run: |
           cd xq-bench-mac
-          python3 xq_bench_mac.py --apps gpui --scenarios main,heavy --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
+          python3 xq_bench_mac.py --apps gpui --scenarios main,heavy,web --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
           ls -la "$GITHUB_WORKSPACE/smoke"; head -60 "$GITHUB_WORKSPACE/smoke/summary.md" || true
       - uses: actions/upload-artifact@v4
         if: always()

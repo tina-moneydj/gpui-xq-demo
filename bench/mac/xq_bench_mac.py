@@ -8,16 +8,18 @@
   heavy   重圖表：20 疊加＋8 副圖＋1000 筆畫線分 100 層（XQ_CHART_LAYERS），跳價／十字線／平移／拖曳／選取／換層順序／正確性
   ticks   高頻進價（xq-tickgen）：每秒 1k、10k、50k、100k 筆＋開盤爆量；延遲 p50/p99、遺失、積壓、CPU、FPS
   multi   1 個與 4 個看盤視窗（每秒 10k 筆），分到各螢幕（Retina／外接螢幕各自的縮放與更新率都記錄下來）
+  web     網頁版：同一頁嵌多個元件（穿插版面／4 個元件／1 個元件）× egui、GPUI，用 Chrome（沒有就 Edge）開，見 web_multi.py
 
 只用 macOS 內建工具：ps（RSS、累計 CPU 時間）、vmmap --summary（Physical footprint，即「活動監視器」的記憶體欄；
 只在量測區間外取，因為 vmmap 會暫停目標程式一下）、ioreg（整機 GPU 使用率）、osascript JXA（螢幕資訊、視窗位置）、
 sysctl／sw_vers／system_profiler（機器資訊）。不需要 sudo，也不需要「輔助使用」或「螢幕錄製」權限。
 
-用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,gpui-quads,egui-wgpu,egui] [--scenarios main,stress,heavy,ticks,multi]
+用法：python3 xq_bench_mac.py [--quick] [--runs 3] [--apps gpui,gpui-quads,egui-wgpu,egui] [--scenarios main,stress,heavy,ticks,multi,web]
                              [--ticks s1k,s10k,s50k,s100k,burst] [--windows 1,4] [--layers 100] [--bin-dir DIR] [--port 47631]
 在 Linux 上也能跑（開發者自測流程用；記憶體/CPU 改讀 /proc，螢幕假設單一 1920×1080）。
 """
 import argparse, datetime, json, os, platform, re, shutil, socket, statistics, subprocess, sys, tempfile, threading, time, zipfile
+import web_multi
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 IS_MAC = sys.platform == "darwin"
@@ -30,7 +32,8 @@ ap.add_argument("--apps", default="gpui,gpui-nofix,egui-wgpu,egui",
                 help="gpui-nofix＝同一個 GPUI 執行檔關掉 10/25 的兩個修補（XQ_INACTIVE_THROTTLE=1、XQ_MAC_ACTIVITY=0），只跑高頻 s10k 與 4 視窗，A/B 對照用；"
                      "gpui-quads＝GPUI 開 XQ_DRAW_QUADS=1，只跑重圖表（10/24 實測沒有比較快、CPU 還多 6–9 點，預設不跑）；"
                      "gpui-largecache＝GPUI 保留 macOS malloc 大塊快取（XQ_MALLOC_LARGE_CACHE=1，10/25 下午修補前的狀態），只跑重圖表，A/B 對照用")
-ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi")
+ap.add_argument("--scenarios", default="main,stress,heavy,ticks,multi,web")
+ap.add_argument("--web-dir", default=os.path.join(HERE, "web"), help="網頁情境用的網頁（web/egui、web/gpui）")
 ap.add_argument("--ticks", default=None)
 ap.add_argument("--windows", default="1,4")
 ap.add_argument("--layers", default="100", help="重圖表畫線分幾層（1＝不分層對照）")
@@ -778,7 +781,8 @@ def summarize(ALL):
 
 def write_outputs(ALL, rows, S, info, build, t_start):
     res = {"tool": "gpui-xq-demo/bench/mac/xq_bench_mac.py", "version": 1, "started": t_start, "finished": datetime.datetime.now().isoformat(timespec="seconds"),
-           "args": vars(A), "runs": RUNS, "apps": APPS, "machine": info, "build": build, "summary": S, "raw": ALL, "failures": FAILS}
+           "args": vars(A), "runs": RUNS, "apps": APPS, "machine": info, "build": build, "summary": S, "raw": ALL, "failures": FAILS,
+           "webBrowser": WEB_BROWSER[0]}
     open(os.path.join(OUT, "results.json"), "w", encoding="utf-8").write(anon(json.dumps(res, ensure_ascii=False, indent=1, default=str)))
     import csv
     with open(os.path.join(OUT, "results.csv"), "w", newline="", encoding="utf-8-sig") as f:
@@ -837,6 +841,7 @@ def write_outputs(ALL, rows, S, info, build, t_start):
                 cells.append(c)
             md.append("| %s%s | %s |" % (m["label"], "（越高越好）" if m["higher_is_better"] else "", " | ".join(cells)))
     md += stall_md(ALL, lab)
+    if "web" in SCEN: md += web_multi.summary_md(ALL.get("web"), WEB_BROWSER[0])
     md += ["", "## 量法", "",
            "- 情境同 Linux／Windows 版（scripts/bench-*.sh、bench/windows）。主視窗／5 萬列／重圖表的行情來自 xq-demofeed（WryFeedHost --demo-ticks 的 Rust 移植，合成資料）；高頻與多視窗來自 xq-tickgen。",
            "- RSS＝ps 的常駐記憶體；實體記憶體＝vmmap 的 Physical footprint（≈ 活動監視器「記憶體」欄，只在量測區間外取）。CPU：100%＝一顆核心。",
@@ -888,11 +893,13 @@ def stall_md(ALL, lab):
 
 # ---------------------------------------------------------------- 主流程
 FAILS = []
+WEB_BROWSER = [None]
 def main():
     global STALL_TMP
     t_start = datetime.datetime.now().isoformat(timespec="seconds")
     STALL_TMP = os.path.join(WORK, "stalls"); os.makedirs(STALL_TMP, exist_ok=True)
-    for b in ["xq-demofeed", "xq-tickgen"] + sorted(set(APPDEF[a]["bin"] for a in APPS)): bin_path(b)
+    if [s for s in SCEN if s != "web"]:
+        for b in ["xq-demofeed", "xq-tickgen"] + sorted(set(APPDEF[a]["bin"] for a in APPS)): bin_path(b)
     if port_busy(): sys.exit("%s 已被佔用：請先關掉 XQ／上次沒結束的測試程式（或用 --port 換埠）" % ADDR)
     mine = set(os.path.basename(APPDEF[a]["bin"]) for a in APPS) | {"xq-demofeed", "xq-tickgen"}
     running = [l for l in sh(["ps", "-A", "-o", "pid=,comm="]).splitlines() if os.path.basename(l.split(None, 1)[-1].strip()) in mine]
@@ -910,7 +917,8 @@ def main():
     say("XQ 壓測 macOS 版：%s；情境 %s；%d 輪。預估約 %d 分鐘。" % (",".join(APPS), ",".join(SCEN), RUNS, round((per_app * len([x for x in APPS if "only" not in APPDEF[x]]) + (70 if "heavy" in SCEN else 0) * len([x for x in APPS if x in ("gpui-quads", "gpui-largecache")]) + 85 * len([x for x in APPS if x == "gpui-nofix"])) * RUNS * 1.1 / 60)))
     say("螢幕：" + "；".join("%s %dx%d 點 ×%s（%s Hz）" % (s.get("name"), s["w"], s["h"], s.get("scale"), s.get("maxFps")) for s in SCR))
     say("測試期間請不要動滑鼠鍵盤、不要把終端機蓋在測試視窗上面。結果：%s" % OUT)
-    ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": []}
+    if "web" in SCEN: say("網頁情境約 %d 分鐘（會開 Chrome 視窗，跑完自動關）。" % round(6 * 25 * RUNS / 60))
+    ALL = {"main": [], "stress": [], "heavy": [], "ticks": [], "multi": [], "web": []}
     try:
         for run in range(1, RUNS + 1):
             for app in APPS:  # 每一輪 app 交錯跑，降低背景負載變化的影響
@@ -942,6 +950,9 @@ def main():
                         time.sleep(1)
             stop_feed()
             rows, S = summarize(ALL); write_outputs(ALL, rows, S, info, build, t_start)  # 每輪存一次，中斷也有資料
+        if "web" in SCEN:  # 網頁情境最後一起跑（自己 3 輪交錯），不跟原生 app 交錯
+            recs, fails, WEB_BROWSER[0] = web_multi.run_all(A.web_dir, RUNS, say)
+            ALL["web"] = recs; FAILS.extend(fails)
     except KeyboardInterrupt:
         say("中斷了；已完成的部分照樣存檔")
     finally:
@@ -972,6 +983,7 @@ def resummarize(path):
     scr = (res.get("machine") or {}).get("screens") or []
     SCREEN_MAX_FPS = _num(scr[0].get("maxFps")) if scr else None
     FAILS = res.get("failures") or []
+    WEB_BROWSER[0] = res.get("webBrowser")
     rows, S = summarize(res["raw"])
     write_outputs(res["raw"], rows, S, res.get("machine") or {}, res.get("build") or {}, res.get("started"))
     shutil.rmtree(WORK, ignore_errors=True)
