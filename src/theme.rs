@@ -11,9 +11,48 @@ pub fn rgba_tok(c: xq_tokens::Rgba) -> Rgba {
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-pub fn ui_font() -> &'static str { tk().font.ui }
+pub fn ui_font() -> &'static str { font_sub(tk().font.ui, 0) }
 #[cfg(not(any(target_os = "android", target_os = "macos", target_os = "ios")))]
-pub fn mono_font() -> &'static str { tk().font.mono }
+pub fn mono_font() -> &'static str { font_sub(tk().font.mono, 1) }
+
+/// 字型替代（2026-10-25）：token 的 Noto Sans CJK 不是每台都有（Windows 預設沒有）。找不到時 GPUI 每排一段字都會
+/// 重新建錯誤物件、再沿後援清單（.ZedMono → .ZedSans → Helvetica → Segoe UI…）逐一找，報價表一幀約 200 段字；
+/// 有設 RUST_BACKTRACE 時每個錯誤還抓一次 backtrace（Linux 實測主執行緒約 7 成時間在這，5 萬列捲動掉到 25 FPS）。
+/// 啟動時查一次，找不到就直接用 GPUI 本來就會退到的那個字型（畫面不變，只是不再每次走錯誤路徑）。
+/// 內容：[(token 名稱, 實際用的名稱); ui, mono]。token 熱更新換了名稱就不套用（回傳新名稱）。
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+static FONT_SUB: std::sync::OnceLock<[(&'static str, &'static str); 2]> = std::sync::OnceLock::new();
+
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+fn font_sub(name: &'static str, k: usize) -> &'static str {
+    match FONT_SUB.get().and_then(|s| s.get(k)) {
+        Some(&(orig, sub)) if orig == name => sub,
+        _ => name,
+    }
+}
+
+/// 蘋果系統用內建字型（上面），不需要替代
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+pub fn resolve_fonts(_cx: &gpui::App) {}
+
+/// 啟動時（開視窗前）呼叫一次。每個名稱只查一次字型表，不列舉系統字型。
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
+pub fn resolve_fonts(cx: &gpui::App) {
+    let ts = cx.text_system();
+    let resolved = |name: &'static str| -> &'static str {
+        let fam = ts.get_font_for_id(ts.resolve_font(&gpui::font(name))).map(|f| f.family);
+        match fam {
+            Some(f) if f.as_ref() != name => {
+                eprintln!("[fonts] 這台沒有「{name}」，改用 GPUI 後援字型「{f}」");
+                // 啟動時最多兩個名稱，留到程式結束
+                String::from(f.as_ref()).leak()
+            }
+            _ => name,
+        }
+    };
+    let t = tk();
+    let _ = FONT_SUB.set([(t.font.ui, resolved(t.font.ui)), (t.font.mono, resolved(t.font.mono))]);
+}
 /// macOS／iOS：系統內建的蘋方-繁（PingFang TC）；等寬用 Menlo（中文字由 CoreText 字型後援補上）。
 /// token 的 Noto Sans CJK 在蘋果系統上沒有內建。字型由 CoreText 依名稱按需開啟（檔案映射、系統共用），不整檔讀進記憶體。
 #[cfg(any(target_os = "macos", target_os = "ios"))]
@@ -22,7 +61,7 @@ pub fn ui_font() -> &'static str { "PingFang TC" }
 pub fn mono_font() -> &'static str { "Menlo" }
 /// Android 系統字型沒有 Mono CJK：等寬字也用介面字型（Noto Sans CJK TC，egui 手機版同樣做法）
 #[cfg(target_os = "android")]
-pub fn mono_font() -> &'static str { tk().font.ui }
+pub fn mono_font() -> &'static str { ui_font() }
 
 pub fn bg() -> Rgba { rgb(tk().ui.bg) }
 pub fn panel() -> Rgba { rgb(tk().ui.panel) }
