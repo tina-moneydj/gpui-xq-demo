@@ -294,6 +294,10 @@ struct Terminal {
     last_frame: Option<Instant>,
     jank_n: u64,
     jank_ms: f64,
+    /// 捲動時每幀的幀間隔（ms），算 p50／p95／p99；捲動開始時一次配好 FRAME_SAMPLES 格，滿了就不再記
+    frame_ms: Vec<f32>,
+    /// 捲動壓測（預設）：每一幀在 root render 開頭推進一次捲動位置；None＝沒在捲
+    scroll_drive: Option<ScrollDrive>,
     /// XQ_TICK_BENCH=1：高頻進價壓測量測（預設 None，熱路徑不多做事）
     tick: Option<tickbench::TickBench>,
     /// 主視窗：行情在 root render 開頭套用（預設）；false＝舊的「喚醒就套用＋睡 16ms」（XQ_APPLY=timer）
@@ -450,6 +454,8 @@ impl Terminal {
             last_frame: None,
             jank_n: 0,
             jank_ms: 0.0,
+            frame_ms: Vec::new(),
+            scroll_drive: None,
             tick: crate::plat::tick_bench_enabled().then(|| tickbench::TickBench::for_window(win)),
             render_apply,
             last_render: None,
@@ -521,45 +527,66 @@ impl Terminal {
             let Ok(b) = this.update(cx, snap) else { return };
             eprintln!("GROUPPERF|{{\"phase\":\"tick-end\",\"elapsedMs\":{:.0},{}}}", secs * 1000.0, stats(a, b, secs));
 
-            let _ = this.update(cx, |t, _| {
+            let s0 = Instant::now();
+            let frame_driven = scroll_driver_frame();
+            let _ = this.update(cx, |t, cx| {
                 t.track_jank = true;
                 t.last_frame = None;
                 t.jank_n = 0;
                 t.jank_ms = 0.0;
-            });
-            let s0 = Instant::now();
-            let mut last_tick = Instant::now();
-            while s0.elapsed() < Duration::from_millis(scroll_ms) {
-                let f = s0.elapsed().as_secs_f64() / (scroll_ms as f64 / 1000.0);
-                let frac = (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5;
-                let tick = last_tick.elapsed() >= Duration::from_millis(33);
-                if tick {
-                    last_tick = Instant::now();
+                t.frame_ms = Vec::with_capacity(FRAME_SAMPLES);
+                if frame_driven {
+                    t.scroll_drive = Some(ScrollDrive { s0, secs: scroll_ms as f64 / 1000.0, last_tick: s0, batch, rng, updates: 0 });
+                    cx.notify();
                 }
-                let _ = this.update(cx, |t, cx| {
-                    t.table.update(cx, |tb, cx| {
-                        tb.scroll_frac(frac, cx);
-                        if tick {
-                            tb.synth_ticks(batch, &mut rng, cx);
-                        }
-                    })
-                });
-                cx.background_executor().timer(Duration::from_millis(16)).await;
+            });
+            let mut updates = 0u64;
+            if frame_driven {
+                // 位置每幀由 render 推進；這裡只等時間到（結束時間差一個計時器刻度沒關係）
+                cx.background_executor().timer(Duration::from_millis(scroll_ms)).await;
+            } else {
+                // 舊做法（XQ_SCROLL_DRIVER=timer）：背景計時器每 16 ms 推一次。Windows 計時器刻度約 15.6 ms，
+                // 實際常變成 31 ms 才推一次，報價表每秒只更新約 42 次，畫面看起來就是一頓一頓
+                let mut last_tick = Instant::now();
+                while s0.elapsed() < Duration::from_millis(scroll_ms) {
+                    let frac = scroll_pos(s0.elapsed().as_secs_f64() / (scroll_ms as f64 / 1000.0));
+                    let tick = last_tick.elapsed() >= Duration::from_millis(33);
+                    if tick {
+                        last_tick = Instant::now();
+                    }
+                    let _ = this.update(cx, |t, cx| {
+                        t.table.update(cx, |tb, cx| {
+                            tb.scroll_frac(frac, cx);
+                            if tick {
+                                tb.synth_ticks(batch, &mut rng, cx);
+                            }
+                        })
+                    });
+                    updates += 1;
+                    cx.background_executor().timer(Duration::from_millis(16)).await;
+                }
             }
             let secs = s0.elapsed().as_secs_f64();
             let Ok(c) = this.update(cx, |t, cx| {
                 t.track_jank = false;
-                (snap(t, cx), t.jank_n, t.jank_ms)
+                if let Some(d) = t.scroll_drive.take() {
+                    updates = d.updates;
+                }
+                let ft = frame_stats(&mut t.frame_ms);
+                t.frame_ms = Vec::new();
+                (snap(t, cx), t.jank_n, t.jank_ms, ft)
             }) else {
                 return;
             };
-            let (c, jn, jms) = c;
+            let (c, jn, jms, ft) = c;
             eprintln!(
-                "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},{}}}",
+                "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},\"scrollDriver\":\"{}\",\"scrollUpdatesPerSec\":{:.1},{ft},{}}}",
                 c.4,
                 (b.0 - a.0) as f64 / (tick_ms as f64 / 1000.0),
                 (c.0 - b.0) as f64 / secs,
                 if jn > 0 { jms / jn as f64 } else { 0.0 },
+                if frame_driven { "frame" } else { "timer" },
+                updates as f64 / secs,
                 stats(b, c, secs)
             );
         }))
@@ -995,7 +1022,27 @@ impl Render for Terminal {
                     self.jank_n += 1;
                     self.jank_ms += dt;
                 }
+                if self.frame_ms.len() < self.frame_ms.capacity() {
+                    self.frame_ms.push(dt as f32);
+                }
             }
+        }
+        // 捲動壓測：這一幀的位置由經過時間算（跟著畫面幀走，不靠計時器），再要下一幀
+        if let Some(d) = self.scroll_drive.as_mut() {
+            let frac = scroll_pos(d.s0.elapsed().as_secs_f64() / d.secs);
+            let tick = d.last_tick.elapsed() >= Duration::from_millis(33);
+            if tick {
+                d.last_tick = Instant::now();
+            }
+            d.updates += 1;
+            let (batch, rng) = (d.batch, &mut d.rng);
+            self.table.update(cx, |tb, cx| {
+                tb.scroll_frac(frac, cx);
+                if tick {
+                    tb.synth_ticks(batch, rng, cx);
+                }
+            });
+            window.request_animation_frame();
         }
         beat(1);
         let r0 = Instant::now();
@@ -1154,6 +1201,46 @@ impl Render for Terminal {
     }
 }
 
+/// 捲動壓測一次最多記幾個幀間隔（60 fps × 2 分鐘多）
+const FRAME_SAMPLES: usize = 8192;
+
+/// 捲動壓測（XQ_GROUP_STRESS）每幀推進用的狀態；跳價跟 egui 版一樣「這一幀距上次跳價 ≥ 33 ms 才跳」
+struct ScrollDrive {
+    s0: Instant,
+    secs: f64,
+    last_tick: Instant,
+    batch: usize,
+    rng: u64,
+    /// 推進了幾次捲動位置（＝報價表收到幾個新位置）
+    updates: u64,
+}
+
+/// 預設每幀推進；XQ_SCROLL_DRIVER=timer 切回舊的「背景每 16 ms 推一次」（A/B 對照用）
+fn scroll_driver_frame() -> bool {
+    crate::plat::var("XQ_SCROLL_DRIVER").as_deref() != Ok("timer")
+}
+
+/// 捲動位置：經過比例 f（0..1）→ 上下正弦兩趟（同 wry／egui 版）
+fn scroll_pos(f: f64) -> f64 {
+    (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5
+}
+
+/// 幀間隔分布（ms）→ GROUPPERF 的 JSON 片段；會就地排序
+fn frame_stats(ms: &mut [f32]) -> String {
+    ms.sort_unstable_by(f32::total_cmp);
+    let q = |p: f64| -> f32 {
+        if ms.is_empty() {
+            return 0.0;
+        }
+        let i = ((ms.len() - 1) as f64 * p).round() as usize;
+        ms.get(i).copied().unwrap_or(0.0)
+    };
+    format!(
+        "\"frameMsP50\":{:.1},\"frameMsP95\":{:.1},\"frameMsP99\":{:.1},\"frameMsMax\":{:.1},\"frameSamples\":{}",
+        q(0.5), q(0.95), q(0.99), ms.last().copied().unwrap_or(0.0), ms.len()
+    )
+}
+
 /// XQ_WINDOWS=N（預設 1，最多 8）：開 N 個看盤視窗（各自走勢圖＝WATCH[k]），
 /// 共用同一條行情連線、同一個報價表 entity（同一份 5 萬列資料，只合併一次），每個視窗自己的 view／走勢圖。
 fn window_count() -> usize {
@@ -1191,6 +1278,7 @@ fn run(app: gpui::Application) {
     app.run(|cx: &mut App| {
         #[cfg(target_arch = "wasm32")]
         web_fonts(cx);
+        theme::resolve_fonts(cx);
         tick_tape::bind_keys(cx);
         search::bind_keys(cx);
         // 設計 token：F8 切換深色／淺色；refresh_windows 會略過 view 快取整個重畫
@@ -1291,4 +1379,26 @@ fn main() {
     eprintln!("BENCH wasm-start");
     let platform = std::rc::Rc::new(gpui_web::WebPlatform::new(false));
     run(gpui::Application::with_platform(platform));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{frame_stats, scroll_pos};
+
+    #[test]
+    fn frame_stats_percentiles() {
+        let mut ms: Vec<f32> = (1..=100).map(|v| v as f32).collect();
+        ms.reverse();
+        let s = frame_stats(&mut ms);
+        assert_eq!(s, "\"frameMsP50\":51.0,\"frameMsP95\":95.0,\"frameMsP99\":99.0,\"frameMsMax\":100.0,\"frameSamples\":100");
+        assert_eq!(frame_stats(&mut []), "\"frameMsP50\":0.0,\"frameMsP95\":0.0,\"frameMsP99\":0.0,\"frameMsMax\":0.0,\"frameSamples\":0");
+    }
+
+    #[test]
+    fn scroll_pos_two_round_trips() {
+        assert!((scroll_pos(0.0) - 0.5).abs() < 1e-9);
+        assert!((scroll_pos(0.125) - 1.0).abs() < 1e-9);
+        assert!(scroll_pos(0.375).abs() < 1e-9);
+        assert!((0.0..=1.0).contains(&scroll_pos(0.7)));
+    }
 }
