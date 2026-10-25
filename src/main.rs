@@ -826,7 +826,7 @@ impl Terminal {
     fn sync_check(&mut self, cx: &mut Context<Self>) {
         let now = crate::plat::unix_us();
         let sym = self.chart.read(cx).symbol();
-        let shown = [self.info.read(cx).shown_price, self.chart.read(cx).shown_price];
+        let shown = [self.info.read(cx).shown_price, self.chart.read(cx).shown_price()];
         let row = self.table.read(cx).row(&sym).map(|r| (r.price, r.changed_us));
         let Some(sc) = self.sync.as_mut() else { return };
         sc.frames += 1;
