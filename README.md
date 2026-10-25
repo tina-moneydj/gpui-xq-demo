@@ -359,6 +359,12 @@
 gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第二個視窗／彈出視窗／浮動視窗（回 `WebWindowError`）、原生選單（`set_menus` 空實作）、
 檔案對話框（`prompt_for_paths` 回「not supported on the web」）、`reveal_path`、防休眠、結束程式。輸入法走隱藏 `<textarea>`（`ime_mirror.rs`）。
 
+### 一頁嵌多個元件（2026-10-25，和一般 HTML 穿插）
+
+**可行，但 GPUI 一個元件要一個 wasm instance**（gpui_web 一個 Application 只能開一個視窗）。同一個 html 頁面放：左上報價組合（GPUI）、右上公告與左下下單匣（一般 HTML）、右下技術分析（GPUI K 線），四格都會動、HTML 輸入正常、一格 panic 只停那一格。
+代價是記憶體：穿插版面 wasm 記憶體 GPUI **24.8 MB**、egui（共用一份）**8.9 MB**；下載 GPUI 約 6.4 MB、egui 4.2 MB（gzip）。已放進 Mac／Windows 實機壓測包的 `web` 情境。
+細節、數字、沒驗的事：[docs/web-multi.md](docs/web-multi.md)；範例：[`examples/web-multi/`](examples/web-multi/)。
+
 ### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
 
 | 原生有 | 網頁版 |

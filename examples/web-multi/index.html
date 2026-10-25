@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一頁嵌多個 GPUI 元件（可行性）</title>
+<style>
+  html, body { margin: 0; background: #0b0f14; color: #c8d3de; font: 14px system-ui, sans-serif; }
+  header { padding: 8px 12px; }
+  header h1 { font-size: 16px; margin: 0 0 4px; }
+  header p { margin: 0; color: #8899aa; font-size: 12px; }
+  #grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 380px 380px; gap: 10px; padding: 0 12px 12px; }
+  .cell { display: flex; flex-direction: column; border: 1px solid #263240; min-width: 0; min-height: 0; }
+  .cell h2 { font-size: 13px; margin: 0; padding: 6px 8px; background: #121a23; display: flex; justify-content: space-between; }
+  .cell h2 span { color: #8899aa; font-weight: normal; font-family: monospace; }
+  .cell .slot { flex: 1; min-height: 0; position: relative; }
+  .cell .slot canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+  .cell .gone { flex: 1; display: flex; align-items: center; justify-content: center; color: #8899aa; }
+  .web { flex: 1; min-height: 0; overflow: auto; padding: 8px 10px; font-size: 13px; }
+  .web .big { font: 32px monospace; color: #e8b04a; }
+  .web ul { margin: 6px 0; padding-left: 18px; color: #aab8c6; }
+  .web input { background: #121a23; color: #c8d3de; border: 1px solid #36506a; padding: 4px 6px; width: 120px; }
+  .web button { background: #1d3a5a; color: #c8d3de; border: 1px solid #36506a; padding: 4px 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>一頁嵌多個 GPUI 元件</h1>
+  <p id="mode">載入中…</p>
+</header>
+<div id="grid"></div>
+<script type="module">
+  // 共用頁面邏輯（版面、網頁格、自動壓測）在 page.js；這裡只有 GPUI 怎麼啟動。
+  // gpui_web 一個 Application 只能開一個視窗（＝一張 canvas），canvas 由它自己建、掛在 body 上，
+  // 所以每個元件各自 instance 化一次（同一份 wasm 只下載、編譯一次），再把它建的 canvas 搬進格子。
+  // 網址參數 XQ_WEB_BACKEND=webgl|webgpu 可強制繪圖後端（預設 WebGPU 優先、失敗退回 WebGL2）。
+  import { setupPage } from "./page.js";
+  setupPage({
+    framework: "gpui",
+    mode: "separate",
+    async boot({ xq, cells }) {
+      xq.modeText = "每個 GPUI 元件各自一個 wasm instance（同一份檔案）";
+      const mods = [];
+      xq.wasmBytes = () => mods.reduce((s, m) => s + m.wasm_memory_bytes(), 0);
+      if (!cells.length) return;
+      const compiled = await WebAssembly.compileStreaming(fetch(new URL("./xq_web_multi_gpui_bg.wasm", import.meta.url)));
+      for (const { id, kind, slot } of cells) {
+        const m = await import(`./xq_web_multi_gpui.js?inst=${id}`);
+        await m.default({ module_or_path: compiled });
+        mods.push(m);
+        m.start(kind);
+        // gpui_web 在 body 最後面建 canvas（WebGPU 失敗會換一張 WebGL2 的）：畫出第一幀、而且 canvas 已在格子裡才算好
+        for (let i = 0; i < 400; i++) {
+          for (const c of document.body.querySelectorAll(":scope > canvas")) if (!c.dataset.xq || c.dataset.xq === id) { c.dataset.xq = id; slot.append(c); }
+          if (m.frames() > 0 && slot.querySelector("canvas") && !document.body.querySelector(":scope > canvas")) break;
+          await new Promise((r) => setTimeout(r, 25));
+        }
+        xq.widgets[id] = { frames: () => m.frames(), panic: () => m.panic_next_frame(), destroy: () => m.destroy() };
+      }
+    },
+  });
+</script>
+</body>
+</html>
