@@ -4,6 +4,7 @@
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
+> - **最新（10-25 晚上）**：「[Mac 只跑重圖表](#mac-只跑重圖表記憶體修正確認2026-10-25-晚上)」確認記憶體修正有效，GPUI 重圖表 321 → 115 MB，變成最省。
 > - **選型最新結論（10-25 下午）**先看「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
 > - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
 > - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
@@ -17,6 +18,24 @@
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
+
+## Mac 只跑重圖表：記憶體修正確認（2026-10-25 晚上）
+
+### 結論先看
+
+- 🏆 **Mac 重圖表記憶體問題解決，Tina 的 M4 上確認**：GPUI 重圖表 RSS **321 → 115 MB**，實體記憶體 **370 → 159 MB**；vmmap 那塊 201 MB 的「Malloc Large (empty)」消失。
+- 🏆 **GPUI 變成重圖表最省記憶體**（3 輪中位數，跳價段）：
+
+  | 項目 | GPUI（修正開） | GPUI 修正關（對照） | egui wgpu | egui OpenGL |
+  |---|---:|---:|---:|---:|
+  | RSS | **115.2 MB** 🏆 | 321.2 MB | 131.5 MB | 134.0 MB |
+  | 實體記憶體 | **158.5 MB** 🏆 | 370.4 MB | 189.5 MB | 203.3 MB |
+  | FPS | 60 ＝ | 60 ＝ | 60 ＝ | 62.8 ＝ |
+  | CPU | 32.0 % | 31.1 % | 35.6 % | **25.3 %** 🏆 |
+
+- **代價**：CPU 多 1–6 個百分點（十字線段 35.6 vs 29.7 %），FPS 不變，每幀繪圖多 0.1–0.4 ms。CPU 最省的仍是 egui OpenGL。
+- **對選型**：「Mac 重圖表記憶體 GPUI 2.4 倍」這個缺點消除。剩下沒過的是 Windows 效率（CPU／GPU 約 2 倍、5 萬列捲動卡頓），整體仍是「**GPUI 有條件**」。
+- 細節：[docs/bench/real-hw/2026-10-25-mac-heavy/](docs/bench/real-hw/2026-10-25-mac-heavy/README.md)。
 
 ## Windows 重跑＋Mac 第三次（2026-10-25 下午）：GPUI vs egui 門檻判定
 
@@ -37,7 +56,7 @@
 - **Windows 5 萬列捲動**：GPUI 51 FPS、卡頓 63 次（沒改善）；egui OpenGL 6 輪有 4 輪掉到約 12 FPS；🏆 egui wgpu 6 輪都 60 FPS、0 次。
 - **0.5 秒停頓結案**：不是 GPUI 卡住（Mac 看門狗「只有主執行緒卡住」0 次）。
 - **Mac 重圖表多 200 MB 找到原因**：不是 Metal，是 malloc 已 free 但沒還給系統的大塊（201 MB），可以在我們這層修。
-  - **10-25 已修（等 Tina 在 Mac 上只跑重圖表確認）**：新版 macOS 的 malloc 會把 free 掉的大塊（每塊約 2.6 MB，推測是 GPUI 每幀複製／組成的 Path 頂點暫存）留在快取裡，等系統缺記憶體才收回。現在程式一啟動就設 `MallocLargeCache=0`（蘋果正式的環境變數）關掉這個快取（`src/memrelief.rs`），不改 GPUI。CI 的 Mac 虛擬機實測：重圖表 RSS 259–271 → 88–93 MB，實體記憶體 188 → 44 MB；CPU 部分情境多 0–10 個百分點、FPS 差不多。`XQ_MALLOC_LARGE_CACHE=1` 可恢復系統預設做對照。第一版（每 0.5 秒 `malloc_zone_pressure_relief`）在新版 macOS 上沒用，已換掉。
+  - **10-25 已修，晚上 Tina 在 M4 上確認（321 → 115 MB，見上一節）**：新版 macOS 的 malloc 會把 free 掉的大塊（每塊約 2.6 MB，推測是 GPUI 每幀複製／組成的 Path 頂點暫存）留在快取裡，等系統缺記憶體才收回。現在程式一啟動就設 `MallocLargeCache=0`（蘋果正式的環境變數）關掉這個快取（`src/memrelief.rs`），不改 GPUI。CI 的 Mac 虛擬機實測：重圖表 RSS 259–271 → 88–93 MB，實體記憶體 188 → 44 MB；CPU 部分情境多 0–10 個百分點、FPS 差不多。`XQ_MALLOC_LARGE_CACHE=1` 可恢復系統預設做對照。第一版（每 0.5 秒 `malloc_zone_pressure_relief`）在新版 macOS 上沒用，已換掉。
 - 細節：[Windows](docs/bench/real-hw/2026-10-25-windows/README.md)、[Mac 第三次](docs/bench/real-hw/2026-10-25-mac-2/README.md)。
 
 ## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）
@@ -57,7 +76,7 @@
   - GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間（egui 版會主動排重畫，所以沒有）。已在 Linux 重現並修好。
   - 壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
   - p50／p99 不受影響。
-- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。（10-25 下午更正：多出來的是 malloc 已 free 但沒還給系統的大塊，不是 Metal，見上一節。）
+- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。（**10-25 晚上已修**：GPUI 115 MB，變成最省。）（10-25 下午更正：多出來的是 malloc 已 free 但沒還給系統的大塊，不是 Metal，見上一節。）
 - 新加的：
   - 所有視窗關掉 GPUI 的背景視窗限速（`inactive_frame_interval: None`）。
   - macOS 申請延遲敏感模式。
@@ -78,7 +97,7 @@
 | 重圖表 1000 條畫線、100 層 FPS | **平手**：三版都 60 | 壓測包逾時沒有正式數字；log 裡兩邊都約 60 |
 | 開啟到第一筆報價 | 🏆 **GPUI** 190.5 ms（egui 246–248） | 🏆 **egui** 192 ms（GPUI 316） |
 | 一般畫面記憶體 | 🏆 **GPUI** RSS 101 MB（egui 116–121） | 大致平手（Working Set 74 vs 77.5 MB） |
-| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
+| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329；**10-25 晚上修好後 GPUI 115–121 MB 🏆**） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
 | CPU（高頻報價） | 🏆 **egui OpenGL** 6–7%（GPUI 30–35%；egui wgpu 23–35%） | 🏆 **egui** 8.9–13.6%（GPUI 20.8–25.2%） |
 | GPU 使用率／GPU 記憶體 | 整機數字，只當參考 | 🏆 **egui**：GPUI 是 2.3–5 倍／2.3–2.8 倍 |
 | 4 個視窗 延遲 p50／p99 | 🏆 **egui** 17.6／33.4 ms（GPUI 44.8／49.6） | 🏆 **egui** 21.8／33.7 ms（GPUI 43／64.3，57–58 FPS） |
