@@ -97,6 +97,8 @@ class Symbolizer:
                 return None
             i = order[j]
         sym, inl = names[i]
+        if re.match(r"fun_[0-9a-f]+$", sym):
+            return None  # samply 沒有真的符號，只給了位址名稱
         # 內聯函式只有短名（draw、{closure#0}），看不出是誰；預設只用外層完整符號名，XQ_PROF_INLINE=1 才展開
         if inl and os.environ.get("XQ_PROF_INLINE") == "1":
             return list(reversed(inl))
@@ -335,7 +337,7 @@ def main():
     for w, t in main_rows[:1]:
         analyze(w, t, "主執行緒")
     others = [r for r in rows if r not in main_rows[:1]]
-    for w, t in others[:1]:
+    for w, t in others[:int(os.environ.get('XQ_PROF_OTHERS', '1'))]:
         if dur_ms and unit == "µs" and w / 1000 / dur_ms < 0.01:
             break
         analyze(w, t, "其他執行緒")
