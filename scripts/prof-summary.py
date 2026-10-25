@@ -53,8 +53,8 @@ class Symbolizer:
                 return None
             i = order[j]
         sym, inl = names[i]
-        # frames：samply 給的是「內→外」，最後一個是最外層
-        if inl:
+        # 內聯函式只有短名（draw、{closure#0}），看不出是誰；預設只用外層完整符號名，XQ_PROF_INLINE=1 才展開
+        if inl and os.environ.get("XQ_PROF_INLINE") == "1":
             return list(reversed(inl))
         return [sym]
 
@@ -76,6 +76,29 @@ BUCKETS = [
     ("gpui: present", r"DirectXRenderer::present|::present\b"),
     ("D3D11/DXGI/驅動", r"^(d3d11|dxgi|d3d10warp|nvwgf2umx|nvldumdx|igd10|igd11|D3DSCache|dcomp)\.dll"),
     ("我們的程式（gpui_xq_demo）", r"gpui_xq_demo::"),
+]
+
+
+# 主執行緒各階段（含子呼叫；同一個樣本可以同時算進好幾個階段）
+PHASES = [
+    ("整幀 Window::draw", r"<gpui::window::Window>::draw\b|draw_roots"),
+    ("  render()（建元素樹）", r"as gpui::view::Render>::render|AnyView.*render|<gpui::view::Entity.*render"),
+    ("  request_layout＋taffy 排版", r"compute_layout|<taffy::"),
+    ("  prepaint", r"::prepaint$|prepaint_view"),
+    ("  paint", r"Interactivity>::paint|::paint$"),
+    ("  文字排版 shape_line/layout_line", r"shape_line|shape_text|layout_line|LineLayoutCache"),
+    ("    DirectWrite（dwrite.dll）", r"^dwrite\.dll!|DirectWriteState>::layout_line"),
+    ("  字形點陣／圖集 rasterize/atlas", r"rasterize_glyph|raster_bounds|Atlas.*get_or_insert_with"),
+    ("  Scene 整理（finish/sort/clear）", r"<gpui::scene::Scene>::(finish|clear)|BoundsTree"),
+    ("present／送 GPU（renderer.draw）", r"<gpui::window::Window>::present|DirectXRenderer>::draw|render_frame|WgpuRenderer.*draw"),
+    ("  畫 path（中間 MSAA 圖）", r"draw_paths_to_intermediate|draw_paths_from_intermediate"),
+    ("  D3D11/DXGI/驅動/WARP", r"^(d3d11|dxgi|d3d10warp|nvwgf2umx|nvldumdx|igd10\w*|igd11\w*|dcomp|D3DSCache)\.dll!"),
+    ("我們的程式（gpui_xq_demo::，不含 main）", r"gpui_xq_demo::(?!main\b)\w|<gpui_xq_demo::"),
+    ("  apply_feed", r"apply_feed"),
+    ("  chart 畫圖", r"gpui_xq_demo::chart::"),
+    ("  報價表", r"gpui_xq_demo::table::"),
+    ("配置／釋放記憶體（malloc/free/HeapAlloc/mmap）", r"malloc|free\b|_free$|HeapAlloc|HeapFree|RtlAllocateHeap|RtlFreeHeap|munmap|mmap|memcpy|memmove"),
+    ("訊息迴圈／等待（GetMessage/Wait/poll）", r"GetMessageW|MsgWaitForMultipleObjects|NtUserGetMessage|WaitForSingleObject|epoll|poll|futex"),
 ]
 
 
@@ -202,7 +225,24 @@ def main():
                         b = bn
             bucket_c[b] += wt
         tot = sum(x or 0 for x in w) or 1
+        phase_c = collections.Counter()
+        for si, wt in zip(s["stack"], w):
+            if not wt:
+                continue
+            names = stack_list(si)
+            hit = set()
+            for k, (pn, rx) in enumerate(PHASES):
+                if pn in hit:
+                    continue
+                if any(re.search(rx, n.split("!", 1)[-1]) or re.search(rx, n) for n in names):
+                    hit.add(pn)
+            for pn in hit:
+                phase_c[pn] += wt
         print(f"\n######## {label}：{t.get('name')} tid={t.get('tid')}，CPU {tot/1000:.0f} ms")
+        print("-- 階段（含子呼叫；%＝佔這條執行緒；ms＝整段取樣期間合計）")
+        for pn, _ in PHASES:
+            v = phase_c.get(pn, 0)
+            print(f"  {v/tot*100:5.1f}%  {v/1000:8.0f} ms  {pn}")
         print("-- 分桶（最內層命中；%＝佔這條執行緒）")
         for k, v in bucket_c.most_common():
             print(f"  {v/tot*100:5.1f}%  {k}")
