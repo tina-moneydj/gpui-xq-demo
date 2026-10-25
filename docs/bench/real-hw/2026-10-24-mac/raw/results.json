@@ -38,7 +38,7 @@
   "ramGB": 24.0,
   "power": [
    "Now drawing from 'AC Power'",
-   " -InternalBattery-0 (id=35520611)\t100%; charged; 0:00 remaining present: true"
+   " -InternalBattery-0 (id=…)\t100%; charged; 0:00 remaining present: true"
   ],
   "lowPowerMode": false,
   "gpus": [

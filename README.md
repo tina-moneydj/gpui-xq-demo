@@ -4,8 +4,9 @@
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
-> - **選型最新結論**先看「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
-> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android 手機版**（`mobile/`，見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
+> - **最新（10-25 晚上）**：「[4 視窗第 2～4 個視窗晚約 3 秒](#4-視窗第-24-個視窗晚約-3-秒才有報價查到原因並修好2026-10-25-晚上)」已修好。「[Mac 只跑重圖表](#mac-只跑重圖表記憶體修正確認2026-10-25-晚上)」確認記憶體修正有效，GPUI 重圖表 321 → 115 MB，變成最省。
+> - **選型最新結論（10-25 下午）**先看「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
+> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
 > - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
 > - **GPUI 三項優化**（沒變的視窗不重畫、捲動卡頓、報價延遲）已在 main，數字見「[GPUI 優化](#gpui-優化2026-10-23)」。
 > - 成交明細（`XQ_TAPE=1`）往下捲看舊成交時，新成交不會再把畫面推走（`Home` 回到最新）。
@@ -17,6 +18,57 @@
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
 |---|---|
 | ![日線](screenshot-daily.png) | ![壓力](screenshot-stress-50k.png) |
+
+## 4 視窗「第 2～4 個視窗晚約 3 秒才有報價」：查到原因並修好（2026-10-25 晚上）
+
+### 結論先看
+
+- ✅ **已修好（Linux 重現並確認）**：4 視窗時，GPUI 第 2～4 個視窗現在跟主視窗同時（0.15 秒內）顯示「行情連線」，不再晚約 3 秒。
+- **原因（一句話）**：GPUI 開視窗時會先同步畫一幀。主視窗在第 2～4 個視窗開好之前，就已經把「連線就緒」那一包取走，只有主視窗收到；其他視窗要等下一包行情才會從「連線中…」變成「行情連線」。
+- **為什麼剛好約 3 秒**：多視窗壓測的行情產生器（`xq-tickgen`）刻意在訂閱後等 3 秒才送第一份快照，所以其他視窗要等到那時候。
+- **要說清楚的一點**：這個情境下，**四個視窗（GPUI 和 egui 都一樣）真正的報價資料都是約 3 秒後才到**，因為產生器本來就那時才送。「第一筆報價」的計時看的是「連線就緒」，所以主視窗和 egui 才顯示約 0.2 秒。之前那 3 秒差在其他視窗的狀態列和走勢圖／資訊格；報價表是共用的，資料到了四個視窗就同時有。
+- **怎麼修**：共用行情匯流記住最近一次的連線狀態；後開的視窗一開就接手，並從共用報價表補上自己那一檔的現價。延遲 p50／p99 的量法不變。
+- Linux 重現（4 視窗、tickgen 每秒 1 萬筆）：修正前主視窗與其他視窗的「第一筆報價」差 2.8 秒（2 次都是）；修正後差 0.15 秒（2 次）。
+
+## Mac 只跑重圖表：記憶體修正確認（2026-10-25 晚上）
+
+### 結論先看
+
+- 🏆 **Mac 重圖表記憶體問題解決，Tina 的 M4 上確認**：GPUI 重圖表 RSS **321 → 115 MB**，實體記憶體 **370 → 159 MB**；vmmap 那塊 201 MB 的「Malloc Large (empty)」消失。
+- 🏆 **GPUI 變成重圖表最省記憶體**（3 輪中位數，跳價段）：
+
+  | 項目 | GPUI（修正開） | GPUI 修正關（對照） | egui wgpu | egui OpenGL |
+  |---|---:|---:|---:|---:|
+  | RSS | **115.2 MB** 🏆 | 321.2 MB | 131.5 MB | 134.0 MB |
+  | 實體記憶體 | **158.5 MB** 🏆 | 370.4 MB | 189.5 MB | 203.3 MB |
+  | FPS | 60 ＝ | 60 ＝ | 60 ＝ | 62.8 ＝ |
+  | CPU | 32.0 % | 31.1 % | 35.6 % | **25.3 %** 🏆 |
+
+- **代價**：CPU 多 1–6 個百分點（十字線段 35.6 vs 29.7 %），FPS 不變，每幀繪圖多 0.1–0.4 ms。CPU 最省的仍是 egui OpenGL。
+- **對選型**：「Mac 重圖表記憶體 GPUI 2.4 倍」這個缺點消除。剩下沒過的是 Windows 效率（CPU／GPU 約 2 倍、5 萬列捲動卡頓），整體仍是「**GPUI 有條件**」。
+- 細節：[docs/bench/real-hw/2026-10-25-mac-heavy/](docs/bench/real-hw/2026-10-25-mac-heavy/README.md)。
+
+## Windows 重跑＋Mac 第三次（2026-10-25 下午）：GPUI vs egui 門檻判定
+
+### 結論先看
+
+- **判定：延遲過關、效率沒過 → 維持「GPUI 有條件」。** 不翻盤成 egui（多視窗已追平到差 2–3 ms），但 Windows 的 CPU 和捲動卡頓沒解決，也還不能正式定 GPUI。
+- 4 個視窗（Tina 的兩台電腦，3 輪中位數）：
+
+  | 項目 | GPUI | egui OpenGL | egui wgpu |
+  |---|---:|---:|---:|
+  | Windows 延遲 p99 | 36.0 ms（10-23：64.3） | **33.4 ms** 🏆 | **33.9 ms** 🏆 |
+  | Windows 最慢視窗 p99 | 37.3 ms | **33.9 ms** 🏆 | 44.8 ms |
+  | Windows CPU | 44.1 % | **27.7 %** 🏆 | 32.1 % |
+  | Windows GPU 3D | 21.7 % | **4.6 %** 🏆 | 8.7 % |
+  | Mac 延遲 p99 | 35.6 ms | **34.1 ms** 🏆 | **33.6 ms** 🏆 |
+  | Mac 最慢視窗 p99 | 36.4 ms | 36.9 ms | **34.5 ms** 🏆 |
+
+- **Windows 5 萬列捲動**：GPUI 51 FPS、卡頓 63 次（沒改善）；egui OpenGL 6 輪有 4 輪掉到約 12 FPS；🏆 egui wgpu 6 輪都 60 FPS、0 次。
+- **0.5 秒停頓結案**：不是 GPUI 卡住（Mac 看門狗「只有主執行緒卡住」0 次）。
+- **Mac 重圖表多 200 MB 找到原因**：不是 Metal，是 malloc 已 free 但沒還給系統的大塊（201 MB），可以在我們這層修。
+  - **10-25 已修，晚上 Tina 在 M4 上確認（321 → 115 MB，見上一節）**：新版 macOS 的 malloc 會把 free 掉的大塊（每塊約 2.6 MB，推測是 GPUI 每幀複製／組成的 Path 頂點暫存）留在快取裡，等系統缺記憶體才收回。現在程式一啟動就設 `MallocLargeCache=0`（蘋果正式的環境變數）關掉這個快取（`src/memrelief.rs`），不改 GPUI。CI 的 Mac 虛擬機實測：重圖表 RSS 259–271 → 88–93 MB，實體記憶體 188 → 44 MB；CPU 部分情境多 0–10 個百分點、FPS 差不多。`XQ_MALLOC_LARGE_CACHE=1` 可恢復系統預設做對照。第一版（每 0.5 秒 `malloc_zone_pressure_relief`）在新版 macOS 上沒用，已換掉。
+- 細節：[Windows](docs/bench/real-hw/2026-10-25-windows/README.md)、[Mac 第三次](docs/bench/real-hw/2026-10-25-mac-2/README.md)。
 
 ## Mac 重跑＋GPUI 優化第 3 批（2026-10-25）
 
@@ -35,7 +87,7 @@
   - GPUI 版量測程式的假象：報價停了之後，最後一包要等到每秒一次的取樣才補記時間（egui 版會主動排重畫，所以沒有）。已在 Linux 重現並修好。
   - 壓測包自己的 vmmap 暫停程式約 0.5 秒，發生在量測區間外。
   - p50／p99 不受影響。
-- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。多出來的在 GPUI／Metal 那一層，不是我們的資料，Linux 也重現不了。新版壓測包會把記憶體拆開記（malloc vs GPU 緩衝區），之後再決定怎麼減。
+- **重圖表記憶體還是 GPUI 輸**（321 vs 131 MB）。（**10-25 晚上已修**：GPUI 115 MB，變成最省。）（10-25 下午更正：多出來的是 malloc 已 free 但沒還給系統的大塊，不是 Metal，見上一節。）
 - 新加的：
   - 所有視窗關掉 GPUI 的背景視窗限速（`inactive_frame_interval: None`）。
   - macOS 申請延遲敏感模式。
@@ -56,7 +108,7 @@
 | 重圖表 1000 條畫線、100 層 FPS | **平手**：三版都 60 | 壓測包逾時沒有正式數字；log 裡兩邊都約 60 |
 | 開啟到第一筆報價 | 🏆 **GPUI** 190.5 ms（egui 246–248） | 🏆 **egui** 192 ms（GPUI 316） |
 | 一般畫面記憶體 | 🏆 **GPUI** RSS 101 MB（egui 116–121） | 大致平手（Working Set 74 vs 77.5 MB） |
-| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
+| 重圖表記憶體 | 🏆 **egui** 131–141 MB（GPUI 321–329；**10-25 晚上修好後 GPUI 115–121 MB 🏆**） | 🏆 **egui** 約 78 MB（GPUI 100–115，取自 log） |
 | CPU（高頻報價） | 🏆 **egui OpenGL** 6–7%（GPUI 30–35%；egui wgpu 23–35%） | 🏆 **egui** 8.9–13.6%（GPUI 20.8–25.2%） |
 | GPU 使用率／GPU 記憶體 | 整機數字，只當參考 | 🏆 **egui**：GPUI 是 2.3–5 倍／2.3–2.8 倍 |
 | 4 個視窗 延遲 p50／p99 | 🏆 **egui** 17.6／33.4 ms（GPUI 44.8／49.6） | 🏆 **egui** 21.8／33.7 ms（GPUI 43／64.3，57–58 FPS） |
@@ -341,6 +393,23 @@ cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:
 - 壓測（在 gpui-xq-demo repo 的 `scripts/web/`，用 puppeteer-core 開系統 Chrome）：`OUT=輸出資料夾 ./run-all.sh 3` → `summarize.py 輸出資料夾` → `tables.py 輸出資料夾/summary.json docs/bench/2026-10-21-parity`。
   單場：`node bench-web.js <egui|gpui> <main|stress|heavy|ticks:s1k|…|ticks:burst> <輪次> <輸出資料夾>`。另有 `chrome-baseline.js`（空白 Chrome 記憶體）、`layers-smoke.js`（圖層冒煙測試）、`ime-web.sh`（注音）、`webgpu-try.js`（WebGPU 試跑）。
 - 原始數據：`docs/bench/web/`（`results.jsonl` 每場一行、`summary.json` 中位數、`progress.log`、每場瀏覽器 console log、`contention.log` 每 10 秒的系統負載）。
+
+## 手機版（iOS）（2026-10-25 新增，egui 和 GPUI 一起做）
+
+**結論**：兩個 app 都有 iOS 版，已合進 `main`。GitHub 雲端 Mac（Xcode 26.6、iOS 26.2 模擬器）每次都會編模擬器版和 iPhone 版，並在模擬器裡把 app 打開截圖；兩版都能正常開、中文正常、行情會跳。**還沒在真的 iPhone 上試過，也還沒用 Xcode 27 編過**（雲端還沒有）。
+
+- **怎麼裝到自己的 iPhone（非開發者也可以）**：照 [bench/ios/README.md](bench/ios/README.md)。裝好 Xcode 後，在「終端機」貼一行：
+  ```
+  curl -fsSL https://raw.githubusercontent.com/tina-moneydj/gpui-xq-demo/main/bench/ios/get.sh | bash -s gpui
+  ```
+  它會下載程式碼、裝 Rust、先編一次、打開 Xcode 專案；接著在 Xcode 選自己的 Apple ID（免費 Personal Team）、接上 iPhone、按 ▶。免費帳號每 7 天要重按一次 ▶；公司付費帳號可以改走 TestFlight（說明附錄 B，需要的金鑰之後再設）。
+- **只想先看看**：[ios-latest](https://github.com/tina-moneydj/gpui-xq-demo/releases/tag/ios-latest) 有模擬器用的 app（`XQGPUI-simulator.zip`，只能裝到 Mac 上的 iPhone 模擬器）和雲端模擬器截圖。由 `main` 自動更新。
+- **跟 Android 版一樣**：報價表、點一列進走勢圖、單指拖／雙指縮放／長按十字線、搜尋框、FPS／記憶體、封包計數；共用 `../src` 的程式碼與設計 token。
+- **行情**：手機上沒有電腦的行情服務，app 內建合成行情（假資料）。要連 Mac 上的行情服務設 `XQ_FEED_ADDR`（見說明）。
+- **中文字**：中文用 iPhone 內建的蘋方（PingFang TC，CoreText 直接畫，不複製字型檔）。
+- **畫面更新不看焦點**：控制中心、通知蓋住時照畫，只有進背景才停（Android 版「失焦就凍住」的問題不會發生；待真機確認）。
+- **接法**：Longbridge gpui-mobile 的「嵌入模式」，由我們的 Swift UIScene 外殼建立畫面（vendored，iOS 26 字型修補見 `mobile/vendor/gpui-mobile/PATCHES.md` §5）。Xcode 專案由 XcodeGen 產生並放進 repo（`mobile/ios/XQGPUI.xcodeproj`），一鍵腳本 `mobile/ios/setup-mac.command`。
+- **還缺**：真機測試、Xcode 27 建置、「自訂指標腳本」（兩個 repo 都還沒有這功能）。CI：`.github/workflows/ios.yml`。
 
 ## 手機版（Android）（2026-10-23 新增，egui 和 GPUI 一起做）
 

@@ -10,15 +10,21 @@ pub fn rgba_tok(c: xq_tokens::Rgba) -> Rgba {
     gpui::rgba((c.rgb << 8) | (c.a.clamp(0.0, 1.0) * 255.0).round() as u32)
 }
 
-#[cfg(not(windows))]
+#[cfg(not(any(target_os = "macos", target_os = "ios", windows)))]
 pub fn ui_font() -> &'static str { tk().font.ui }
-#[cfg(not(any(target_os = "android", windows)))]
+#[cfg(not(any(target_os = "android", target_os = "macos", target_os = "ios", windows)))]
 pub fn mono_font() -> &'static str { tk().font.mono }
 /// Windows：系統內建的微軟正黑體；等寬用 Consolas（中文字由 DirectWrite 字型後援補上）。token 的 Noto Sans CJK 在 Windows 上沒有內建。
 #[cfg(windows)]
 pub fn ui_font() -> &'static str { "Microsoft JhengHei UI" }
 #[cfg(windows)]
 pub fn mono_font() -> &'static str { "Consolas" }
+/// macOS／iOS：系統內建的蘋方-繁（PingFang TC）；等寬用 Menlo（中文字由 CoreText 字型後援補上）。
+/// token 的 Noto Sans CJK 在蘋果系統上沒有內建。字型由 CoreText 依名稱按需開啟（檔案映射、系統共用），不整檔讀進記憶體。
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+pub fn ui_font() -> &'static str { "PingFang TC" }
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+pub fn mono_font() -> &'static str { "Menlo" }
 /// Android 系統字型沒有 Mono CJK：等寬字也用介面字型（Noto Sans CJK TC，egui 手機版同樣做法）
 #[cfg(target_os = "android")]
 pub fn mono_font() -> &'static str { tk().font.ui }

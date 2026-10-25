@@ -1648,8 +1648,6 @@ dependencies = [
 [[package]]
 name = "gpui-pre-wgpu"
 version = "0.3.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b1cdb26c1503bf9662ee8fbc5ab0b44b2deeee4b5c12dc67491ba6fb5fc544b"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -5265,6 +5263,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
+name = "xq-demofeed"
+version = "0.1.0"
+
+[[package]]
 name = "xq-feed"
 version = "0.1.0"
 
@@ -5274,6 +5276,7 @@ version = "0.1.0"
 dependencies = [
  "android-activity",
  "android_logger",
+ "core-text",
  "futures",
  "gpui-pre",
  "gpui-pre-mobile",
@@ -5282,6 +5285,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "serde_json",
+ "xq-demofeed",
  "xq-feed",
  "xq-tape",
  "xq-tokens",

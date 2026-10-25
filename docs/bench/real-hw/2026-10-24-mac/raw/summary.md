@@ -27,7 +27,7 @@
 - 架構：arm64
 - Rosetta 轉譯中：False
 - 低耗電模式：False
-- 電源：["Now drawing from 'AC Power'", ' -InternalBattery-0 (id=35520611)\t100%; charged; 0:00 remaining present: true']
+- 電源：["Now drawing from 'AC Power'", ' -InternalBattery-0 (id=…)\t100%; charged; 0:00 remaining present: true']
 - GPU：Apple M4 10 核心，Metal spdisplays_metal4
 - 螢幕 1：內建Retina顯示器，1470x956 點 ×2 倍＝2940x1912 像素，最高 60 Hz（主螢幕）
 - 編譯：{"gpui_rev": "b1db788", "gpui_branch": "mac-bench", "shaders": "precompiled", "targets": "universal", "xcode": "Xcode 26.6", "built": "2026-10-23T05:12:18Z", "ci": true, "egui_rev": "6c638c1", "egui_branch": "mac-bench", "egui_targets": "arm64"}

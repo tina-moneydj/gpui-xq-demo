@@ -2,7 +2,7 @@
 
 來源：[longbridge/gpui-mobile](https://github.com/longbridge/gpui-mobile) `c24a130`（2026-10-14），授權沿用原專案
 （GPL-3.0-or-later OR AGPL-3.0-or-later OR Apache-2.0，見 LICENSE-*）。只複製 `src/`、`Cargo.toml`、授權與 README；
-`vendor/gpui-pre-wgpu`（只給 `offscreen` 功能用）沒帶，`offscreen` feature 與 `[patch.crates-io]` 也拿掉
+`vendor/gpui-pre-wgpu`（upstream 的，只給 `offscreen` 功能用）沒帶，`offscreen` feature 與 `[patch.crates-io]` 也拿掉
 （路徑依賴時 cargo 會檢查 feature 指向的套件，而那個 patch 只在本 crate 當 workspace 根時才生效）。
 
 所有修補都標了 `修補（xq）`，可用 `rg "修補（xq）"` 找到。
@@ -67,3 +67,61 @@ GPUI 就一直不畫（WindowManager 的 `mCurrentFocus` 仍是本 app）。egui
 > NotoColorEmoji.ttf fully just to look at the table directory. `add_fonts` accepts `Cow<'static, [u8]>`
 > and does not copy, so memory-mapping the files (memmap2, leaked `&'static [u8]`) makes them file-backed,
 > shared and reclaimable. Dedupe by canonical path. Optionally an env/config allow-list.
+
+## 4. iOS：關掉預設 feature 時編不過 — `src/ios/platform_view.rs`
+
+`default-features = false` 時 `packages::video_player`／`packages::camera` 不存在，但 iOS 的 platform view 直接呼叫
+`ios_get_player`／`ios_get_session`。改成 `#[cfg(feature = …)]`，沒開時當作找不到（原生 view 照建、只是不掛播放器／相機預覽）。
+
+## 5. iOS 26：所有字型都「Failed to read traits」→ 找不到字型而 panic — `src/ios/text_system.rs`
+
+**現象**（GitHub macOS runner、Xcode 26.6、iOS 26.2 模擬器）：啟動後立刻
+`failed to resolve font 'PingFang TC' or any of the fallbacks: … Helvetica … Arial` panic，app 閃退。
+log 顯示 PingFang TC、Helvetica、Arial 的每個字面都 `Failed to read traits`。
+
+**原因**：`load_family` 為了避免 font-kit `Font::properties()` 的 unwrap panic，先檢查
+`CTFontCopyTraits` 有沒有 symbolic／width／weight／slant 四個數字；iOS 26 的字典少了其中某些鍵，
+所以每個字型都被跳過。
+
+**修補**：不再跳過；`font_id` 改用 `lenient_properties()`（缺的鍵用預設值：一般粗細、正常寬度、不斜體；
+粗細換算跟 font-kit 同一張表）。缺哪些鍵用 `log::debug!` 記下。
+
+## 6. iOS 27（Xcode 27）：第一次畫畫面就中止 — `src/ios/ffi.rs`、`src/ios/window.rs`、`src/ios/text_system.rs`
+
+**現象**（Tina 的 Mac，Xcode 27、iPhone 18 Pro／iPhone Duo 模擬器）：app 一開就停住，Xcode 顯示
+`Thread 1: hit program assert`，堆疊 `viewDidLayoutSubviews → gpui_ios_request_frame → … → __pthread_kill`；
+行情執行緒（xq-feed、xq-demofeed）已經在跑。雲端 runner 只有 Xcode 26.6／iOS 26.2，同一份程式正常。
+
+**原因**：`gpui_ios_request_frame` 是 `extern "C"`，GPUI 畫第一幀時只要有任何 panic，Rust 不能讓它跨過 C 邊界，
+就直接 abort（所以只看到 assert，看不到哪裡錯）。確切的 panic 訊息在 Xcode 主控台，雲端重現不了，還沒拿到。
+
+**修補**：
+- `guarded()`／`catch_unwind`：`request_frame`、`layout_view`、`handle_touch`、四個生命週期入口、`run_demo` 的 panic 都接住；
+  訊息（app 的 panic hook 呼叫 `record_panic`，含檔名行號）由新的 `gpui_ios_fatal_error()` 取得，
+  Swift 外殼停掉 CADisplayLink、在畫面上顯示紅底訊息。`request_frame` 一定把 callback 放回去，連續 3 次 panic 才判定失敗。
+- `handle_layout_change` 的縮放倍率改用 `view.traitCollection.displayScale` → `view.window.screen.scale` → `UIScreen.mainScreen`，
+  都是 0 就沿用舊值（UIScene 下 `mainScreen` 已淘汰）；`is_active` 改問 `view.window.isKeyWindow`，不用淘汰的 `UIApplication.keyWindow`。
+- `font_id`：家族載不到（或每個字面都被跳過）時不回錯（GPUI 收到錯誤會 panic），改用 CoreText 依名稱建字型，
+  再退到 PingFang TC／Helvetica／系統 UI 字型。
+
+## 7. Xcode 27 模擬器：Metal 驗證「buffer 位移要是 256 的倍數」→ 中止 — `../gpui-pre-wgpu/src/wgpu_context.rs`
+
+**現象**：Xcode 27、iPhone 18 Pro 模擬器按 ▶，停在 `gpui_ios_request_frame`（hit program assert），主控台：
+`-[MTLDebugRenderCommandEncoder validateCommonDrawErrors:] … Fragment Function(fs_mono_sprite): the offset into the buffer
+gamma_params that is bound at Buffer index 1 must be a multiple of 256 but was set to 128.`
+§6 的 `catch_unwind` 接不到，因為這不是 Rust panic，是 Metal 的除錯層直接中止程式。
+
+**原因**：渲染器把三個 uniform（globals、path globals、gamma_params）放在同一塊 buffer，用
+`min_uniform_buffer_offset_alignment` 排位移。wgpu-hal 29 看「OS 是 iOS」就回報 64（只有 macOS／visionOS 回 256），
+所以 gamma_params 被放在 128。但模擬器實際跑在 Mac 的 GPU 上，Apple 規定模擬器的 buffer 位移要 256 對齊；
+Xcode 按 ▶ 預設會開 Metal API 驗證，iOS 27 模擬器就把它當錯誤中止。CI（Xcode 26、`simctl launch`
+沒開驗證）因此沒抓到。
+
+**修補**：把 `gpui-pre-wgpu` 0.3.9 原封複製到 `mobile/vendor/gpui-pre-wgpu/`（`mobile/Cargo.toml` 的
+`[patch.crates-io]` 指過去），只改建立 device 時的 limits：iOS（實機＋模擬器）把
+`min_uniform_buffer_offset_alignment`、`min_storage_buffer_offset_alignment` 至少調成 256。
+對齊要求只能往上調，256 是 64／16 的倍數，實機也合法，代價只是 buffer 裡多幾百 bytes 填充。
+gamma_params 改放在 512（globals 0、path globals 256）。Android／桌面不受影響（`cfg(target_os = "ios")`）。
+
+**CI**：`.github/workflows/ios.yml` 的模擬器冒煙測試加 `MTL_DEBUG_LAYER=1`（跟 Xcode 按 ▶ 一樣開驗證），
+log 裡出現 `failed assertion`／`Validation Error`／`validateCommon` 就算失敗（`Metal API Validation Enabled` 那行是正常訊息，不算），之後同類錯誤 CI 會先抓到。
