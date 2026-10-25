@@ -179,6 +179,118 @@ pub fn run(len: usize, color: Hsla) -> TextRun {
     TextRun { len, font: font(mono_font()), color, background_color: None, underline: None, strikethrough: None }
 }
 
+// ---------------------------------------------------------------- 等寬 ASCII 快速路徑（2026-10-25，Windows CPU）
+// 價格、漲跌、量、座標軸數字每幀都在變，走 shape_line 每個新字串都要平台排字一次（Windows 是 DirectWrite：
+// CreateTextFormat＋CreateTextLayout＋Draw，CI 取樣主執行緒約 10% 在 DWrite／TextShaping；Linux cosmic-text 約 16%），
+// 而且每行文字各包一個 paint_layer。等寬字的 ASCII 每個字的字形和寬度是固定的：每個字級只排一次 0x20..0x7E，
+// 之後直接 paint_glyph，不經排字、不建 ShapedLine。字型不是單一字型（有後援字型）或字級太多就退回 shape_line。
+// XQ_MONO_FAST=0 關掉（對照用）。
+
+const ASCII0: u8 = 0x20;
+const NASCII: usize = 95;
+/// 最多記幾種字級（畫面上只有 3–4 種；超過就整個清掉重來，不會一直長大）
+const MAX_FACES: usize = 8;
+
+#[derive(Clone, Copy)]
+struct MonoFace {
+    size_bits: u32,
+    /// None＝這個字級排出來不是單一等寬字型，不走快速路徑
+    ok: Option<(gpui::FontId, f32, f32)>,
+    gid: [Option<gpui::GlyphId>; NASCII],
+    adv: [f32; NASCII],
+}
+
+thread_local! {
+    static MONO: std::cell::RefCell<Vec<MonoFace>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+pub fn mono_fast() -> bool {
+    static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *V.get_or_init(|| crate::plat::var("XQ_MONO_FAST").map_or(true, |v| v != "0"))
+}
+
+fn build_face(window: &mut Window, size_px: f32) -> MonoFace {
+    let mut f = MonoFace { size_bits: size_px.to_bits(), ok: None, gid: [None; NASCII], adv: [0.0; NASCII] };
+    let all: String = (ASCII0..ASCII0 + NASCII as u8).map(char::from).collect();
+    let line = shape(window, all, size_px, gpui::black());
+    let lay: &gpui::LineLayout = &line;
+    let [run] = lay.runs.as_slice() else { return f };
+    if run.glyphs.len() != NASCII {
+        return f;
+    }
+    for (k, g) in run.glyphs.iter().enumerate() {
+        // 每個字剛好一個字形、照順序（等寬 ASCII 不會有連字／重排）
+        if g.index != k || g.is_emoji {
+            return f;
+        }
+        let next = run.glyphs.get(k + 1).map_or(lay.width, |n| n.position.x);
+        f.adv[k] = f32::from(next - g.position.x);
+        f.gid[k] = Some(g.id);
+    }
+    f.ok = Some((run.font_id, f32::from(lay.ascent), f32::from(lay.descent)));
+    f
+}
+
+fn with_face<R>(window: &mut Window, size_px: f32, g: impl FnOnce(&MonoFace) -> R) -> Option<R> {
+    if !mono_fast() {
+        return None;
+    }
+    let bits = size_px.to_bits();
+    let hit = MONO.with(|m| m.borrow().iter().position(|f| f.size_bits == bits));
+    let ix = match hit {
+        Some(ix) => ix,
+        None => {
+            let face = build_face(window, size_px);
+            MONO.with(|m| {
+                let mut m = m.borrow_mut();
+                if m.len() >= MAX_FACES {
+                    m.clear();
+                }
+                m.push(face);
+                m.len() - 1
+            })
+        }
+    };
+    MONO.with(|m| m.borrow().get(ix).copied()).filter(|f| f.ok.is_some()).map(|f| g(&f))
+}
+
+fn face_width(f: &MonoFace, s: &str) -> Option<f32> {
+    let mut w = 0.0;
+    for b in s.bytes() {
+        let k = b.wrapping_sub(ASCII0) as usize;
+        if k >= NASCII || f.gid[k].is_none() {
+            return None;
+        }
+        w += f.adv[k];
+    }
+    Some(w)
+}
+
+/// 等寬 ASCII 字串寬度；None＝不能走快速路徑（有中文或其他字、字型不支援）
+pub fn mono_width(window: &mut Window, s: &str, size_px: f32) -> Option<f32> {
+    with_face(window, size_px, |f| face_width(f, s)).flatten()
+}
+
+/// 在 (x, 列頂 y_top) 畫一行等寬 ASCII，垂直置中於 line_h（同 ShapedLine::paint 的基線算法）。
+/// 回傳寬度；None＝沒畫，呼叫端改走 shape_line。
+pub fn mono_paint(window: &mut Window, s: &str, x: f32, y_top: f32, line_h: f32, size_px: f32, color: Hsla) -> Option<f32> {
+    let f = with_face(window, size_px, |f| *f)?;
+    let (font_id, ascent, descent) = f.ok?;
+    let w = face_width(&f, s)?;
+    let base = y_top + (line_h - ascent - descent) / 2.0 + ascent;
+    let mut gx = x;
+    for b in s.bytes() {
+        let k = (b - ASCII0) as usize;
+        if b != b' ' {
+            if let Some(gid) = f.gid[k] {
+                let _ = window.paint_glyph(point(px(gx), px(base)), font_id, gid, px(size_px), color);
+            }
+        }
+        gx += f.adv[k];
+    }
+    Some(w)
+}
+
 pub fn shape(window: &mut Window, s: impl Into<SharedString>, size_px: f32, color: Hsla) -> ShapedLine {
     let s: SharedString = s.into();
     let r = run(s.len(), color);
@@ -207,18 +319,35 @@ pub fn paint_line(window: &mut Window, cx: &mut App, line: &ShapedLine, x: f32, 
 }
 
 pub fn text(window: &mut Window, cx: &mut App, s: impl Into<SharedString>, x: f32, y_mid: f32, size_px: f32, color: Hsla) -> f32 {
+    let s: SharedString = s.into();
+    let lh = size_px + 3.0;
+    if let Some(w) = mono_paint(window, &s, x, y_mid - lh / 2.0, lh, size_px, color) {
+        return w;
+    }
     let l = shape(window, s, size_px, color);
     paint_line(window, cx, &l, x, y_mid, size_px);
     f32::from(l.width())
 }
 
 pub fn text_right(window: &mut Window, cx: &mut App, s: impl Into<SharedString>, right: f32, y_mid: f32, size_px: f32, color: Hsla) {
+    let s: SharedString = s.into();
+    let lh = size_px + 3.0;
+    if let Some(w) = mono_width(window, &s, size_px) {
+        mono_paint(window, &s, right - w, y_mid - lh / 2.0, lh, size_px, color);
+        return;
+    }
     let l = shape(window, s, size_px, color);
     let w = f32::from(l.width());
     paint_line(window, cx, &l, right - w, y_mid, size_px);
 }
 
 pub fn text_center(window: &mut Window, cx: &mut App, s: impl Into<SharedString>, cx_: f32, y_mid: f32, size_px: f32, color: Hsla) -> f32 {
+    let s: SharedString = s.into();
+    let lh = size_px + 3.0;
+    if let Some(w) = mono_width(window, &s, size_px) {
+        mono_paint(window, &s, cx_ - w / 2.0, y_mid - lh / 2.0, lh, size_px, color);
+        return w;
+    }
     let l = shape(window, s, size_px, color);
     let w = f32::from(l.width());
     paint_line(window, cx, &l, cx_ - w / 2.0, y_mid, size_px);

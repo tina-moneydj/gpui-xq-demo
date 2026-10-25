@@ -434,6 +434,15 @@ fn paint_row(b: Bounds<Pixels>, cells: &[(SharedString, Hsla); 6], tick_bg: Opti
                 window.paint_quad(gpui::fill(Bounds::new(point(x, b.origin.y), gpui::size(w, lh)), bg));
             }
         }
+        // 數字欄（等寬、ASCII）：放得下就直接畫字形，不排字（gfx::mono_paint）
+        if right {
+            if let Some(mw) = crate::gfx::mono_width(window, s, size).filter(|mw| *mw <= f32::from(w) - 2.0 * CELL_PAD) {
+                let tx = f32::from(x + w) - CELL_PAD - mw;
+                crate::gfx::mono_paint(window, s, tx, f32::from(b.origin.y), f32::from(lh), size, *color);
+                x += w;
+                continue;
+            }
+        }
         let line = shaped(window, s, right, *color, size);
         let lw = line.width();
         let tx = if right { x + w - px(CELL_PAD) - lw } else { x + px(CELL_PAD) };
@@ -542,7 +551,12 @@ impl Render for QuoteTable {
                     .text_color(dim())
                     .border_b_1()
                     .border_color(border())
-                    .children(COLS.iter().enumerate().map(|(i, (label, w))| cell(*w, i >= 2).child(*label))),
+                    // 欄名一個 canvas 畫完（原本每欄一個 div＋文字，報價表每次重畫都要重排 13 個節點）
+                    .child({
+                        let c: Hsla = dim().into();
+                        let cells: [(SharedString, Hsla); 6] = std::array::from_fn(|i| (SharedString::new_static(COLS[i].0), c));
+                        canvas(|_, _, _| (), move |b, _, window, cx| paint_row(b, &cells, None, window, cx)).size_full()
+                    }),
             )
             .child(
                 uniform_list("quotes", count, cx.processor(|this, range, _window, cx| this.render_rows(range, cx)))
