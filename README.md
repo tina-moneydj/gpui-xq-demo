@@ -32,7 +32,7 @@
 
 小計：同一格兩邊各贏一部分時各算 0.5；「見上」「不判定」「沒比」「—」不算。
 
-⚠️ **Mac 的 GPUI 數字要重跑**：10-25、10-26 的 Mac 壓測，GPUI 編譯時沒開 `font-kit`，**畫面上沒有畫任何文字**（log：`compiled without the font-kit feature, so no text will be rendered`）。GPUI 少做了排字，CPU 還是比較高；記憶體較省、開啟較快這兩格要補上文字後重跑才算數。修法：`Cargo.toml` 的 `gpui_platform` 加 `font-kit`（分支 `claude/adoring-ritchie-5aw37s`，還沒合進 `main`、`mac-bench`）。
+⚠️ **Mac 的 GPUI 數字要重跑**：10-25、10-26 的 Mac 壓測，GPUI 編譯時沒開 `font-kit`，**畫面上沒有畫任何文字**（log：`compiled without the font-kit feature, so no text will be rendered`）。GPUI 少做了排字，CPU 還是比較高；記憶體較省、開啟較快這兩格要補上文字後重跑才算數。修法：`Cargo.toml` 的 `gpui_platform` 加 `font-kit`（10-26 已合進 `main`，Mac 壓測包已重編）。
 
 ### 數據來源與限制
 
@@ -59,6 +59,8 @@
 > - 成交明細（`XQ_TAPE=1`）往下捲看舊成交時，新成交不會再把畫面推走（`Home` 回到最新）。
 
 > **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
+
+> **Mac 壓測包**（`bench/mac/`，2026-10-26 起在 `main`）：在自己的 Mac 上比 GPUI vs egui，一個指令跑完、結果 zip 傳回來 → [bench/mac/README.md](bench/mac/README.md)。
 
 ![分時](screenshot.png)
 
