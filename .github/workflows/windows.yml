@@ -3,6 +3,7 @@
 #   - artifact xq-bench-windows-gpui
 #   - 預發行版 windows-bench-latest：xq-bench-windows-gpui.zip（只有 GPUI，公開）＋各 exe
 # egui-xq-demo（公開 repo）的 Windows workflow 會下載這個 zip、加進 egui，發佈完整版 xq-bench-windows.zip（公開 release）。
+# 網頁情境（web）：從 main 分支的 examples/web-multi 編 GPUI 網頁版（wasm）放進 web\gpui；egui 那邊的 workflow 再加 web\egui。
 name: windows
 
 on:
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - name: Rust toolchain
@@ -44,21 +45,39 @@ jobs:
       - name: Test
         shell: pwsh
         run: cargo test --release --locked --workspace
+      - name: 網頁版範例原始碼（main 分支的 examples/web-multi）
+        uses: actions/checkout@v4
+        with: { ref: main, path: webmain }
+      - name: 編 GPUI 網頁版（一頁嵌多個元件；失敗就不放，壓測包的 web 情境會自動略過 GPUI）
+        continue-on-error: true
+        shell: bash
+        run: |
+          [ -f webmain/examples/web-multi/build.sh ] || { echo "main 還沒有 examples/web-multi"; exit 1; }
+          rustup target add wasm32-unknown-unknown
+          V=$(grep -A1 '^name = "wasm-bindgen"$' webmain/examples/web-multi/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')
+          echo "wasm-bindgen $V"
+          wasm-bindgen --version 2>/dev/null | grep -q " $V$" || cargo install wasm-bindgen-cli --version "$V" --locked
+          curl -sSL -o binaryen.tgz https://github.com/WebAssembly/binaryen/releases/download/version_124/binaryen-version_124-x86_64-windows.tar.gz \
+            && tar xzf binaryen.tgz && export WASM_OPT="$PWD/binaryen-version_124/bin/wasm-opt.exe" || echo "沒有 wasm-opt，略過最佳化"
+          (cd webmain/examples/web-multi && ./build.sh)
+          mkdir -p web-gpui && cp webmain/dist/web-multi/index.html webmain/dist/web-multi/page.js webmain/dist/web-multi/xq_web_multi_gpui.js webmain/dist/web-multi/xq_web_multi_gpui_bg.wasm web-gpui/
+          ls -la web-gpui
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist, kit/xq-bench-windows/bin | Out-Null
+          if (Test-Path web-gpui) { New-Item -ItemType Directory -Force kit/xq-bench-windows/web | Out-Null; Copy-Item web-gpui kit/xq-bench-windows/web/gpui -Recurse }
           Copy-Item target/release/gpui-xq-demo.exe, target/release/xq-tickgen.exe, target/release/xq-demofeed.exe dist/
           Copy-Item bench/windows/* kit/xq-bench-windows/ -Recurse -Exclude results, bin
           Copy-Item dist/*.exe kit/xq-bench-windows/bin/
           "gpui-xq-demo $env:GITHUB_SHA ($env:GITHUB_REF_NAME) $(Get-Date -Format o)" | Set-Content kit/xq-bench-windows/bin/gpui-build.txt
           Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows-gpui.zip -Force
           Get-ChildItem dist | Format-Table Name, Length
-      - name: 工具包冒煙測試（CI 機器沒有實體 GPU，只確認腳本能跑完 GPUI 主視窗一輪；數字不具參考性）
+      - name: 工具包冒煙測試（CI 機器沒有實體 GPU，只確認腳本能跑完 GPUI 主視窗＋網頁一輪；數字不具參考性）
         continue-on-error: true
         shell: powershell
         run: |
-          & "$PWD\kit\xq-bench-windows\bench-windows.ps1" -Scenarios main -Runs 1 -Apps gpui -NoDownload -NoZip -OutDir "$PWD\smoke"
+          & "$PWD\kit\xq-bench-windows\bench-windows.ps1" -Scenarios main,web -Runs 1 -Apps gpui -NoDownload -NoZip -OutDir "$PWD\smoke"
           Get-ChildItem smoke | Format-Table Name, Length
           if (Test-Path smoke\summary.md) { Get-Content smoke\summary.md -Encoding UTF8 | Select-Object -First 40 }
       - uses: actions/upload-artifact@v4

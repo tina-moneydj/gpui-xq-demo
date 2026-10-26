@@ -60,6 +60,8 @@
 
 > **團隊文件（加入翻寫的成員從這裡開始）**：[docs/team/](docs/team/README.md) —— 學習路線、AI 開發規範、範例模組（成交明細）、prompt 模板；給 AI 代理的規則在 [AGENTS.md](AGENTS.md)。
 
+> **Mac 壓測包（mac-bench 分支）**：在自己的 Mac 上比 GPUI vs egui，一個指令跑完、結果 zip 傳回來 → [bench/mac/README.md](bench/mac/README.md)（目前還沒有 Mac 實測數字）。
+
 ![分時](screenshot.png)
 
 | 日線（合成）＋MA5/20/60＋成交量 | 壓力 5 萬列（虛擬化） |
