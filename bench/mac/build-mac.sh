@@ -12,7 +12,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 GPUI_SRC="$(cd "$HERE/../.." && pwd)"
 BIN="$HERE/bin"
-BRANCH="${XQ_BRANCH:-mac-bench}"
+BRANCH="${XQ_BRANCH:-main}"
 UNIVERSAL=0; [ "${1:-}" = "--universal" ] && UNIVERSAL=1
 say() { printf '\033[1;36m[build]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[build] %s\033[0m\n' "$*" >&2; exit 1; }

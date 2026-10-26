@@ -43,7 +43,7 @@
 
 ## 放進實機壓測包
 
-Mac（`bench/mac/xq_bench_mac.py`，`mac-bench` 分支）和 Windows（`bench/windows/bench-windows.ps1`，`windows-bench-ci` 分支）的 `web` 情境：
+Mac（`bench/mac/xq_bench_mac.py`，`main` 分支）和 Windows（`bench/windows/bench-windows.ps1`，`windows-bench-ci` 分支）的 `web` 情境：
 
 - 工具包的 `web/egui`、`web/gpui` 是兩個 repo main 分支 `examples/web-multi/build.sh` 的產出，由 CI 編好放進 zip。
 - 用 Chrome（沒有就 Edge）開全新暫存設定檔，網址加 `?bench=1`：頁面自己照固定流程量（暖機 3 秒 → 5 秒幀數 → 記憶體 → 移除一格 → 報價表 panic），把結果 POST 到壓測包內建的小伺服器（只聽 127.0.0.1、會 gzip）；壓測包另外量頁面總下載量、整個瀏覽器的記憶體與 5 秒量測區間的 CPU。

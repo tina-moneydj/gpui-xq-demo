@@ -7,7 +7,7 @@
 name: macos
 on:
   push:
-    branches: [mac-bench]
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
@@ -88,11 +88,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: xq-bench-mac-gpui, path: xq-bench-mac-gpui.zip, retention-days: 30 }
       - name: Publish mac-bench-latest pre-release
-        if: github.ref == 'refs/heads/mac-bench'
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete mac-bench-latest --cleanup-tag -y 2>/dev/null || true
           gh release create mac-bench-latest xq-bench-mac-gpui.zip --prerelease --target "$GITHUB_SHA" \
-            --title "Mac 壓測包（GPUI 版，mac-bench ${GITHUB_SHA::7}）" \
+            --title "Mac 壓測包（GPUI 版，main ${GITHUB_SHA::7}）" \
             --notes "自動產生的 macOS 預先編譯版（arm64＋Intel 通用、ad-hoc 簽章、shader=${{ steps.metal.outputs.shaders }}）。只含 GPUI；含 egui 的完整版在 egui-xq-demo 的 mac-bench-latest。下載 → 解壓 → 終端機執行 xattr -dr com.apple.quarantine 資料夾 → ./run-bench.command。說明：bench/mac/README.md"

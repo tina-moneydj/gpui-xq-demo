@@ -196,14 +196,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 ```
 mkdir -p ~/xq-mac && cd ~/xq-mac
-git clone -b mac-bench https://github.com/tina-moneydj/gpui-xq-demo.git
-git clone -b mac-bench https://github.com/tina-moneydj/egui-xq-demo.git
+git clone https://github.com/tina-moneydj/gpui-xq-demo.git
+git clone https://github.com/tina-moneydj/egui-xq-demo.git
 ```
 
 - 兩個 repo 都是公開的，`git clone` 不用登入。
 - 沒有 git 的話，可以改用瀏覽器下載：
   1. 打開 tina-moneydj/egui-xq-demo（gpui-xq-demo 同樣做法）。
-  2. 左上角分支切到 `mac-bench`。
+  2. 左上角分支維持 `main`。
   3. 按綠色的 **Code**，選 **Download ZIP**。
   4. 解壓縮，資料夾改名成 `egui-xq-demo`，放進 `~/xq-mac/`。
   5. 打開終端機，執行 `xattr -dr com.apple.quarantine ~/xq-mac`，清除「從網路下載」的標記。
@@ -258,7 +258,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
   - 兩個 app 都讀環境變數 `XQ_WIN_RECTS="x,y,w,h,displayId,dx,dy;…"`，自己把視窗開在指定的螢幕和大小。
   - 用的是全域座標，單位是點，主螢幕左上角是 (0,0)。
   - 所以不需要「輔助使用」權限。
-- **macOS 的程式改動**（只在 mac-bench 分支）：
+- **macOS 的程式改動**（2026-10-26 起已合進 `main`）：
   - GPUI：
     - 字型：蘋方-繁，等寬用 Menlo
     - 自身 RSS：`proc_pidinfo`
@@ -268,7 +268,7 @@ cd ~/xq-mac/gpui-xq-demo/bench/mac
     - 自身 RSS：`proc_pidinfo`
   - 兩邊都加了 `XQ_WIN_RECTS`。
 - **還沒做：** 高頻情境的「點報價列切換」反應時間。要自動點擊得開「輔助使用」權限，這版先略過。
-- **CI：** `.github/workflows/macos.yml`（gpui-xq-demo、egui-xq-demo 各一份，推 `mac-bench` 分支就會跑）：
+- **CI：** `.github/workflows/macos.yml`（gpui-xq-demo、egui-xq-demo 各一份，推 `main` 就會跑；2026-10-26 起不再用 `mac-bench` 分支）：
   - gpui-xq-demo：在 macos-26（Xcode 26）上編 GPUI＋`xq-tickgen`＋`xq-demofeed` 的 arm64＋x86_64 通用執行檔，預先編譯 Metal shader，ad-hoc 簽章，打包成 `xq-bench-mac-gpui.zip`，發佈公開預發行版 `mac-bench-latest`；並實際跑一輪 GPUI 主視窗＋重圖表＋網頁當冒煙測試（artifact `smoke-mac-gpui`）。網頁版（`web/gpui`）是從 **main 分支**的 `examples/web-multi` 編的。
   - egui-xq-demo：編 egui（預設只編 arm64，省建置時間；手動執行可勾 universal），下載上面的 GPUI 包、加進 egui（含 main 分支 `examples/web-multi` 編的 `web/egui`），發佈公開預發行版 `mac-bench-latest` 的 `xq-bench-mac.zip`；並跑一輪 egui 主視窗冒煙測試。
   - 兩個 repo 同時推時，egui 那邊可能拿到上一版 GPUI 包；要確定是最新的，等 gpui 的 run 跑完再推 egui（或手動重跑 egui 的 workflow）。
