@@ -8,7 +8,7 @@
 ### 結論先看
 
 - **用起來的感覺（延遲、掉筆、順不順）：Windows、Mac 兩邊差不多。** 高頻報價延遲中位數都約 31 ms，p99 只差 1–3 ms（不到 1/5 幀），都 0 掉筆，畫面都到 60 FPS。唯一看得出差別的是 5 萬列捲動：Windows GPUI 51 FPS、卡頓 63 次（修正已合併，待重跑）。
-- **差在「吃多少資源」：egui 較省。** Windows 上 GPUI 的 CPU 約 egui（OpenGL）的 1.5–2.3 倍、顯卡用量 2.5–5 倍；Mac 上 GPUI 的 CPU 和 egui（wgpu）差不多，但約 egui（OpenGL）的 3 倍。記憶體 Windows 是 egui 較省，Mac 是 GPUI 較省（但要重跑）。
+- **差在「吃多少資源」：egui 較省。** Windows 上 GPUI 的 CPU 約 egui（OpenGL）的 1.5–2.3 倍、顯卡用量 2.5–5 倍；Mac 上 GPUI 的 CPU 比 egui（wgpu）略高、約 egui（OpenGL）的 4 倍。記憶體 Windows 是 egui 較省，Mac 兩邊差不多（GPUI 少約 8%）。
 - **網頁、Android：egui 明顯較好**（下載小、延遲低、FPS 高），但都是在沒有顯卡的機器上量的。**iOS 還沒比。**
 - 所以「兩邊差不多」在桌面的**使用體驗**上成立；在 **CPU／顯卡用量**、網頁和手機上不成立。
 
@@ -16,30 +16,30 @@
 
 怎麼判：差距使用者感覺不到就算**平手**（延遲差 < 5 ms、FPS 都在 58 以上、其他數字差 10% 以內）；否則寫較好的那邊和數字（GPUI vs egui）。egui 有 OpenGL 和 wgpu 兩版時，取比較好的那版。
 
-| 項目 | Windows 桌面 | Mac 桌面 ⚠️ | 網頁 | Android | iOS |
+| 項目 | Windows 桌面 | Mac 桌面 | 網頁 | Android | iOS |
 |---|---|---|---|---|---|
-| 報價延遲 | 平手（p99 34.0 vs 33.9 ms） | 平手（p99 35.3 vs 33.4 ms） | **egui**（中位數 48–51 vs 32 ms） | **egui**（101 vs 443 ms） | 沒比 |
-| 4 視窗延遲 | 平手（p99 36.0 vs 33.4 ms） | 平手（p99 35.1 vs 33.4 ms） | — | — | — |
+| 報價延遲 | 平手（p99 34.0 vs 33.9 ms） | 平手（p99 34.5 vs 33.4 ms） | **egui**（中位數 48–51 vs 32 ms） | **egui**（101 vs 443 ms） | 沒比 |
+| 4 視窗延遲 | 平手（p99 36.0 vs 33.4 ms） | 平手（p99 35.3 vs 33.4 ms） | — | — | — |
 | 掉筆 | 平手（都 0） | 平手（都 0） | 平手（都 0） | 平手（都 0） | 沒比 |
 | 一般畫面／重圖表 FPS | 平手（都 60） | 平手（都 60） | 重圖表 **egui**（26 vs 33）；捲動 **GPUI**（49 vs 42，卡頓 20 vs 167） | **egui**（報價表 3.3 vs 6.3） | 沒比 |
-| 5 萬列 | 捲動 **egui**（51 vs 60 FPS，卡頓 63 vs 0；待重跑） | 跳價 **egui**（45 vs 57 FPS，可能只是少畫） | 見上 | — | — |
-| CPU | **egui**（4 視窗 44 vs 28 %、主視窗 16 vs 7 %） | **egui**（高頻 30 vs 8 %） | **egui** 小勝（扣掉軟體繪圖後：主視窗 20 vs 14 %；每秒 10 萬筆 53 vs 52 % 平手） | **egui**（每分鐘 98 vs 70 CPU 秒） | 沒比 |
+| 5 萬列 | 捲動 **egui**（51 vs 60 FPS，卡頓 63 vs 0；待重跑） | 跳價 **egui**（47 vs 57 FPS，可能只是少畫）；捲動平手（都 60、0 卡頓） | 見上 | — | — |
+| CPU | **egui**（4 視窗 44 vs 28 %、主視窗 16 vs 7 %） | **egui**（高頻 35 vs 8 %、主視窗 17 vs 11 %） | **egui** 小勝（扣掉軟體繪圖後：主視窗 20 vs 14 %；每秒 10 萬筆 53 vs 52 % 平手） | **egui**（每分鐘 98 vs 70 CPU 秒） | 沒比 |
 | 顯卡用量 | **egui**（4 視窗 22 vs 5 %） | 不判定（只有整機數字） | — | — | — |
-| 記憶體 | **egui**（4 視窗 106 vs 91 MB、重圖表 105 vs 86 MB；一般畫面 73 vs 78 MB 平手） | **GPUI**（100 vs 116 MB；待重跑） | 平手（整個 Chrome 580 vs 546 MB） | 平手（修補後 57.6 vs 58 MB） | 沒比 |
-| 開啟速度 | **egui**（281 vs 185 ms） | **GPUI**（166 vs 186 ms；待重跑） | **egui**（0.60 vs 0.40 秒） | **egui**（13.7 vs 12.2 秒，模擬器上差 1.5 秒） | 沒比 |
+| 記憶體 | **egui**（4 視窗 106 vs 91 MB、重圖表 105 vs 86 MB；一般畫面 73 vs 78 MB 平手） | 平手（主視窗 106 vs 116 MB、重圖表 123 vs 125 MB） | 平手（整個 Chrome 580 vs 546 MB） | 平手（修補後 57.6 vs 58 MB） | 沒比 |
+| 開啟速度 | **egui**（281 vs 185 ms） | 各有勝負：第一幀 **GPUI**（155 vs 186 ms）；第一筆報價 **egui**（220 vs 189 ms） | **egui**（0.60 vs 0.40 秒） | **egui**（13.7 vs 12.2 秒，模擬器上差 1.5 秒） | 沒比 |
 | 檔案大小 | **egui**（執行檔 25.5 vs 13.0 MB，Linux 版） | **egui**（同左） | **egui**（gzip 6.0 vs 4.2 MB） | **egui**（安裝檔 15.4 vs 6.7 MB） | 沒比 |
-| **小計**（GPUI／egui／平手） | 0／6／4 | 2／3／4（待重跑） | 0.5／4.5／2 | 0／5／2 | — |
+| **小計**（GPUI／egui／平手） | 0／6／4 | 0.5／3.5／5 | 0.5／4.5／2 | 0／5／2 | — |
 
 小計：同一格兩邊各贏一部分時各算 0.5；「見上」「不判定」「沒比」「—」不算。
 
-⚠️ **Mac 的 GPUI 數字要重跑**：10-25、10-26 的 Mac 壓測，GPUI 編譯時沒開 `font-kit`，**畫面上沒有畫任何文字**（log：`compiled without the font-kit feature, so no text will be rendered`）。GPUI 少做了排字，CPU 還是比較高；記憶體較省、開啟較快這兩格要補上文字後重跑才算數。修法：`Cargo.toml` 的 `gpui_platform` 加 `font-kit`（10-26 已合進 `main`，Mac 壓測包已重編）。
+**Mac 的 GPUI 欄是 10-26 下午重跑、有畫文字的數字**（3 輪中位數，0 失敗）。之前 10-25、10-26 早上的 Mac 壓測，GPUI 編譯時沒開 `font-kit`，畫面上沒有畫任何文字（log：`compiled without the font-kit feature, so no text will be rendered`），已在 `main` 修好。補上文字後 GPUI：記憶體多約 6–7 MB（主視窗 100 → 106 MB）、CPU 多 2–5 個百分點，延遲、FPS 不變；原本「記憶體較省」從 GPUI 勝變平手，開啟速度變成各有勝負。egui 欄是同一台 Mac 10-26 早上的數字（egui 沒改），兩邊不是同一次跑的，會多一點誤差。
 
 ### 數據來源與限制
 
 | 平台 | 機器 | 日期 | 細節 |
 |---|---|---|---|
 | Windows | Dell i7-13700＋GTX 1650，3 輪中位數 | 10-25 | [docs/bench/real-hw/2026-10-25-windows](docs/bench/real-hw/2026-10-25-windows/README.md) |
-| Mac | MacBook Air M4，3 輪中位數 | 10-26（GPUI 沒畫字） | Tina 的壓測包結果 `20261026-091545-mac`，還沒放進 repo；上一次見 [2026-10-25-mac-2](docs/bench/real-hw/2026-10-25-mac-2/README.md) |
+| Mac | MacBook Air M4，3 輪中位數 | GPUI 10-26 下午（有畫字）；egui 10-26 早上 | Tina 的壓測包結果 `20261026-150703-mac`（GPUI）、`20261026-091545-mac`（egui），還沒放進 repo；上一次見 [2026-10-25-mac-2](docs/bench/real-hw/2026-10-25-mac-2/README.md) |
 | 網頁 | Linux 測試機、**沒有顯卡**（Chrome 軟體繪圖） | 10-23 | 見下方「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」。10-26 在 M4 的 Chrome 上 GPUI 一頁多元件可用、互不拖垮，每格約 27 fps；egui 頁面那次沒載入成功，沒有對照 |
 | Android | 模擬器、**沒有顯卡、CPU 用軟體模擬** | 10-23／10-24 | 見下方「[手機版（Android）](#手機版android2026-10-23-新增egui-和-gpui-一起做)」；GPUI 修補後只重量了記憶體 |
 | iOS | 只在雲端模擬器開過，兩邊都約 31–33 FPS | 10-25 | 沒有正式比較，見 [bench/ios](bench/ios/README.md) |
