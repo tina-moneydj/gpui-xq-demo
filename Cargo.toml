@@ -27,7 +27,7 @@ libc = "0.2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 gpui = { package = "gpui-pre", version = "=0.3.7" }
-gpui_platform = { package = "gpui-pre-platform", version = "=0.3.7", features = ["wayland", "x11"] }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.7", features = ["wayland", "x11", "font-kit"] }
 
 # 網頁版（wasm32-unknown-unknown）：gpui_web（Zed 2026-02 合併的瀏覽器平台，WebGPU 優先、WebGL2 備援）。
 # 不經過 gpui_platform：它會開 gpui_web 的預設 feature "multithreaded"（wasm_thread，要 nightly），這裡用單執行緒。
