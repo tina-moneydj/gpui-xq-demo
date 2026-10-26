@@ -3,10 +3,56 @@
 與 [`wry-xq-demo`](https://github.com/tina-moneydj/wry-xq-demo)（tao + wry，HTML/JS 畫面）**接同一個行情來源**：
 `WryFeedHost`（.NET，`127.0.0.1:47631`，little-endian 封包）。差別是這版整個主畫面都用 GPUI 原生繪圖，不用 WebView。
 
+## 各平台最新比較：GPUI vs egui（2026-10-26 整理）
+
+### 結論先看
+
+- **用起來的感覺（延遲、掉筆、順不順）：Windows、Mac 兩邊差不多。** 高頻報價延遲中位數都約 31 ms，p99 只差 1–3 ms（不到 1/5 幀），都 0 掉筆，畫面都到 60 FPS。唯一看得出差別的是 5 萬列捲動：Windows GPUI 51 FPS、卡頓 63 次（修正已合併，待重跑）。
+- **差在「吃多少資源」：egui 較省。** Windows 上 GPUI 的 CPU 約 egui（OpenGL）的 1.5–2.3 倍、顯卡用量 2.5–5 倍；Mac 上 GPUI 的 CPU 和 egui（wgpu）差不多，但約 egui（OpenGL）的 3 倍。記憶體 Windows 是 egui 較省，Mac 是 GPUI 較省（但要重跑）。
+- **網頁、Android：egui 明顯較好**（下載小、延遲低、FPS 高），但都是在沒有顯卡的機器上量的。**iOS 還沒比。**
+- 所以「兩邊差不多」在桌面的**使用體驗**上成立；在 **CPU／顯卡用量**、網頁和手機上不成立。
+
+### 總表
+
+怎麼判：差距使用者感覺不到就算**平手**（延遲差 < 5 ms、FPS 都在 58 以上、其他數字差 10% 以內）；否則寫較好的那邊和數字（GPUI vs egui）。egui 有 OpenGL 和 wgpu 兩版時，取比較好的那版。
+
+| 項目 | Windows 桌面 | Mac 桌面 ⚠️ | 網頁 | Android | iOS |
+|---|---|---|---|---|---|
+| 報價延遲 | 平手（p99 34.0 vs 33.9 ms） | 平手（p99 35.3 vs 33.4 ms） | **egui**（中位數 48–51 vs 32 ms） | **egui**（101 vs 443 ms） | 沒比 |
+| 4 視窗延遲 | 平手（p99 36.0 vs 33.4 ms） | 平手（p99 35.1 vs 33.4 ms） | — | — | — |
+| 掉筆 | 平手（都 0） | 平手（都 0） | 平手（都 0） | 平手（都 0） | 沒比 |
+| 一般畫面／重圖表 FPS | 平手（都 60） | 平手（都 60） | 重圖表 **egui**（26 vs 33）；捲動 **GPUI**（49 vs 42，卡頓 20 vs 167） | **egui**（報價表 3.3 vs 6.3） | 沒比 |
+| 5 萬列 | 捲動 **egui**（51 vs 60 FPS，卡頓 63 vs 0；待重跑） | 跳價 **egui**（45 vs 57 FPS，可能只是少畫） | 見上 | — | — |
+| CPU | **egui**（4 視窗 44 vs 28 %、主視窗 16 vs 7 %） | **egui**（高頻 30 vs 8 %） | **egui** 小勝（扣掉軟體繪圖後：主視窗 20 vs 14 %；每秒 10 萬筆 53 vs 52 % 平手） | **egui**（每分鐘 98 vs 70 CPU 秒） | 沒比 |
+| 顯卡用量 | **egui**（4 視窗 22 vs 5 %） | 不判定（只有整機數字） | — | — | — |
+| 記憶體 | **egui**（4 視窗 106 vs 91 MB、重圖表 105 vs 86 MB；一般畫面 73 vs 78 MB 平手） | **GPUI**（100 vs 116 MB；待重跑） | 平手（整個 Chrome 580 vs 546 MB） | 平手（修補後 57.6 vs 58 MB） | 沒比 |
+| 開啟速度 | **egui**（281 vs 185 ms） | **GPUI**（166 vs 186 ms；待重跑） | **egui**（0.60 vs 0.40 秒） | **egui**（13.7 vs 12.2 秒，模擬器上差 1.5 秒） | 沒比 |
+| 檔案大小 | **egui**（執行檔 25.5 vs 13.0 MB，Linux 版） | **egui**（同左） | **egui**（gzip 6.0 vs 4.2 MB） | **egui**（安裝檔 15.4 vs 6.7 MB） | 沒比 |
+| **小計**（GPUI／egui／平手） | 0／6／4 | 2／3／4（待重跑） | 0.5／4.5／2 | 0／5／2 | — |
+
+小計：同一格兩邊各贏一部分時各算 0.5；「見上」「不判定」「沒比」「—」不算。
+
+⚠️ **Mac 的 GPUI 數字要重跑**：10-25、10-26 的 Mac 壓測，GPUI 編譯時沒開 `font-kit`，**畫面上沒有畫任何文字**（log：`compiled without the font-kit feature, so no text will be rendered`）。GPUI 少做了排字，CPU 還是比較高；記憶體較省、開啟較快這兩格要補上文字後重跑才算數。修法：`Cargo.toml` 的 `gpui_platform` 加 `font-kit`（分支 `claude/adoring-ritchie-5aw37s`，還沒合進 `main`、`mac-bench`）。
+
+### 數據來源與限制
+
+| 平台 | 機器 | 日期 | 細節 |
+|---|---|---|---|
+| Windows | Dell i7-13700＋GTX 1650，3 輪中位數 | 10-25 | [docs/bench/real-hw/2026-10-25-windows](docs/bench/real-hw/2026-10-25-windows/README.md) |
+| Mac | MacBook Air M4，3 輪中位數 | 10-26（GPUI 沒畫字） | Tina 的壓測包結果 `20261026-091545-mac`，還沒放進 repo；上一次見 [2026-10-25-mac-2](docs/bench/real-hw/2026-10-25-mac-2/README.md) |
+| 網頁 | Linux 測試機、**沒有顯卡**（Chrome 軟體繪圖） | 10-23 | 見下方「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」。10-26 在 M4 的 Chrome 上 GPUI 一頁多元件可用、互不拖垮，每格約 27 fps；egui 頁面那次沒載入成功，沒有對照 |
+| Android | 模擬器、**沒有顯卡、CPU 用軟體模擬** | 10-23／10-24 | 見下方「[手機版（Android）](#手機版android2026-10-23-新增egui-和-gpui-一起做)」；GPUI 修補後只重量了記憶體 |
+| iOS | 只在雲端模擬器開過，兩邊都約 31–33 FPS | 10-25 | 沒有正式比較，見 [bench/ios](bench/ios/README.md) |
+| Linux 桌面 | 只用來開發和自動測試，測試機沒有顯卡 | — | 不列入比較 |
+
+- 網頁和 Android 的排名到有顯卡的真機上可能會變。GPUI 很靠 GPU，差距可能縮小。
+- Windows 的 5 萬列捲動卡頓已查到主因是壓測用計時器（[docs/bench/2026-10-25-scroll](docs/bench/2026-10-25-scroll/README.md)），修正已合併，等 Windows 重跑確認。
+
 > **main 現在有什麼（2026-10-24 合併，台北時間）**
 > - **5 萬列捲動卡頓（10-25 晚上）**：查到 Windows 卡頓主要是壓測用 16 ms 計時器推捲動（Windows 計時器刻度 15.6 ms，報價表每秒只拿到約 42 個新位置），改成每幀推進；另修字型找不到時每段字走錯誤路徑。說明與數字：[docs/bench/2026-10-25-scroll/](docs/bench/2026-10-25-scroll/README.md)。**Windows 待重跑確認。**
 > - **最新（10-25 晚上）**：「[4 視窗第 2～4 個視窗晚約 3 秒](#4-視窗第-24-個視窗晚約-3-秒才有報價查到原因並修好2026-10-25-晚上)」已修好。「[Mac 只跑重圖表](#mac-只跑重圖表記憶體修正確認2026-10-25-晚上)」確認記憶體修正有效，GPUI 重圖表 321 → 115 MB，變成最省。
-> - **選型最新結論（10-25 下午）**先看「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
+> - **各平台最新比較（10-26）**先看「[各平台最新比較](#各平台最新比較gpui-vs-egui2026-10-26-整理)」：一張表看每個平台誰好。
+> - **選型結論（10-25 下午）**見「[Windows 重跑＋Mac 第三次](#windows-重跑mac-第三次2026-10-25-下午gpui-vs-egui-門檻判定)」：延遲兩台都追平到 egui 的 2–3 ms 內，Windows 效率（CPU 約 2 倍、捲動卡頓）還沒過，維持「GPUI 有條件」。第一次實測見「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般客戶電腦（Mac M4 內建 GPU、Windows 入門獨顯 GTX 1650）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
 > - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android／iOS 手機版**（`mobile/`，iOS 見「[手機版（iOS）](#手機版ios2026-10-25-新增egui-和-gpui-一起做)」；見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
 > - 顏色、字級等改讀**共用設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
 > - **GPUI 三項優化**（沒變的視窗不重畫、捲動卡頓、報價延遲）已在 main，數字見「[GPUI 優化](#gpui-優化2026-10-23)」。
